@@ -14,7 +14,7 @@ import java.time.Instant;
 @Data
 public class AnnotationEntity {
     @Id
-    @GeneratedValue private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne @JoinColumn(name = "image_id") private ImageEntity image;
     private String creator;
     private String type;

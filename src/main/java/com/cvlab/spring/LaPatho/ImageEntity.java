@@ -14,7 +14,9 @@ import java.time.Instant;
 @NoArgsConstructor
 @Data
 public class ImageEntity {
-    @Id @GeneratedValue private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String name;
     private int width, height, tileSize, maxLevel;
     private String path;

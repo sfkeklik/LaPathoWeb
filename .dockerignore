@@ -1,0 +1,17 @@
+# Ignore logs and temporary files
+*.log
+logs/
+temp/
+tmp/
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Don't ignore pom.xml and src/ directory - these are needed for build
+!pom.xml
+!src/
