@@ -1,28 +1,6 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-    volumes:
-      - ./uploads:/app/uploads
-    depends_on:
-      - database
-
-  frontend:
-    build:
-      context: ./src/main/web-ui
-      dockerfile: Dockerfile
-    ports:
-      - "4200:4200"
-    depends_on:
-      - backend
-
   database:
     image: postgres:15
     environment:
@@ -33,6 +11,39 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lapatho"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/lapatho
+      - SPRING_DATASOURCE_USERNAME=lapatho
+      - SPRING_DATASOURCE_PASSWORD=password
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./src/main/web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   postgres_data:
