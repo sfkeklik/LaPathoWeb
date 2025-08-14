@@ -84,11 +84,14 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- OpenSlide dependency temporarily commented out due to Maven repository issue -->
+		<!--
 		<dependency>
 			<groupId>org.openslide</groupId>
 			<artifactId>openslide-java</artifactId>
 			<version>0.13.0</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>formats-gpl</artifactId>
