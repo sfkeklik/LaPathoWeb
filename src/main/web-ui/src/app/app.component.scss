@@ -1,0 +1,41 @@
+// Eğer :root tanımlarınız styles.scss'de değilse burada da ekleyin:
+:root {
+    --primary: #0052cc;
+    --secondary: #00b8d9;
+    --bg: #f4f5f7;
+    --text: #172b4d;
+  }
+  
+  .app-header {
+    background: var(--bg);
+    padding: 0.75rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    /* İstersen logo veya başlık ekleyebilirsin */
+  }
+  
+  .btn-home {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--primary);
+    color: #000;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  
+  .btn-home:hover {
+    background: var(--secondary);
+    transform: translateY(-2px);
+  }
+  
+  .btn-home:active {
+    transform: translateY(0);
+  }
+  

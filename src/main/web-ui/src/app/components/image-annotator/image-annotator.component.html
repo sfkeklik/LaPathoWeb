@@ -1,0 +1,154 @@
+<div class="annotator-container">
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>{{ loadingMessage }}</p>
+    </div>
+  </div>
+
+  <!-- Main Toolbar -->
+  <div class="main-toolbar">
+    <div class="toolbar-section">
+      <button class="toolbar-btn" (click)="navigateHome()" title="Ana Sayfa">
+        <i class="fas fa-home"></i>
+      </button>
+      <button class="toolbar-btn" (click)="toggleSidebar()" title="Yan Panel">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+
+    <!-- Tools -->
+    <!-- Tools -->
+    <div class="toolbar-section tools-section">
+      <button class="toolbar-btn" (click)="setTool(null)" title="Seçim Modu"
+              [class.active]="currentTool===null">
+        <i class="fas fa-mouse-pointer"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('rect')" title="Dikdörtgen"
+              [class.active]="currentTool==='rect' || currentTool==='rectangle'">
+        <i class="fas fa-square"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('polygon')" title="Çokgen"
+              [class.active]="currentTool==='polygon'">
+        <i class="fas fa-draw-polygon"></i>
+      </button>
+
+      <!-- Yeni araçlar -->
+      <button class="toolbar-btn" (click)="setTool('point')" title="Nokta"
+              [class.active]="currentTool==='point'">
+        <i class="fas fa-dot-circle"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('circle')" title="Daire"
+              [class.active]="currentTool==='circle'">
+        <i class="fas fa-circle"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('ellipse')" title="Elips"
+              [class.active]="currentTool==='ellipse'">
+        <i class="fas fa-compact-disc"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('freehand')" title="Serbest Çizim"
+              [class.active]="currentTool==='freehand'">
+        <i class="fas fa-signature"></i>
+      </button>
+
+      <!-- Export / Clear -->
+      <button class="toolbar-btn" (click)="exportAnnotations()" title="Anotasyonları Dışa Aktar">
+        <i class="fas fa-download"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="clearAnnotations()" title="Tümünü Temizle">
+        <i class="fas fa-broom"></i>
+      </button>
+    </div>
+
+    <div class="toolbar-section">
+      <!-- Undo/Redo buttons removed -->
+    </div>
+
+    <div class="toolbar-section">
+      <button class="toolbar-btn" (click)="zoomOut()" title="Uzaklaştır (-)">
+        <i class="fas fa-search-minus"></i>
+      </button>
+      <span class="zoom-level">{{ zoomPercentage }}%</span>
+      <button class="toolbar-btn" (click)="zoomIn()" title="Yakınlaştır (+)">
+        <i class="fas fa-search-plus"></i>
+      </button>
+      <button class="toolbar-btn" (click)="resetView()" title="Sıfırla (0)">
+        <i class="fas fa-compress-arrows-alt"></i>
+      </button>
+    </div>
+
+    <div class="toolbar-section">
+      <button class="toolbar-btn" (click)="rotateLeft()" title="Sola Döndür">
+        <i class="fas fa-undo-alt"></i>
+      </button>
+      <button class="toolbar-btn" (click)="rotateRight()" title="Sağa Döndür">
+        <i class="fas fa-redo-alt"></i>
+      </button>
+    </div>
+
+    <div class="toolbar-section ml-auto">
+      <!-- Annotation counter removed -->
+      <button class="toolbar-btn" (click)="toggleSettings()" title="Ayarlar">
+        <i class="fas fa-cog"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="content-wrapper">
+    <!-- Sidebar -->
+    <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
+      <!-- Panel Tabs -->
+      <div class="panel-tabs">
+        <!-- Panel tabs will be added here later -->
+      </div>
+
+      <!-- Panel Content -->
+      <div class="panel-content">
+        <!-- Panel content will be added here later -->
+      </div>
+    </div>
+
+    <!-- Viewer Container -->
+    <div class="viewer-wrapper">
+      <div #viewerContainer class="viewer-container"></div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" *ngIf="showSettings" (click)="showSettings = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Ayarlar</h2>
+        <button class="close-btn" (click)="showSettings = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Settings content -->
+        <div class="form-row">
+          <label for="tagVocab">Etiket sözlüğü (virgülle ayır):</label>
+          <input id="tagVocab" type="text" [(ngModel)]="tagVocabInput"
+                 placeholder="Örn: Nucleus,Tumor,Necrosis,Stroma" />
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button class="btn btn-primary" (click)="applySettings()">Uygula</button>
+        </div>
+
+        <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur (yeniden başlatılır).</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showSettings = false">Kapat</button>
+      </div>
+    </div>
+  </div>
+</div>

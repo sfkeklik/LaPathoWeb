@@ -1,0 +1,21 @@
+/* You can add global styles to this file, and also import other style files */
+
+  :root {
+    --bg: #ffffff; /* ya da istediğiniz başka bir gri ton */
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg);
+  }
+  app-root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    background-color: var(--bg);
+  }
+
+
+

@@ -1,0 +1,227 @@
+<div class="home-container">
+  <!-- Header -->
+  <header class="home-header">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="logo">
+          <i class="fas fa-microscope"></i>
+          <h1>Patoloji Görüntü Yönetimi</h1>
+        </div>
+        <p class="subtitle">Tıbbi görüntüleri yükleyin, düzenleyin ve anotasyon ekleyin</p>
+      </div>
+
+      <div class="header-right">
+        <div class="stats-card">
+          <i class="fas fa-images"></i>
+          <div class="stats-info">
+            <span class="stats-value">{{ images.length }}</span>
+            <span class="stats-label">Toplam Görüntü</span>
+          </div>
+        </div>
+
+        <div class="stats-card">
+          <i class="fas fa-check-circle"></i>
+          <div class="stats-info">
+            <span class="stats-value">{{ readyImagesCount }}</span>
+            <span class="stats-label">Hazır</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <!-- Upload Button -->
+      <input
+        #fileInput
+        id="fileInput"
+        type="file"
+        accept="image/*"
+        hidden
+        (change)="startUpload()"
+      />
+
+      <label
+        for="fileInput"
+        class="btn btn-primary btn-upload"
+        [class.uploading]="uploading">
+        <i class="fas" [ngClass]="uploading ? 'fa-spinner fa-spin' : 'fa-cloud-upload-alt'"></i>
+        <span>{{ uploading ? 'Yükleniyor...' : 'Görüntü Yükle' }}</span>
+      </label>
+
+      <!-- View Options -->
+      <div class="view-options">
+        <button class="view-btn active" title="Izgara Görünümü">
+          <i class="fas fa-th-large"></i>
+        </button>
+        <button class="view-btn" title="Liste Görünümü">
+          <i class="fas fa-list"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar-right">
+      <!-- Search -->
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          placeholder="Görüntü ara..."
+          class="search-input">
+      </div>
+
+      <!-- Filter -->
+      <select class="filter-select">
+        <option value="all">Tüm Görüntüler</option>
+        <option value="ready">Hazır</option>
+        <option value="processing">İşleniyor</option>
+        <option value="failed">Başarısız</option>
+      </select>
+
+      <!-- Sort -->
+      <select class="sort-select">
+        <option value="date-desc">En Yeni</option>
+        <option value="date-asc">En Eski</option>
+        <option value="name-asc">İsme Göre (A-Z)</option>
+        <option value="name-desc">İsme Göre (Z-A)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Gallery Grid -->
+  <div class="gallery-container">
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="images.length === 0">
+      <div class="empty-content">
+        <i class="fas fa-folder-open"></i>
+        <h3>Henüz görüntü yok</h3>
+        <p>Başlamak için bir görüntü yükleyin</p>
+        <label for="fileInput" class="btn btn-primary">
+          <i class="fas fa-cloud-upload-alt"></i>
+          İlk Görüntüyü Yükle
+        </label>
+      </div>
+    </div>
+
+    <!-- Image Grid -->
+    <div class="image-grid" *ngIf="images.length > 0">
+      <div
+        class="image-card"
+        *ngFor="let img of images"
+        [class.processing]="img.status !== 'READY'"
+        [class.clickable]="img.status === 'READY'">
+
+        <!-- Card Header with Status -->
+        <div class="card-header">
+          <span class="status-badge" [ngClass]="{
+            'status-ready': img.status === 'READY',
+            'status-processing': img.status === 'PROCESSING',
+            'status-failed': img.status === 'ERROR'
+          }">
+            <i class="fas" [ngClass]="{
+              'fa-check-circle': img.status === 'READY',
+              'fa-spinner fa-spin': img.status === 'PROCESSING',
+              'fa-exclamation-circle': img.status === 'ERROR'
+            }"></i>
+            {{ img.status === 'READY' ? 'Hazır' :
+               img.status === 'PROCESSING' ? 'İşleniyor' :
+               img.status === 'ERROR' ? 'Hata' :
+               img.status }}
+          </span>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions" *ngIf="img.status === 'READY'">
+            <button
+              class="action-btn"
+              (click)="editImage(img, $event)"
+              title="Düzenle">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="action-btn delete"
+              (click)="deleteImage(img, $event)"
+              title="Sil">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Image Preview -->
+        <div
+          class="card-image"
+          (click)="img.status === 'READY' && open(img.id)">
+
+          <!-- Ready Image -->
+          <img
+            *ngIf="img.status === 'READY'"
+            [src]="img.previewUrl"
+            [alt]="img.name"
+            class="preview-image"
+            loading="lazy">
+
+          <!-- Processing State -->
+          <div class="processing-overlay" *ngIf="img.status === 'PROCESSING'">
+            <div class="processing-content">
+              <div class="spinner-large"></div>
+              <span>İşleniyor...</span>
+            </div>
+          </div>
+
+          <!-- Failed State -->
+          <div class="failed-overlay" *ngIf="img.status === 'ERROR'">
+            <div class="failed-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Yükleme Başarısız</span>
+            </div>
+          </div>
+
+          <!-- Hover Overlay for Ready Images -->
+          <div class="hover-overlay" *ngIf="img.status === 'READY'">
+            <button class="overlay-btn">
+              <i class="fas fa-microscope"></i>
+              <span>Anotasyon Ekle</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="card-footer">
+          <h3 class="image-name" [title]="img.name">{{ img.name }}</h3>
+          <div class="image-meta">
+            <span class="meta-item" *ngIf="img.created">
+              <i class="fas fa-calendar"></i>
+              {{ img.created | date:'dd.MM.yyyy' }}
+            </span>
+            <!-- Sadece görüntü ID'sini göster -->
+            <span class="meta-item">
+              <i class="fas fa-hashtag"></i>
+              #{{ img.id }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="uploading">
+    <div class="upload-progress">
+      <div class="progress-spinner"></div>
+      <h3>Görüntü Yükleniyor</h3>
+      <p>Lütfen bekleyin...</p>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Edit Modal -->
+<app-image-edit-modal
+  [isVisible]="showEditModal"
+  [image]="selectedImage"
+  (imageUpdated)="onImageUpdated($event)"
+  (modalClosed)="onModalClosed()">
+</app-image-edit-modal>

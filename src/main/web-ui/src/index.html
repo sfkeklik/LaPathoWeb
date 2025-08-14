@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>WebUi</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- OpenSeadragon önce yüklenmeli -->
+  <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/openseadragon.min.js"></script>
+
+  <!-- Annotorious CSS -->
+  <link rel="stylesheet" href="assets/css/annotorious.min.css">
+
+  <!-- Annotorious JavaScript -->
+  <script src="assets/js/openseadragon-annotorious.min.js"></script>
+</head>
+<body>
+  <app-root></app-root>
+
+  <!-- Global Annotorious initialization script -->
+  <script>
+    // Ensure Annotorious is available globally after page load
+    window.addEventListener('DOMContentLoaded', function() {
+      console.log('🔍 Checking Annotorious availability...');
+      console.log('OpenSeadragon:', typeof window.OpenSeadragon);
+
+      // Check what's available in window
+      const annoKeys = Object.keys(window).filter(k => k.toLowerCase().includes('anno'));
+      console.log('Anno-related globals:', annoKeys);
+
+      // Try to find and properly expose Annotorious
+      if (typeof window.Annotorious !== 'undefined') {
+        console.log('✅ window.Annotorious already available');
+      } else if (typeof window.AnnotoriousOSD !== 'undefined') {
+        window.Annotorious = window.AnnotoriousOSD;
+        console.log('✅ window.AnnotoriousOSD found and mapped to Annotorious');
+      } else if (typeof window.OpenSeadragonAnnotorious !== 'undefined') {
+        window.Annotorious = window.OpenSeadragonAnnotorious;
+        console.log('✅ window.OpenSeadragonAnnotorious found and mapped to Annotorious');
+      } else if (window.OpenSeadragon && window.OpenSeadragon.Annotorious) {
+        window.Annotorious = window.OpenSeadragon.Annotorious;
+        console.log('✅ OpenSeadragon.Annotorious found and mapped');
+      } else {
+        // Try to check if it's exported differently
+        console.log('Available window properties:', Object.keys(window).slice(0, 20));
+        console.error('❌ Annotorious not found in any expected location');
+      }
+    });
+  </script>
+</body>
+</html>
