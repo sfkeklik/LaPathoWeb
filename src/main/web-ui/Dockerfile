@@ -7,14 +7,14 @@ WORKDIR /app
 # Copy package files first for better Docker layer caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies including devDependencies (Angular CLI is needed for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application for production
-RUN npm run build --prod
+# Build the application for production (updated syntax)
+RUN npm run build
 
 # Production stage with Nginx
 FROM nginx:alpine
