@@ -16,11 +16,6 @@ COPY . .
 # Build the application for production (updated syntax)
 RUN npm run build
 
-# Debug: Check what was built
-RUN ls -la dist/
-RUN ls -la dist/web-ui/ || echo "web-ui directory not found"
-RUN find dist/ -name "index.html" -type f
-
 # Production stage with Nginx
 FROM nginx:alpine
 
@@ -30,12 +25,8 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist/web-ui /usr/share/nginx/html
-
-# Debug: Verify files were copied
-RUN ls -la /usr/share/nginx/html/
-RUN cat /usr/share/nginx/html/index.html | head -10 || echo "index.html not found"
+# Copy built application from builder stage (fix path for new Angular output structure)
+COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
