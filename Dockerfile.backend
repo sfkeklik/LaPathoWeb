@@ -5,7 +5,10 @@ FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /app
 
 # Copy pom.xml first for better Docker layer caching
-COPY pom.xml .
+COPY pom.xml ./
+
+# Verify pom.xml was copied correctly (debug step)
+RUN ls -la && cat pom.xml | head -10
 
 # Download dependencies
 RUN mvn dependency:go-offline -B
