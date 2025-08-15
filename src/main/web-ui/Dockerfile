@@ -31,8 +31,8 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from builder stage
-# Angular v19+ output directory structure
-COPY --from=builder /app/dist/browser /usr/share/nginx/html
+# The actual path from the build logs shows dist/web-ui/browser
+COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
 
 # Debug: Verify the files were copied correctly
 RUN ls -la /usr/share/nginx/html/
