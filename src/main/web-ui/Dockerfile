@@ -18,7 +18,6 @@ RUN npm run build
 
 # Debug: List the contents of dist directory to see the actual structure
 RUN ls -la dist/
-RUN ls -la dist/web-ui/ || echo "dist/web-ui not found"
 RUN find dist/ -type f -name "*.html" || echo "No HTML files found"
 
 # Production stage with Nginx
@@ -32,8 +31,8 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from builder stage
-# Angular v17+ yeni yapısında browser klasörü altında dosyalar oluşuyor
-COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
+# Angular v19+ output directory structure
+COPY --from=builder /app/dist/browser /usr/share/nginx/html
 
 # Debug: Verify the files were copied correctly
 RUN ls -la /usr/share/nginx/html/

@@ -33,7 +33,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  frontend:
+  web-ui:
     build:
       context: ./src/main/web-ui
       dockerfile: Dockerfile
