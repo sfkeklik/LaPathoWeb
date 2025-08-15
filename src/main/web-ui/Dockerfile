@@ -13,8 +13,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application for production (updated syntax)
+# Build the application for production
 RUN npm run build
+
+# Debug: List the contents of dist directory to see the actual structure
+RUN ls -la dist/
+RUN ls -la dist/web-ui/ || echo "dist/web-ui not found"
+RUN find dist/ -type f -name "*.html" || echo "No HTML files found"
 
 # Production stage with Nginx
 FROM nginx:alpine
@@ -25,8 +30,13 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy built application from builder stage (fix path for new Angular output structure)
+# Copy built application from builder stage
+# Angular v17+ yeni yapısında browser klasörü altında dosyalar oluşuyor
 COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
+
+# Debug: Verify the files were copied correctly
+RUN ls -la /usr/share/nginx/html/
+RUN test -f /usr/share/nginx/html/index.html && echo "index.html found" || echo "index.html NOT found"
 
 # Expose port 80
 EXPOSE 80
