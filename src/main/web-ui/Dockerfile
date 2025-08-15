@@ -24,8 +24,9 @@ RUN find dist/ -type f -name "*.html" || echo "No HTML files found"
 # Production stage with Nginx
 FROM nginx:alpine
 
-# Remove default nginx content
+# Remove default nginx configuration and content
 RUN rm -rf /usr/share/nginx/html/*
+RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -37,6 +38,9 @@ COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
 # Debug: Verify the files were copied correctly
 RUN ls -la /usr/share/nginx/html/
 RUN test -f /usr/share/nginx/html/index.html && echo "index.html found" || echo "index.html NOT found"
+
+# Ensure nginx user owns the files
+RUN chown -R nginx:nginx /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
