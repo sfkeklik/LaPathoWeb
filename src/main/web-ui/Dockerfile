@@ -31,7 +31,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from builder stage
-# The actual path from the build logs shows dist/web-ui/browser
+# Fixed: Use correct path from Angular build output
 COPY --from=builder /app/dist/web-ui/browser /usr/share/nginx/html
 
 # Debug: Verify the files were copied correctly
