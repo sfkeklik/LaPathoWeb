@@ -44,6 +44,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
     volumes:
       - ./uploads:/app/uploads
+      - ./tiles:/app/tiles
     depends_on:
       database:
         condition: service_healthy

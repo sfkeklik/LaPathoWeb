@@ -1,6 +1,7 @@
 package com.cvlab.spring.LaPatho;
 
 import loci.formats.FormatException;
+import loci.formats.ImageReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,9 +80,12 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 
         } catch (Exception e) {
-            log.error("Genel Hata:", e);
+            log.error("Genel Hata - WSL Debug:", e);
+            log.error("Hata detayları: {}", e.getStackTrace());
             Map<String, String> error = new HashMap<>();
             error.put("error", "Sunucu hatası: " + e.getMessage());
+            error.put("type", e.getClass().getSimpleName());
+            error.put("details", e.getCause() != null ? e.getCause().getMessage() : "No cause");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
@@ -98,6 +102,40 @@ public class FileUploadController {
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> health = new HashMap<>();
+        try {
+            // Check tile directory
+            Path tileDir = Paths.get("/app/tiles");
+            health.put("tileDirectoryExists", Files.exists(tileDir));
+            health.put("tileDirectoryWritable", Files.isWritable(tileDir));
+
+            // Check upload directory
+            Path uploadDir = Paths.get("uploads");
+            health.put("uploadDirectoryExists", Files.exists(uploadDir));
+            health.put("uploadDirectoryWritable", Files.isWritable(uploadDir));
+
+            // Check profile
+            health.put("activeProfile", System.getProperty("spring.profiles.active"));
+
+            // Check Bio-Formats
+            try {
+                ImageReader reader = new ImageReader();
+                health.put("bioFormatsAvailable", true);
+                reader.close();
+            } catch (Exception e) {
+                health.put("bioFormatsAvailable", false);
+                health.put("bioFormatsError", e.getMessage());
+            }
+
+            return ResponseEntity.ok(health);
+        } catch (Exception e) {
+            health.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(health);
         }
     }
 }
