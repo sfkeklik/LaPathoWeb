@@ -25,17 +25,22 @@ RUN apk add --no-cache wget
 # Set working directory
 WORKDIR /app
 
-# Create uploads and tiles directories
-RUN mkdir -p /app/uploads
-RUN mkdir -p /app/tiles
+# Create non-root user for security first
+RUN addgroup -g 1001 -S spring && \
+    adduser -S spring -u 1001 -G spring
+
+# Create uploads and tiles directories with proper permissions
+RUN mkdir -p /app/uploads /app/tiles && \
+    chmod 755 /app/uploads /app/tiles && \
+    chown -R spring:spring /app
 
 # Copy the built JAR from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S spring && \
-    adduser -S spring -u 1001 -G spring
-RUN chown -R spring:spring /app
+# Ensure the jar file has correct permissions
+RUN chown spring:spring app.jar
+
+# Switch to non-root user
 USER spring
 
 # Expose port
