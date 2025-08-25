@@ -23,5 +23,15 @@ public class ImageEntity {
     @Enumerated(EnumType.STRING)
     private Status status;            // PENDING, PROCESSING, READY, ERROR
     private Instant created, updated;
-    // getters/setters, @PrePersist/@PreUpdate
+
+    @PrePersist
+    public void prePersist() {
+        created = Instant.now();
+        updated = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = Instant.now();
+    }
 }
