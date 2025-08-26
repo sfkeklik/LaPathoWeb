@@ -17,17 +17,44 @@ public class ImageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "name")
     private String name;
-    private int width, height, tileSize, maxLevel;
+
+    @Column(name = "width")
+    private int width;
+
+    @Column(name = "height")
+    private int height;
+
+    @Column(name = "tile_size")
+    private int tileSize;
+
+    @Column(name = "max_level")
+    private int maxLevel;
+
+    @Column(name = "path")
     private String path;
+
     @Enumerated(EnumType.STRING)
-    private Status status;            // PENDING, PROCESSING, READY, ERROR
-    private Instant created, updated;
+    @Column(name = "status")
+    private Status status = Status.PENDING;            // PENDING, PROCESSING, READY, ERROR
+
+    @Column(name = "created")
+    private Instant created;
+
+    @Column(name = "updated")
+    private Instant updated;
 
     @PrePersist
     public void prePersist() {
-        created = Instant.now();
+        if (created == null) {
+            created = Instant.now();
+        }
         updated = Instant.now();
+        if (status == null) {
+            status = Status.PENDING;
+        }
     }
 
     @PreUpdate

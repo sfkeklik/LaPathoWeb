@@ -1,8 +1,10 @@
--- Database schema initialization for PostgreSQL
--- This will create the images table with proper auto-incrementing ID
+-- Fix database migration script for existing installations
+-- Run this on your remote server to fix the images table
 
+-- Drop existing table and constraints
 DROP TABLE IF EXISTS images CASCADE;
 
+-- Recreate the table with proper structure
 CREATE TABLE images (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255),
@@ -16,7 +18,7 @@ CREATE TABLE images (
     updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index for better performance
+-- Create indexes for better performance
 CREATE INDEX idx_images_status ON images(status);
 CREATE INDEX idx_images_name ON images(name);
 
@@ -34,3 +36,7 @@ CREATE TRIGGER update_images_updated
     BEFORE UPDATE ON images
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_column();
+
+-- Grant necessary permissions (adjust as needed for your user)
+GRANT ALL PRIVILEGES ON TABLE images TO postgres;
+GRANT USAGE, SELECT ON SEQUENCE images_id_seq TO postgres;

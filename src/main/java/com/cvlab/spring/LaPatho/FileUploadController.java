@@ -80,19 +80,52 @@ public class FileUploadController {
             Path target = uploadDir.resolve(filename);
 
             log.info("Dosya kaydediliyor: {}", target.toAbsolutePath());
+
+            // Ensure the target file doesn't already exist
+            if (Files.exists(target)) {
+                filename = UUID.randomUUID() + "-" + UUID.randomUUID() + "-" + file.getOriginalFilename();
+                target = uploadDir.resolve(filename);
+            }
+
             file.transferTo(target);
-            log.info("Dosya başarıyla kaydedildi: {}", target.toAbsolutePath());
 
-            // ImageEntity oluştur ve kaydet
-            ImageDTO dto = imageService.create(
-                file.getOriginalFilename(),
-                target.toString()
-            );
-            log.info("Image entity oluşturuldu: ID={}", dto.getId());
+            // Verify file was written successfully
+            if (!Files.exists(target) || Files.size(target) == 0) {
+                log.error("Dosya yazılamadı veya boş: {}", target.toAbsolutePath());
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Dosya yazma hatası: Dosya kaydedilemedi");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            }
 
-            // Async tile üretimi başlat
-            imageService.generateTilesAsync(dto.getId());
-            log.info("Tile üretimi başlatıldı");
+            log.info("Dosya başarıyla kaydedildi: {} (size: {} bytes)", target.toAbsolutePath(), Files.size(target));
+
+            // ImageEntity oluştur ve kaydet - with better error handling
+            ImageDTO dto;
+            try {
+                dto = imageService.create(file.getOriginalFilename(), target.toString());
+                log.info("Image entity oluşturuldu: ID={}", dto.getId());
+            } catch (Exception e) {
+                log.error("Image entity oluşturma hatası: {}", e.getMessage(), e);
+                // Clean up the uploaded file if database save fails
+                try {
+                    Files.deleteIfExists(target);
+                } catch (IOException cleanupError) {
+                    log.warn("Cleanup hatası: {}", cleanupError.getMessage());
+                }
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Veritabanı kaydetme hatası: " + e.getMessage());
+                error.put("details", e.getCause() != null ? e.getCause().getMessage() : "Unknown cause");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            }
+
+            // Async tile üretimi başlat - with error handling
+            try {
+                imageService.generateTilesAsync(dto.getId());
+                log.info("Tile üretimi başlatıldı için ID: {}", dto.getId());
+            } catch (Exception e) {
+                log.error("Tile üretimi başlatma hatası: {}", e.getMessage(), e);
+                // Don't fail the upload if tile generation fails - it can be retried
+            }
 
             return ResponseEntity.ok(dto);
 
@@ -101,22 +134,23 @@ public class FileUploadController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Dosya yazma hatası: " + e.getMessage());
             error.put("path", uploadBasePath);
+            error.put("stackTrace", e.getClass().getSimpleName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
 
-        } catch (FormatException e) {
-            log.error("Format Hatası:", e);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Desteklenmeyen dosya formatı: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-
         } catch (Exception e) {
-            log.error("Genel Hata - WSL Debug:", e);
-            log.error("Hata detayları: {}", e.getStackTrace());
+            log.error("Genel Hata - Upload Debug:", e);
             Map<String, String> error = new HashMap<>();
             error.put("error", "Sunucu hatası: " + e.getMessage());
             error.put("type", e.getClass().getSimpleName());
             error.put("details", e.getCause() != null ? e.getCause().getMessage() : "No cause");
             error.put("uploadPath", uploadBasePath);
+
+            // Add stack trace for debugging
+            StackTraceElement[] stackTrace = e.getStackTrace();
+            if (stackTrace.length > 0) {
+                error.put("location", stackTrace[0].toString());
+            }
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

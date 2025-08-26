@@ -1,17 +1,39 @@
 #!/bin/bash
 
-# Database migration script to fix the images table ID sequence issue
-# Run this script on your remote server
-
 echo "Starting database migration to fix images table..."
 
-# Connect to PostgreSQL and run the migration
-docker exec -i lapatho-database-1 psql -U lapatho -d lapatho << 'EOF'
+# Check if Docker is running
+if ! docker info &> /dev/null; then
+    echo "Error: Docker is not running. Please start Docker first."
+    exit 1
+fi
 
--- Drop the existing table if it exists and recreate with proper sequence
+# Find the database container
+DB_CONTAINER=$(docker ps --filter "name=database" --format "{{.Names}}" | head -n1)
+
+if [ -z "$DB_CONTAINER" ]; then
+    echo "Error: No database container found. Looking for containers with 'postgres' in name..."
+    DB_CONTAINER=$(docker ps --filter "name=postgres" --format "{{.Names}}" | head -n1)
+fi
+
+if [ -z "$DB_CONTAINER" ]; then
+    echo "Error: No database container found. Available containers:"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    echo ""
+    echo "Please start your database container first with: docker-compose up -d database"
+    exit 1
+fi
+
+echo "Found database container: $DB_CONTAINER"
+
+# Execute the database migration
+echo "Running database migration..."
+docker exec -i $DB_CONTAINER psql -U postgres -d lapatho << 'EOF'
+-- Fix database migration script for existing installations
+-- Drop existing table and constraints
 DROP TABLE IF EXISTS images CASCADE;
 
--- Create the images table with proper auto-incrementing ID
+-- Recreate the table with proper structure
 CREATE TABLE images (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255),
@@ -20,20 +42,49 @@ CREATE TABLE images (
     tile_size INTEGER,
     max_level INTEGER,
     path VARCHAR(500),
-    status VARCHAR(50),
-    created TIMESTAMP,
-    updated TIMESTAMP
+    status VARCHAR(50) DEFAULT 'PENDING',
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for better performance
 CREATE INDEX idx_images_status ON images(status);
 CREATE INDEX idx_images_name ON images(name);
 
--- Verify the table was created correctly
-\d images;
+-- Create a function to update the updated timestamp
+CREATE OR REPLACE FUNCTION update_updated_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
+-- Create trigger to automatically update the updated timestamp
+CREATE TRIGGER update_images_updated
+    BEFORE UPDATE ON images
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_column();
+
+-- Grant necessary permissions
+GRANT ALL PRIVILEGES ON TABLE images TO postgres;
+GRANT USAGE, SELECT ON SEQUENCE images_id_seq TO postgres;
+
+-- Verify the table structure
+\d images;
 EOF
 
-echo "Database migration completed!"
-echo "The images table now has a proper auto-incrementing ID column."
-echo "Please restart your application containers."
+if [ $? -eq 0 ]; then
+    echo "Database migration completed successfully!"
+    echo "The images table now has a proper auto-incrementing ID column."
+    echo ""
+    echo "Next steps:"
+    echo "1. Restart your application containers:"
+    echo "   docker-compose restart backend"
+    echo "2. Test file upload functionality"
+    echo "3. Check application logs if needed:"
+    echo "   docker-compose logs -f backend"
+else
+    echo "Database migration failed. Please check the error messages above."
+    exit 1
+fi

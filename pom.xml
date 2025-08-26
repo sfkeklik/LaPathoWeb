@@ -89,12 +89,17 @@
 		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>bio-formats_plugins</artifactId>
-			<version>6.14.0</version>
+			<version>7.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>formats-gpl</artifactId>
-			<version>6.14.0</version>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>ome</groupId>
+			<artifactId>formats-common</artifactId>
+			<version>7.0.1</version>
 		</dependency>
 
 		<!-- Alternative image processing libraries as fallback -->
@@ -142,8 +147,13 @@
 		</repository>
 		<repository>
 			<id>ome.releases</id>
-			<name>OME Artifacts</name>
+			<name>OME Releases</name>
 			<url>https://artifacts.openmicroscopy.org/artifactory/ome.releases</url>
+		</repository>
+		<repository>
+			<id>ome.snapshots</id>
+			<name>OME Snapshots</name>
+			<url>https://artifacts.openmicroscopy.org/artifactory/ome.snapshots</url>
 		</repository>
 	</repositories>
 </project>
