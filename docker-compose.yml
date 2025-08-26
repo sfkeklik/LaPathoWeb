@@ -39,12 +39,9 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/lapatho
-      - SPRING_DATASOURCE_USERNAME=lapatho
-      - SPRING_DATASOURCE_PASSWORD=password
     volumes:
-      - ./uploads:/app/uploads
-      - ./tiles:/app/tiles
+      - ./uploads:/app/uploads:rw
+      - ./tiles:/app/tiles:rw
     depends_on:
       database:
         condition: service_healthy
