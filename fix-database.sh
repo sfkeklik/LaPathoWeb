@@ -26,9 +26,9 @@ fi
 
 echo "Found database container: $DB_CONTAINER"
 
-# Execute the database migration
+# Execute the database migration with correct credentials
 echo "Running database migration..."
-docker exec -i $DB_CONTAINER psql -U postgres -d lapatho << 'EOF'
+docker exec -i $DB_CONTAINER psql -U lapatho -d lapatho << 'EOF'
 -- Fix database migration script for existing installations
 -- Drop existing table and constraints
 DROP TABLE IF EXISTS images CASCADE;
@@ -66,12 +66,15 @@ CREATE TRIGGER update_images_updated
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_column();
 
--- Grant necessary permissions
-GRANT ALL PRIVILEGES ON TABLE images TO postgres;
-GRANT USAGE, SELECT ON SEQUENCE images_id_seq TO postgres;
+-- Grant necessary permissions to lapatho user
+GRANT ALL PRIVILEGES ON TABLE images TO lapatho;
+GRANT USAGE, SELECT ON SEQUENCE images_id_seq TO lapatho;
 
 -- Verify the table structure
 \d images;
+
+-- Show current table contents (should be empty after migration)
+SELECT COUNT(*) as row_count FROM images;
 EOF
 
 if [ $? -eq 0 ]; then
@@ -84,7 +87,18 @@ if [ $? -eq 0 ]; then
     echo "2. Test file upload functionality"
     echo "3. Check application logs if needed:"
     echo "   docker-compose logs -f backend"
+    echo ""
+    echo "You can also check the database health with:"
+    echo "   docker exec $DB_CONTAINER psql -U lapatho -d lapatho -c '\\d images;'"
 else
     echo "Database migration failed. Please check the error messages above."
+    echo ""
+    echo "Troubleshooting steps:"
+    echo "1. Make sure the database container is running:"
+    echo "   docker-compose ps database"
+    echo "2. Check database logs:"
+    echo "   docker-compose logs database"
+    echo "3. Try connecting to the database manually:"
+    echo "   docker exec -it $DB_CONTAINER psql -U lapatho -d lapatho"
     exit 1
 fi
