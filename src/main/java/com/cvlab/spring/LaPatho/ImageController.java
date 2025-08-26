@@ -1,5 +1,6 @@
 package com.cvlab.spring.LaPatho;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -52,11 +53,12 @@ public class ImageController {
     }
 
     @GetMapping("/get-images-list")
-    public ResponseEntity<List<ImageOverviewDTO>> listImages() {
+    public ResponseEntity<List<ImageOverviewDTO>> listImages(HttpServletRequest request) {
         List<ImageOverviewDTO> list = imageService.findAll().stream()
                 .map(img -> {
                     String preview = (img.getStatus() == Status.READY)
-                            ? String.format("http://localhost:8080/api/tiles/%d/0/0_0.jpg", img.getId())
+                            ? String.format("%s://%s/api/tiles/%d/0/0_0.jpg",
+                            request.getScheme(), request.getServerName() + ":" + request.getServerPort(), img.getId())
                             : null;
                     return new ImageOverviewDTO(
                             img.getId(), img.getName(), img.getStatus(), preview

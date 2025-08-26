@@ -1,5 +1,25 @@
 export const API_VERSION = '/api';
-export const API_ENDPOINT = 'http://localhost:8080';
+
+// Check if we're in a browser environment and get the current host
+const getApiEndpoint = (): string => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+
+    // If accessing via localhost or 127.0.0.1, keep the original behavior
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8080';
+    }
+
+    // For remote access, use the same hostname but port 8080 for API
+    return `${protocol}//${hostname}:8080`;
+  }
+
+  // Fallback for server-side rendering or non-browser environments
+  return 'http://localhost:8080';
+};
+
+export const API_ENDPOINT = getApiEndpoint();
 export const API_ENDPOINTWITHVERSION = API_ENDPOINT + API_VERSION;
 
 
