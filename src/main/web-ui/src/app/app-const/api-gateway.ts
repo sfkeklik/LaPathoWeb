@@ -6,22 +6,37 @@ const getApiEndpoint = (): string => {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
 
+    console.log('🔍 API Gateway Debug:', {
+      hostname,
+      protocol,
+      fullURL: window.location.href
+    });
+
     // If accessing via localhost or 127.0.0.1, keep the original behavior
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8080';
+      const endpoint = 'http://localhost:8080';
+      console.log('🌐 Using localhost endpoint:', endpoint);
+      return endpoint;
     }
 
     // For remote access, use the same hostname but port 8080 for API
-    return `${protocol}//${hostname}:8080`;
+    const endpoint = `${protocol}//${hostname}:8080`;
+    console.log('🌐 Using remote endpoint:', endpoint);
+    return endpoint;
   }
 
   // Fallback for server-side rendering or non-browser environments
+  console.log('🌐 Using fallback endpoint: http://localhost:8080');
   return 'http://localhost:8080';
 };
 
 export const API_ENDPOINT = getApiEndpoint();
 export const API_ENDPOINTWITHVERSION = API_ENDPOINT + API_VERSION;
 
+console.log('✅ API Configuration initialized:', {
+  API_ENDPOINT,
+  API_ENDPOINTWITHVERSION
+});
 
 export const ApiGateway = {
     api: API_ENDPOINTWITHVERSION,
