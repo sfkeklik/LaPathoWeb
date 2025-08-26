@@ -1,6 +1,7 @@
 -- Database schema initialization for PostgreSQL
--- This will create the images table with proper auto-incrementing ID
+-- This will create both images and annotations tables
 
+DROP TABLE IF EXISTS annotations CASCADE;
 DROP TABLE IF EXISTS images CASCADE;
 
 CREATE TABLE images (
@@ -16,21 +17,19 @@ CREATE TABLE images (
     updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index for better performance
+CREATE TABLE annotations (
+    id BIGSERIAL PRIMARY KEY,
+    image_id BIGINT NOT NULL,
+    creator VARCHAR(255),
+    type VARCHAR(100),
+    geometry TEXT,
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE
+);
+
+-- Create indexes for better performance
 CREATE INDEX idx_images_status ON images(status);
 CREATE INDEX idx_images_name ON images(name);
-
--- Create a function to update the updated timestamp
-CREATE OR REPLACE FUNCTION update_updated_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Create trigger to automatically update the updated timestamp
-CREATE TRIGGER update_images_updated
-    BEFORE UPDATE ON images
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_column();
+CREATE INDEX idx_annotations_image_id ON annotations(image_id);
+CREATE INDEX idx_annotations_type ON annotations(type);
