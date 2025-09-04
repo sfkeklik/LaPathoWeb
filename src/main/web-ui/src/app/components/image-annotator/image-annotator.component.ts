@@ -164,6 +164,8 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
         this.imageId = Number(idStr);
         if (!isNaN(this.imageId)) {
           this.initializeViewer();
+          // Subscribe to annotation changes
+          this.subscribeToAnnotationChanges();
         }
       }
     });
@@ -174,8 +176,10 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   ngOnDestroy(): void {
-    this.cleanup();
-    this.anno.destroy(); // ⬅️ ekle
+     this.cleanup();
+      if (this.anno) {
+        this.anno.destroy();
+      }
   }
 
 
@@ -308,27 +312,26 @@ selectAllAnnotations(): void {
 }
 
 deleteBatchAnnotations(): void {
-  if (this.selectedAnnotationIds.size === 0) return;
+  if (this.selectedAnnotationIds.size === 0 || !this.anno) return;
 
   const count = this.selectedAnnotationIds.size;
   if (confirm(`${count} anotasyonu silmek istediğinize emin misiniz?`)) {
-    const deletePromises = Array.from(this.selectedAnnotationIds).map(id =>
-      this.annotationService.deleteAnnotation(this.imageId, parseInt(id, 10)).toPromise()
+    // Delete using Annotorious methods
+    Array.from(this.selectedAnnotationIds).forEach(id => {
+      this.anno.deleteAnnotationById(id);
+    });
+
+    // Update local state
+    this.annotations = this.annotations.filter(ann =>
+      !this.selectedAnnotationIds.has(ann.id)
     );
 
-    Promise.all(deletePromises).then(() => {
-      this.annotations = this.annotations.filter(ann =>
-        !this.selectedAnnotationIds.has(ann.id)
-      );
-      this.addActivity('delete', `${count} anotasyon toplu silindi`);
-      this.selectedAnnotationIds.clear();
-      this.batchSelectionMode = false;
-      this.updateLayerCounts();
-      this.calculateStats();
-    }).catch(error => {
-      console.error('Toplu silme hatası:', error);
-      alert('Bazı anotasyonlar silinemedi!');
-    });
+    this.addActivity('delete', `${count} anotasyon toplu silindi`);
+    this.selectedAnnotationIds.clear();
+    this.batchSelectionMode = false;
+    this.updateLayerCounts();
+    this.calculateStats();
+    this.cdr.detectChanges();
   }
 }
 
@@ -336,27 +339,21 @@ updateBatchAnnotationType(event: Event): void {
   const selectElement = event.target as HTMLSelectElement;
   const newType = selectElement.value;
 
-  if (!newType || this.selectedAnnotationIds.size === 0) return;
+  if (!newType || this.selectedAnnotationIds.size === 0 || !this.anno) return;
 
-  const updatePromises = Array.from(this.selectedAnnotationIds).map(id => {
+  // Update each annotation using Annotorious
+  Array.from(this.selectedAnnotationIds).forEach(id => {
     const ann = this.annotations.find(a => a.id === id);
     if (ann) {
+      this.anno.updateAnnotationProperties(id, { type: newType });
       ann.type = newType;
-      return this.annotationService.updateAnnotation(
-        this.imageId,
-        parseInt(id, 10),
-        { type: newType }
-      ).toPromise();
     }
-    return Promise.resolve();
   });
 
-  Promise.all(updatePromises).then(() => {
-    this.addActivity('update', `${this.selectedAnnotationIds.size} anotasyon tipi güncellendi`);
-    this.updateLayerCounts();
-    this.calculateStats();
-    this.cdr.detectChanges();
-  });
+  this.addActivity('update', `${this.selectedAnnotationIds.size} anotasyon tipi güncellendi`);
+  this.updateLayerCounts();
+  this.calculateStats();
+  this.cdr.detectChanges();
 }
 
 // Advanced Export Methods
@@ -805,14 +802,51 @@ private getAnnotationDensity(): string {
     this.anno.setTool(tool);
   }
 
-  exportAnnotations() {
-    const data = this.anno.exportAnnotations();
-    console.log('Exported', data);
-    // burada JSON olarak indirtebilir ya da backend’e POST edebilirsin
+  exportAnnotations(): void {
+    if (this.anno) {
+      const annotoriousData = this.anno.exportAnnotations();
+      const exportData = {
+        imageId: this.imageId,
+        timestamp: new Date().toISOString(),
+        annotations: this.annotations.map(ann => ({
+          id: ann.id,
+          type: ann.type,
+          creator: ann.creator,
+          notes: ann.notes,
+          color: ann.color,
+          area: ann.area,
+          created: ann.created,
+          updated: ann.updated,
+          geometry: ann.geometry
+        }))
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `annotations-${this.imageId}-${Date.now()}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      this.addActivity('create', 'Anotasyonlar dışa aktarıldı');
+    }
   }
 
-  clearAnnotations() {
-    this.anno.clearAnnotations();
+  clearAnnotations(): void {
+    if (this.annotations.length === 0) return;
+
+    if (confirm('Tüm anotasyonları silmek istediğinize emin misiniz?')) {
+      if (this.anno) {
+        this.anno.clearAnnotations();
+        this.annotations = [];
+        this.selectedAnnotation = null;
+        this.updateLayerCounts();
+        this.calculateStats();
+        this.addActivity('delete', 'Tüm anotasyonlar temizlendi');
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   // Ayarları uygula
@@ -827,68 +861,76 @@ private getAnnotationDensity(): string {
 
   // ========== SIDEBAR PANEL METHODS ==========
 
+private subscribeToAnnotationChanges(): void {
+  // Subscribe to annotation changes from Annotorious
+  if (this.anno) {
+    this.anno.annotationsChanged$.subscribe((annotations: any[]) => {
+      this.annotations = annotations.map(ann => ({
+        id: ann.id,
+        type: ann.type,
+        creator: ann.creator,
+        notes: ann.notes,
+        color: ann.color,
+        area: ann.area,
+        created: ann.created,
+        updated: ann.updated,
+        geometry: ann.geometry
+      }));
+
+      this.updateLayerCounts();
+      this.calculateStats();
+      this.cdr.detectChanges();
+    });
+  }
+}
+
   // Annotations Panel Methods
   refreshAnnotations(): void {
-    this.annotationService.getAnnotations(this.imageId.toString()).subscribe({
-      next: (annotations) => {
-        this.annotations = annotations.map(ann => ({
-          id: String(ann.databaseId || ann.id),
-          type: ann.annotation?.body?.purpose || ann.type || 'Unknown',
-          creator: ann.annotation?.creator || ann.creator || 'Unknown',
-          notes: ann.annotation?.body?.value || ann.notes || '',
-          color: ann.annotation?.body?.style?.fill || '#ff0000',
-          area: this.calculateAnnotationArea(ann.annotation?.target?.selector),
-          created: ann.created ? new Date(ann.created) : new Date(),
-          updated: ann.updated ? new Date(ann.updated) : new Date(),
-          geometry: ann.annotation
-        }));
-        this.updateLayerCounts();
-        this.calculateStats();
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Anotasyonlar yüklenemedi:', error);
-      }
-    });
+    // Get annotations from Annotorious instead of backend
+    if (this.anno) {
+      const annotations = this.anno.getAnnotations();
+      this.annotations = annotations;
+      this.updateLayerCounts();
+      this.calculateStats();
+      this.cdr.detectChanges();
+    }
   }
 
   selectAnnotation(annotation: AnnotationItem): void {
     this.selectedAnnotation = annotation;
-    // Highlight annotation in viewer (if method exists)
-    if (this.anno && typeof (this.anno as any).highlightAnnotation === 'function') {
-      (this.anno as any).highlightAnnotation(annotation.id);
+
+    // Highlight annotation in viewer using the fixed method
+    if (this.anno) {
+      this.anno.highlightAnnotation(annotation.id);
     }
+
     // Switch to properties tab
-    this.activeTab = 'properties';
+    this.activeTab = 'annotations';
   }
 
   zoomToAnnotation(annotation: AnnotationItem): void {
-    if (annotation.geometry?.target?.selector) {
-      // Zoom to annotation if method exists
-      if (this.anno && typeof (this.anno as any).zoomToAnnotation === 'function') {
-        (this.anno as any).zoomToAnnotation(annotation.id);
-      }
+    if (this.anno) {
+      this.anno.zoomToAnnotation(annotation.id);
     }
   }
 
   deleteAnnotation(annotation: AnnotationItem): void {
     if (confirm(`"${annotation.type}" anotasyonunu silmek istediğinize emin misiniz?`)) {
-      const annotationId = parseInt(annotation.id, 10);
-      this.annotationService.deleteAnnotation(this.imageId, annotationId).subscribe({
-        next: () => {
-          this.annotations = this.annotations.filter(a => a.id !== annotation.id);
-          this.addActivity('delete', `${annotation.type} anotasyonu silindi`, annotation.id);
-          this.updateLayerCounts();
-          this.calculateStats();
-          if (this.selectedAnnotation?.id === annotation.id) {
-            this.selectedAnnotation = null;
-          }
-        },
-        error: (error) => {
-          console.error('Anotasyon silinemedi:', error);
-          alert('Anotasyon silinemedi!');
+      if (this.anno) {
+        this.anno.deleteAnnotationById(annotation.id);
+
+        // Remove from local list
+        this.annotations = this.annotations.filter(a => a.id !== annotation.id);
+        this.addActivity('delete', `${annotation.type} anotasyonu silindi`, annotation.id);
+        this.updateLayerCounts();
+        this.calculateStats();
+
+        if (this.selectedAnnotation?.id === annotation.id) {
+          this.selectedAnnotation = null;
         }
-      });
+
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -903,30 +945,18 @@ private getAnnotationDensity(): string {
   }
 
   saveAnnotationProperties(): void {
-    if (!this.selectedAnnotation) return;
+    if (!this.selectedAnnotation || !this.anno) return;
 
-    const annotationId = parseInt(this.selectedAnnotation.id, 10);
-
-    // Include geometry data which is required by the backend
-    const updateData = {
+    // Use the new updateAnnotationProperties method
+    this.anno.updateAnnotationProperties(this.selectedAnnotation.id, {
       type: this.selectedAnnotation.type,
       creator: this.selectedAnnotation.creator,
       notes: this.selectedAnnotation.notes,
-      color: this.selectedAnnotation.color,
-      // Include the original geometry data
-      annotation: this.selectedAnnotation.geometry
-    };
-
-    this.annotationService.updateAnnotation(this.imageId, annotationId, updateData).subscribe({
-      next: () => {
-        this.addActivity('update', `${this.selectedAnnotation?.type} özellikleri kaydedildi`);
-        alert('Özellikler kaydedildi!');
-      },
-      error: (error) => {
-        console.error('Özellikler kaydedilemedi:', error);
-        alert('Özellikler kaydedilemedi!');
-      }
+      color: this.selectedAnnotation.color
     });
+
+    this.addActivity('update', `${this.selectedAnnotation.type} özellikleri kaydedildi`);
+    alert('Özellikler kaydedildi!');
   }
 
   resetAnnotationProperties(): void {
@@ -940,32 +970,41 @@ private getAnnotationDensity(): string {
   // Layer Management Methods
   toggleLayerVisibility(layer: LayerItem): void {
     layer.visible = !layer.visible;
-    // Use safe method call for layer visibility
-    if (this.anno && typeof (this.anno as any).toggleLayerVisibility === 'function') {
-      (this.anno as any).toggleLayerVisibility(layer.type, layer.visible);
+
+    // Use the fixed toggleLayerVisibility method
+    if (this.anno) {
+      this.anno.toggleLayerVisibility(layer.type, layer.visible);
     }
+
     this.addActivity('update', `${layer.name} katmanı ${layer.visible ? 'görünür' : 'gizli'} yapıldı`);
   }
 
   toggleAllLayers(): void {
     const allVisible = this.annotationLayers.every(layer => layer.visible);
+
     this.annotationLayers.forEach(layer => {
       layer.visible = !allVisible;
-      // Use safe method call for layer visibility
-      if (this.anno && typeof (this.anno as any).toggleLayerVisibility === 'function') {
-        (this.anno as any).toggleLayerVisibility(layer.type, layer.visible);
+
+      // Use the fixed method
+      if (this.anno) {
+        this.anno.toggleLayerVisibility(layer.type, layer.visible);
       }
     });
+
     this.addActivity('update', `Tüm katmanlar ${!allVisible ? 'görünür' : 'gizli'} yapıldı`);
+    this.cdr.detectChanges();
   }
 
   updateLayerColor(layer: LayerItem, event: any): void {
     layer.color = event.target.value;
-    // Use safe method call for layer color update
-    if (this.anno && typeof (this.anno as any).updateLayerColor === 'function') {
-      (this.anno as any).updateLayerColor(layer.type, layer.color);
+
+    // Use the fixed updateLayerColor method
+    if (this.anno) {
+      this.anno.updateLayerColor(layer.type, layer.color);
     }
+
     this.addActivity('update', `${layer.name} katman rengi değiştirildi`);
+    this.cdr.detectChanges();
   }
 
   createNewLayer(): void {
