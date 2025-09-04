@@ -32,13 +32,44 @@ export interface ImageDTO {
 }
 
 /**
- * Sadece metadata için kullandığımız tip
+ * Enhanced metadata interface matching the backend ImageMetadataDTO
  */
 export interface ImageMetadata {
+  // Basic image properties
   width: number;
   height: number;
   tileSize: number;
   maxLevel: number;
+
+  // File information
+  fileName?: string;
+  fileSize?: number;
+  format?: string;
+  path?: string;
+
+  // Technical details
+  pixelSizeX?: number;
+  pixelSizeY?: number;
+  bitDepth?: number;
+  channels?: number;
+  colorSpace?: string;
+  compression?: string;
+
+  // Microscopy-specific metadata
+  magnification?: number;
+  objective?: string;
+  scanner?: string;
+  scanDate?: string;
+
+  // Timestamps and status
+  created?: string;
+  updated?: string;
+  status?: string;
+
+  // Calculated properties
+  totalArea?: number; // in square pixels
+  physicalWidth?: number; // in micrometers
+  physicalHeight?: number; // in micrometers
 }
 
 export interface ImageOverview {

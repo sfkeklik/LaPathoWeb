@@ -195,12 +195,18 @@
                 <span class="property-value">{{ imageMetadata?.format || 'Bilinmiyor' }}</span>
               </div>
               <div class="property-item">
-                <span class="property-label">Büyütme:</span>
-                <span class="property-value">{{ magnificationDisplay }}</span>
+                <span class="property-label">Durum:</span>
+                <span class="property-value" [class]="'status-' + (imageMetadata?.status?.toLowerCase() || 'unknown')">
+                  {{ imageMetadata?.status || 'Bilinmiyor' }}
+                </span>
               </div>
               <div class="property-item">
-                <span class="property-label">Pixel/Mikron:</span>
-                <span class="property-value">{{ imageMetadata?.pixelSizeX || 'N/A' }}</span>
+                <span class="property-label">Oluşturulma:</span>
+                <span class="property-value">{{ imageMetadata?.created ? (imageMetadata?.created | date:'dd/MM/yyyy HH:mm') : 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Güncellenme:</span>
+                <span class="property-value">{{ imageMetadata?.updated ? (imageMetadata?.updated | date:'dd/MM/yyyy HH:mm') : 'N/A' }}</span>
               </div>
             </div>
 
@@ -221,6 +227,79 @@
               <div class="property-item">
                 <span class="property-label">Kanal Sayısı:</span>
                 <span class="property-value">{{ imageMetadata?.channels || 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Renk Uzayı:</span>
+                <span class="property-value">{{ imageMetadata?.colorSpace || 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Sıkıştırma:</span>
+                <span class="property-value">{{ imageMetadata?.compression || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <h4>Mikroskopi Bilgileri</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">Pixel Boyutu (X):</span>
+                <span class="property-value">{{ imageMetadata?.pixelSizeX ? (imageMetadata?.pixelSizeX + ' μm/pixel') : 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Pixel Boyutu (Y):</span>
+                <span class="property-value">{{ imageMetadata?.pixelSizeY ? (imageMetadata?.pixelSizeY + ' μm/pixel') : 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Büyütme:</span>
+                <span class="property-value">{{ imageMetadata?.magnification ? (imageMetadata?.magnification + 'x') : magnificationDisplay }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Objektif:</span>
+                <span class="property-value">{{ imageMetadata?.objective || 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Tarayıcı:</span>
+                <span class="property-value">{{ imageMetadata?.scanner || 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Tarama Tarihi:</span>
+                <span class="property-value">{{ imageMetadata?.scanDate || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <h4>Hesaplanmış Özellikler</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">Toplam Alan:</span>
+                <span class="property-value">{{ imageMetadata?.totalArea ? formatArea(imageMetadata?.totalArea) : 'N/A' }}</span>
+              </div>
+              <div class="property-item" *ngIf="imageMetadata?.physicalWidth">
+                <span class="property-label">Fiziksel Genişlik:</span>
+                <span class="property-value">{{ imageMetadata?.physicalWidth?.toFixed(2) }} μm</span>
+              </div>
+              <div class="property-item" *ngIf="imageMetadata?.physicalHeight">
+                <span class="property-label">Fiziksel Yükseklik:</span>
+                <span class="property-value">{{ imageMetadata?.physicalHeight?.toFixed(2) }} μm</span>
+              </div>
+              <div class="property-item" *ngIf="imageMetadata?.physicalWidth && imageMetadata?.physicalHeight">
+                <span class="property-label">Fiziksel Alan:</span>
+                <span class="property-value">{{ (imageMetadata?.physicalWidth! * imageMetadata?.physicalHeight! / 1000000).toFixed(4) }} mm²</span>
+              </div>
+            </div>
+
+            <!-- Current View Information -->
+            <h4>Mevcut Görünüm</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">Zoom Seviyesi:</span>
+                <span class="property-value">{{ magnificationDisplay }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Merkez Konumu:</span>
+                <span class="property-value">X: {{ viewerState.center.x.toFixed(4) }}, Y: {{ viewerState.center.y.toFixed(4) }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Döndürme:</span>
+                <span class="property-value">{{ viewerState.rotation }}°</span>
               </div>
             </div>
           </div>

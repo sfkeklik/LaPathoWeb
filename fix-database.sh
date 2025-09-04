@@ -29,76 +29,99 @@ echo "Found database container: $DB_CONTAINER"
 # Execute the database migration with correct credentials
 echo "Running database migration..."
 docker exec -i $DB_CONTAINER psql -U lapatho -d lapatho << 'EOF'
--- Fix database migration script for existing installations
--- Drop existing table and constraints
-DROP TABLE IF EXISTS images CASCADE;
+-- Enhanced database migration script with comprehensive metadata support
+-- First, try to add columns to existing table
+ALTER TABLE images
+ADD COLUMN IF NOT EXISTS file_size BIGINT,
+ADD COLUMN IF NOT EXISTS format VARCHAR(50),
+ADD COLUMN IF NOT EXISTS pixel_size_x DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS pixel_size_y DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS bit_depth INTEGER,
+ADD COLUMN IF NOT EXISTS channels INTEGER,
+ADD COLUMN IF NOT EXISTS color_space VARCHAR(50),
+ADD COLUMN IF NOT EXISTS compression VARCHAR(50),
+ADD COLUMN IF NOT EXISTS magnification DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS objective VARCHAR(100),
+ADD COLUMN IF NOT EXISTS scanner VARCHAR(100),
+ADD COLUMN IF NOT EXISTS scan_date VARCHAR(50);
 
--- Recreate the table with proper structure
-CREATE TABLE images (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255),
-    width INTEGER,
-    height INTEGER,
-    tile_size INTEGER,
-    max_level INTEGER,
-    path VARCHAR(500),
-    status VARCHAR(50) DEFAULT 'PENDING',
-    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- If that fails, recreate the table with all columns
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'images' AND column_name = 'bit_depth'
+    ) THEN
+        -- Backup existing data
+        CREATE TEMP TABLE images_backup AS SELECT * FROM images;
+
+        -- Drop and recreate table with full schema
+        DROP TABLE IF EXISTS images CASCADE;
+
+        CREATE TABLE images (
+            id BIGSERIAL PRIMARY KEY,
+            name VARCHAR(255),
+            width INTEGER,
+            height INTEGER,
+            tile_size INTEGER,
+            max_level INTEGER,
+            path VARCHAR(500),
+            status VARCHAR(50) DEFAULT 'PENDING',
+            created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            -- New metadata fields
+            file_size BIGINT,
+            format VARCHAR(50),
+            pixel_size_x DOUBLE PRECISION,
+            pixel_size_y DOUBLE PRECISION,
+            bit_depth INTEGER,
+            channels INTEGER,
+            color_space VARCHAR(50),
+            compression VARCHAR(50),
+            magnification DOUBLE PRECISION,
+            objective VARCHAR(100),
+            scanner VARCHAR(100),
+            scan_date VARCHAR(50)
+        );
+
+        -- Restore basic data
+        INSERT INTO images (id, name, width, height, tile_size, max_level, path, status, created, updated)
+        SELECT id, name, width, height, tile_size, max_level, path,
+               COALESCE(status, 'PENDING'),
+               COALESCE(created, CURRENT_TIMESTAMP),
+               COALESCE(updated, CURRENT_TIMESTAMP)
+        FROM images_backup;
+
+        -- Reset sequence
+        SELECT setval('images_id_seq', COALESCE(MAX(id), 0) + 1, false) FROM images;
+
+        DROP TABLE images_backup;
+
+        RAISE NOTICE 'Table recreated with enhanced metadata support';
+    END IF;
+END $$;
+
+-- Update existing records with sensible defaults
+UPDATE images
+SET
+    format = COALESCE(format, 'TIFF'),
+    bit_depth = COALESCE(bit_depth, 8),
+    channels = COALESCE(channels, 3),
+    color_space = COALESCE(color_space, 'RGB')
+WHERE format IS NULL OR bit_depth IS NULL OR channels IS NULL OR color_space IS NULL;
 
 -- Create indexes for better performance
-CREATE INDEX idx_images_status ON images(status);
-CREATE INDEX idx_images_name ON images(name);
+CREATE INDEX IF NOT EXISTS idx_images_status ON images(status);
+CREATE INDEX IF NOT EXISTS idx_images_format ON images(format);
+CREATE INDEX IF NOT EXISTS idx_images_created ON images(created);
 
--- Create a function to update the updated timestamp
-CREATE OR REPLACE FUNCTION update_updated_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- Verify the final schema
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'images'
+ORDER BY ordinal_position;
 
--- Create trigger to automatically update the updated timestamp
-CREATE TRIGGER update_images_updated
-    BEFORE UPDATE ON images
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_column();
-
--- Grant necessary permissions to lapatho user
-GRANT ALL PRIVILEGES ON TABLE images TO lapatho;
-GRANT USAGE, SELECT ON SEQUENCE images_id_seq TO lapatho;
-
--- Verify the table structure
-\d images;
-
--- Show current table contents (should be empty after migration)
-SELECT COUNT(*) as row_count FROM images;
+RAISE NOTICE 'Database migration completed successfully!';
 EOF
 
-if [ $? -eq 0 ]; then
-    echo "Database migration completed successfully!"
-    echo "The images table now has a proper auto-incrementing ID column."
-    echo ""
-    echo "Next steps:"
-    echo "1. Restart your application containers:"
-    echo "   docker-compose restart backend"
-    echo "2. Test file upload functionality"
-    echo "3. Check application logs if needed:"
-    echo "   docker-compose logs -f backend"
-    echo ""
-    echo "You can also check the database health with:"
-    echo "   docker exec $DB_CONTAINER psql -U lapatho -d lapatho -c '\\d images;'"
-else
-    echo "Database migration failed. Please check the error messages above."
-    echo ""
-    echo "Troubleshooting steps:"
-    echo "1. Make sure the database container is running:"
-    echo "   docker-compose ps database"
-    echo "2. Check database logs:"
-    echo "   docker-compose logs database"
-    echo "3. Try connecting to the database manually:"
-    echo "   docker exec -it $DB_CONTAINER psql -U lapatho -d lapatho"
-    exit 1
-fi
+echo "Database migration completed!"

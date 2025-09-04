@@ -46,6 +46,43 @@ public class ImageEntity {
     @Column(name = "updated")
     private Instant updated;
 
+    // Enhanced metadata fields
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    @Column(name = "format")
+    private String format;
+
+    @Column(name = "pixel_size_x")
+    private Double pixelSizeX;
+
+    @Column(name = "pixel_size_y")
+    private Double pixelSizeY;
+
+    @Column(name = "bit_depth")
+    private Integer bitDepth;
+
+    @Column(name = "channels")
+    private Integer channels;
+
+    @Column(name = "color_space")
+    private String colorSpace;
+
+    @Column(name = "compression")
+    private String compression;
+
+    @Column(name = "magnification")
+    private Double magnification;
+
+    @Column(name = "objective")
+    private String objective;
+
+    @Column(name = "scanner")
+    private String scanner;
+
+    @Column(name = "scan_date")
+    private String scanDate;
+
     @PrePersist
     public void prePersist() {
         if (created == null) {

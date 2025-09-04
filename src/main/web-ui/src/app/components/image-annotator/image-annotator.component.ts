@@ -12,7 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import OpenSeadragon from 'openseadragon';
-import { ImageService } from '../../services/image.service';
+import { ImageService, ImageMetadata as ImageMetadataType } from '../../services/image.service';
 import { AnnotationService } from '../../services/annotation.service';
 import { TilesApi } from '../../app-const/api-gateway';
 import { AnnotoriousIntegration } from './annotorious-integration'; // yolu konumuna göre düzelt
@@ -136,7 +136,7 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
   };
 
   // Image metadata for properties display
-  imageMetadata: any = null;
+  imageMetadata: ImageMetadataType | null = null;
 
   // Add the missing formatFileSize method
   formatFileSize(bytes: number | undefined): string {
@@ -608,6 +608,8 @@ private getAnnotationDensity(): string {
     this.imageService.getImageMetadata(this.imageId).subscribe({
       next: (metadata) => {
         console.log('Metadata yüklendi:', metadata);
+        // Store the comprehensive metadata for the sidebar
+        this.imageMetadata = metadata;
         this.setupOpenSeadragon(metadata);
       },
       error: (error) => {
@@ -1140,8 +1142,8 @@ private getAnnotationDensity(): string {
   }
 
   // Formatting Methods
-  formatArea(area: number): string {
-    if (area === 0) return `0 px²`;
+  formatArea(area: number | undefined): string {
+    if (!area || area === 0) return `0 px²`;
     if (area > 1000000) return `${(area / 1000000).toFixed(2)} MP²`;
     if (area > 1000) return `${(area / 1000).toFixed(1)} K px²`;
     return `${area.toFixed(0)} px²`;

@@ -45,10 +45,50 @@ public class ImageController {
     @GetMapping("/metadata/{id}")
     public ResponseEntity<ImageMetadataDTO> metadata(@PathVariable Long id) {
         return imageService.findById(id)
-                .map(img -> ResponseEntity.ok(new ImageMetadataDTO(
-                        img.getWidth(), img.getHeight(),
-                        img.getTileSize(), img.getMaxLevel()
-                )))
+                .map(img -> {
+                    // Create comprehensive metadata DTO
+                    ImageMetadataDTO metadata = new ImageMetadataDTO();
+
+                    // Basic image properties
+                    metadata.setWidth(img.getWidth());
+                    metadata.setHeight(img.getHeight());
+                    metadata.setTileSize(img.getTileSize());
+                    metadata.setMaxLevel(img.getMaxLevel());
+
+                    // File information
+                    metadata.setFileName(img.getName());
+                    metadata.setFileSize(img.getFileSize());
+                    metadata.setFormat(img.getFormat());
+                    metadata.setPath(img.getPath());
+
+                    // Technical details
+                    metadata.setPixelSizeX(img.getPixelSizeX());
+                    metadata.setPixelSizeY(img.getPixelSizeY());
+                    metadata.setBitDepth(img.getBitDepth());
+                    metadata.setChannels(img.getChannels());
+                    metadata.setColorSpace(img.getColorSpace());
+                    metadata.setCompression(img.getCompression());
+
+                    // Microscopy-specific metadata
+                    metadata.setMagnification(img.getMagnification());
+                    metadata.setObjective(img.getObjective());
+                    metadata.setScanner(img.getScanner());
+                    metadata.setScanDate(img.getScanDate());
+
+                    // Timestamps and status
+                    metadata.setCreated(img.getCreated());
+                    metadata.setUpdated(img.getUpdated());
+                    metadata.setStatus(img.getStatus() != null ? img.getStatus().toString() : "UNKNOWN");
+
+                    // Calculate derived properties
+                    metadata.setTotalArea((double) img.getWidth() * img.getHeight());
+                    if (img.getPixelSizeX() != null && img.getPixelSizeY() != null) {
+                        metadata.setPhysicalWidth(img.getWidth() * img.getPixelSizeX());
+                        metadata.setPhysicalHeight(img.getHeight() * img.getPixelSizeY());
+                    }
+
+                    return ResponseEntity.ok(metadata);
+                })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
