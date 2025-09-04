@@ -102,7 +102,7 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
   predefinedMagnifications: number[] = [0.5, 1, 2, 5, 10, 20, 40, 60, 80, 100];
 
   // Sidebar State
-  activeTab: 'annotations' | 'properties' | 'layers' | 'stats' | 'insights' = 'annotations';
+  activeTab: 'annotations' | 'properties' | 'layers' | 'stats' | 'insights' | 'image-properties' = 'image-properties';
 
   insights: any = null;
 
@@ -134,6 +134,20 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
     center: { x: 0.5, y: 0.5 },
     rotation: 0
   };
+
+  // Image metadata for properties display
+  imageMetadata: any = null;
+
+  // Add the missing formatFileSize method
+  formatFileSize(bytes: number | undefined): string {
+    if (!bytes || bytes === 0) return '0 B';
+
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const size = bytes / Math.pow(1024, i);
+
+    return `${size.toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -890,12 +904,18 @@ private getAnnotationDensity(): string {
     if (!this.selectedAnnotation) return;
 
     const annotationId = parseInt(this.selectedAnnotation.id, 10);
-    this.annotationService.updateAnnotation(this.imageId, annotationId, {
+
+    // Include geometry data which is required by the backend
+    const updateData = {
       type: this.selectedAnnotation.type,
       creator: this.selectedAnnotation.creator,
       notes: this.selectedAnnotation.notes,
-      color: this.selectedAnnotation.color
-    }).subscribe({
+      color: this.selectedAnnotation.color,
+      // Include the original geometry data
+      annotation: this.selectedAnnotation.geometry
+    };
+
+    this.annotationService.updateAnnotation(this.imageId, annotationId, updateData).subscribe({
       next: () => {
         this.addActivity('update', `${this.selectedAnnotation?.type} özellikleri kaydedildi`);
         alert('Özellikler kaydedildi!');

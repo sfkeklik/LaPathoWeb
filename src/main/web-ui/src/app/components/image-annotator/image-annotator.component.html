@@ -55,9 +55,9 @@
         <i class="fas fa-signature"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="exportAnnotations()" title="Anotasyonları Dışa Aktar">
-        <i class="fas fa-download"></i>
-      </button>
+<!--      <button class="toolbar-btn" (click)="exportAnnotations()" title="Anotasyonları Dışa Aktar">-->
+<!--        <i class="fas fa-download"></i>-->
+<!--      </button>-->
 
       <button class="toolbar-btn" (click)="clearAnnotations()" title="Tümünü Temizle">
         <i class="fas fa-broom"></i>
@@ -138,8 +138,248 @@
 
   <!-- Main Content Area -->
   <div class="content-wrapper">
+    <!-- Sidebar -->
+    <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
+      <div class="sidebar-header">
+        <h3>Proje Paneli</h3>
+        <button class="sidebar-toggle" (click)="toggleSidebar()">
+          <i class="fas" [class.fa-chevron-left]="!isSidebarCollapsed" [class.fa-chevron-right]="isSidebarCollapsed"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-content" *ngIf="!isSidebarCollapsed">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'image-properties'"
+            (click)="activeTab = 'image-properties'">
+            <i class="fas fa-image"></i>
+            Görüntü Özellikleri
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'annotations'"
+            (click)="activeTab = 'annotations'">
+            <i class="fas fa-tags"></i>
+            Anotasyonlar
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'layers'"
+            (click)="activeTab = 'layers'">
+            <i class="fas fa-layer-group"></i>
+            Katmanlar
+          </button>
+        </div>
+
+        <!-- Image Properties Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'image-properties'">
+          <div class="properties-section">
+            <h4>Genel Bilgiler</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">Dosya Adı:</span>
+                <span class="property-value">{{ imageMetadata?.fileName || 'Bilinmiyor' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Boyut (Pixel):</span>
+                <span class="property-value">{{ imageMetadata?.width || 0 }} × {{ imageMetadata?.height || 0 }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Dosya Boyutu:</span>
+                <span class="property-value">{{ formatFileSize(imageMetadata?.fileSize) }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Format:</span>
+                <span class="property-value">{{ imageMetadata?.format || 'Bilinmiyor' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Büyütme:</span>
+                <span class="property-value">{{ magnificationDisplay }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Pixel/Mikron:</span>
+                <span class="property-value">{{ imageMetadata?.pixelSizeX || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <h4>Teknik Detaylar</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">Tile Boyutu:</span>
+                <span class="property-value">{{ imageMetadata?.tileSize || 512 }} px</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Zoom Seviyeleri:</span>
+                <span class="property-value">{{ imageMetadata?.maxLevel || 'N/A' }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Renk Derinliği:</span>
+                <span class="property-value">{{ imageMetadata?.bitDepth || 'N/A' }} bit</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">Kanal Sayısı:</span>
+                <span class="property-value">{{ imageMetadata?.channels || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Annotations Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'annotations'">
+          <div class="annotations-header">
+            <div class="annotation-controls">
+              <button class="btn btn-sm btn-primary" (click)="refreshAnnotations()">
+                <i class="fas fa-sync-alt"></i> Yenile
+              </button>
+              <button class="btn btn-sm btn-success" (click)="exportAnnotations()">
+                <i class="fas fa-download"></i> Dışa Aktar
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="clearAnnotations()">
+                <i class="fas fa-trash"></i> Temizle
+              </button>
+            </div>
+            <div class="annotation-stats">
+              <span class="stat-item">Toplam: {{ annotations.length }}</span>
+            </div>
+          </div>
+
+          <div class="annotation-search">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Anotasyon ara..."
+              [(ngModel)]="annotationSearchQuery">
+          </div>
+
+          <div class="annotation-list">
+            <div
+              *ngFor="let annotation of filteredAnnotations; let i = index"
+              class="annotation-item"
+              [class.selected]="selectedAnnotation?.id === annotation.id"
+              (click)="selectAnnotation(annotation)">
+
+              <div class="annotation-header">
+                <span class="annotation-type" [style.color]="annotation.color">
+                  <i class="fas fa-tag"></i>
+                  {{ annotation.type }}
+                </span>
+                <div class="annotation-actions">
+                  <button class="btn-icon" (click)="zoomToAnnotation(annotation); $event.stopPropagation()" title="Konuma Git">
+                    <i class="fas fa-search-location"></i>
+                  </button>
+                  <button class="btn-icon" (click)="deleteAnnotation(annotation); $event.stopPropagation()" title="Sil">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="annotation-details">
+                <div class="detail-item">
+                  <span class="detail-label">Oluşturan:</span>
+                  <span class="detail-value">{{ annotation.creator }}</span>
+                </div>
+                <div class="detail-item" *ngIf="annotation.area">
+                  <span class="detail-label">Alan:</span>
+                  <span class="detail-value">{{ formatArea(annotation.area) }}</span>
+                </div>
+                <div class="detail-item" *ngIf="annotation.created">
+                  <span class="detail-label">Tarih:</span>
+                  <span class="detail-value">{{ formatDate(annotation.created) }}</span>
+                </div>
+                <div class="detail-item" *ngIf="annotation.notes">
+                  <span class="detail-label">Not:</span>
+                  <span class="detail-value">{{ annotation.notes }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="filteredAnnotations.length === 0" class="empty-state">
+              <i class="fas fa-tags"></i>
+              <p>Henüz anotasyon bulunmuyor</p>
+            </div>
+          </div>
+
+          <!-- Selected Annotation Properties Panel -->
+          <div class="annotation-properties" *ngIf="selectedAnnotation">
+            <h4>Anotasyon Özellikleri</h4>
+            <div class="property-form">
+              <div class="form-group">
+                <label>Tip:</label>
+                <select [(ngModel)]="selectedAnnotation.type" (change)="updateAnnotationProperty('type', $event)">
+                  <option value="Nucleus">Nucleus</option>
+                  <option value="Tumor">Tumor</option>
+                  <option value="Necrosis">Necrosis</option>
+                  <option value="Stroma">Stroma</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Renk:</label>
+                <input type="color" [(ngModel)]="selectedAnnotation.color" (change)="updateAnnotationProperty('color', $event)">
+              </div>
+              <div class="form-group">
+                <label>Oluşturan:</label>
+                <input type="text" [(ngModel)]="selectedAnnotation.creator" (change)="updateAnnotationProperty('creator', $event)">
+              </div>
+              <div class="form-group">
+                <label>Notlar:</label>
+                <textarea [(ngModel)]="selectedAnnotation.notes" (change)="updateAnnotationProperty('notes', $event)" rows="3"></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" (click)="saveAnnotationProperties()">Kaydet</button>
+                <button class="btn btn-secondary" (click)="resetAnnotationProperties()">İptal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layers Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'layers'">
+          <div class="layers-header">
+            <h4>Katman Yönetimi</h4>
+            <button class="btn btn-sm btn-primary" (click)="createNewLayer()">
+              <i class="fas fa-plus"></i> Yeni Katman
+            </button>
+          </div>
+
+          <div class="layer-controls">
+            <button class="btn btn-sm" (click)="toggleAllLayers()">
+              <i class="fas fa-eye"></i> Tümünü Aç/Kapat
+            </button>
+          </div>
+
+          <div class="layer-list">
+            <div
+              *ngFor="let layer of annotationLayers"
+              class="layer-item">
+
+              <div class="layer-header">
+                <div class="layer-visibility">
+                  <input
+                    type="checkbox"
+                    [checked]="layer.visible"
+                    (change)="toggleLayerVisibility(layer)">
+                </div>
+                <div class="layer-color">
+                  <input
+                    type="color"
+                    [value]="layer.color"
+                    (change)="updateLayerColor(layer, $event)">
+                </div>
+                <div class="layer-info">
+                  <span class="layer-name">{{ layer.name }}</span>
+                  <span class="layer-count">({{ layer.count }})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Viewer Container -->
-    <div class="viewer-wrapper">
+    <div class="viewer-wrapper" [class.with-sidebar]="!isSidebarCollapsed">
       <div #viewerContainer class="viewer-container"></div>
     </div>
   </div>
