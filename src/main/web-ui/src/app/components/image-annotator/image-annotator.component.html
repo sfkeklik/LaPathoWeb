@@ -19,7 +19,6 @@
     </div>
 
     <!-- Tools -->
-    <!-- Tools -->
     <div class="toolbar-section tools-section">
       <button class="toolbar-btn" (click)="setTool(null)" title="Seçim Modu"
               [class.active]="currentTool===null">
@@ -36,7 +35,6 @@
         <i class="fas fa-draw-polygon"></i>
       </button>
 
-      <!-- Yeni araçlar -->
       <button class="toolbar-btn" (click)="setTool('point')" title="Nokta"
               [class.active]="currentTool==='point'">
         <i class="fas fa-dot-circle"></i>
@@ -57,7 +55,6 @@
         <i class="fas fa-signature"></i>
       </button>
 
-      <!-- Export / Clear -->
       <button class="toolbar-btn" (click)="exportAnnotations()" title="Anotasyonları Dışa Aktar">
         <i class="fas fa-download"></i>
       </button>
@@ -67,18 +64,57 @@
       </button>
     </div>
 
-    <div class="toolbar-section">
-      <!-- Undo/Redo buttons removed -->
-    </div>
-
-    <div class="toolbar-section">
+    <!-- Zoom Controls with Magnification -->
+    <div class="toolbar-section zoom-section">
       <button class="toolbar-btn" (click)="zoomOut()" title="Uzaklaştır (-)">
         <i class="fas fa-search-minus"></i>
       </button>
-      <span class="zoom-level">{{ zoomPercentage }}%</span>
+
+      <!-- Magnification Display and Controls -->
+      <div class="magnification-controls">
+        <!-- Current magnification display -->
+        <span class="magnification-display"
+              (click)="toggleMagnificationInput()"
+              title="Zoom seviyesini değiştirmek için tıklayın (örn: 40x)">
+          {{ magnificationDisplay }}
+        </span>
+
+        <!-- Custom magnification input -->
+        <div class="custom-magnification" *ngIf="showMagnificationInput">
+          <input
+            type="number"
+            class="custom-magnification-input"
+            [(ngModel)]="customMagnificationInput"
+            (keydown)="onMagnificationInputKeyDown($event)"
+            placeholder="40x"
+            min="0.1"
+            max="100"
+            step="0.1">
+          <button class="apply-btn" (click)="applyCustomMagnification()">
+            <i class="fas fa-check"></i>
+          </button>
+          <button class="cancel-btn" (click)="showMagnificationInput = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Predefined magnification buttons -->
+        <div class="predefined-magnifications" *ngIf="!showMagnificationInput">
+          <button
+            *ngFor="let mag of predefinedMagnifications"
+            class="mag-btn"
+            [class.active]="isActiveMagnification(mag)"
+            (click)="setMagnificationFromPredefined(mag)"
+            title="{{mag}}x büyütme">
+            {{mag}}x
+          </button>
+        </div>
+      </div>
+
       <button class="toolbar-btn" (click)="zoomIn()" title="Yakınlaştır (+)">
         <i class="fas fa-search-plus"></i>
       </button>
+
       <button class="toolbar-btn" (click)="resetView()" title="Sıfırla (0)">
         <i class="fas fa-compress-arrows-alt"></i>
       </button>
@@ -94,7 +130,6 @@
     </div>
 
     <div class="toolbar-section ml-auto">
-      <!-- Annotation counter removed -->
       <button class="toolbar-btn" (click)="toggleSettings()" title="Ayarlar">
         <i class="fas fa-cog"></i>
       </button>
@@ -103,19 +138,6 @@
 
   <!-- Main Content Area -->
   <div class="content-wrapper">
-    <!-- Sidebar -->
-    <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
-      <!-- Panel Tabs -->
-      <div class="panel-tabs">
-        <!-- Panel tabs will be added here later -->
-      </div>
-
-      <!-- Panel Content -->
-      <div class="panel-content">
-        <!-- Panel content will be added here later -->
-      </div>
-    </div>
-
     <!-- Viewer Container -->
     <div class="viewer-wrapper">
       <div #viewerContainer class="viewer-container"></div>
@@ -133,7 +155,6 @@
       </div>
 
       <div class="modal-body">
-        <!-- Settings content -->
         <div class="form-row">
           <label for="tagVocab">Etiket sözlüğü (virgülle ayır):</label>
           <input id="tagVocab" type="text" [(ngModel)]="tagVocabInput"
@@ -144,7 +165,7 @@
           <button class="btn btn-primary" (click)="applySettings()">Uygula</button>
         </div>
 
-        <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur (yeniden başlatılır).</p>
+        <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur.</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="showSettings = false">Kapat</button>

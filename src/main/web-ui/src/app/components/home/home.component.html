@@ -38,7 +38,7 @@
         #fileInput
         id="fileInput"
         type="file"
-        accept="image/*"
+        accept=".tiff,.tif,.bif,.ome.tiff,.ome.tif,.svs,.ndpi,.scn,.mrxs"
         hidden
         (change)="startUpload()"
       />
@@ -53,10 +53,12 @@
 
       <!-- View Options -->
       <div class="view-options">
-        <button class="view-btn active" title="Izgara Görünümü">
+        <button class="view-btn" [class.active]="currentView === 'grid'"
+                title="Izgara Görünümü" (click)="setView('grid')">
           <i class="fas fa-th-large"></i>
         </button>
-        <button class="view-btn" title="Liste Görünümü">
+        <button class="view-btn" [class.active]="currentView === 'list'"
+                title="Liste Görünümü" (click)="setView('list')">
           <i class="fas fa-list"></i>
         </button>
       </div>
@@ -67,13 +69,15 @@
       <div class="search-box">
         <i class="fas fa-search"></i>
         <input
+          #searchInput
           type="text"
           placeholder="Görüntü ara..."
-          class="search-input">
+          class="search-input"
+          (input)="onSearchChange($event)">
       </div>
 
       <!-- Filter -->
-      <select class="filter-select">
+      <select class="filter-select" (change)="onFilterChange($event)">
         <option value="all">Tüm Görüntüler</option>
         <option value="ready">Hazır</option>
         <option value="processing">İşleniyor</option>
@@ -81,7 +85,7 @@
       </select>
 
       <!-- Sort -->
-      <select class="sort-select">
+      <select class="sort-select" (change)="onSortChange($event)">
         <option value="date-desc">En Yeni</option>
         <option value="date-asc">En Eski</option>
         <option value="name-asc">İsme Göre (A-Z)</option>
@@ -93,23 +97,27 @@
   <!-- Gallery Grid -->
   <div class="gallery-container">
     <!-- Empty State -->
-    <div class="empty-state" *ngIf="images.length === 0">
+    <div class="empty-state" *ngIf="filteredImages.length === 0 && !uploading">
       <div class="empty-content">
         <i class="fas fa-folder-open"></i>
-        <h3>Henüz görüntü yok</h3>
-        <p>Başlamak için bir görüntü yükleyin</p>
-        <label for="fileInput" class="btn btn-primary">
+        <h3>{{ searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz görüntü yok' }}</h3>
+        <p>{{ searchTerm ? 'Farklı bir arama terimi deneyin' : 'Başlamak için bir görüntü yükleyin' }}</p>
+        <label for="fileInput" class="btn btn-primary" *ngIf="!searchTerm">
           <i class="fas fa-cloud-upload-alt"></i>
           İlk Görüntüyü Yükle
         </label>
+        <button class="btn btn-secondary" *ngIf="searchTerm" (click)="clearSearch()">
+          <i class="fas fa-times"></i>
+          Aramayı Temizle
+        </button>
       </div>
     </div>
 
     <!-- Image Grid -->
-    <div class="image-grid" *ngIf="images.length > 0">
+    <div class="image-grid" [class.list-view]="currentView === 'list'" *ngIf="filteredImages.length > 0">
       <div
         class="image-card"
-        *ngFor="let img of images"
+        *ngFor="let img of filteredImages"
         [class.processing]="img.status !== 'READY'"
         [class.clickable]="img.status === 'READY'">
 
@@ -205,14 +213,58 @@
     </div>
   </div>
 
-  <!-- Loading Overlay -->
+  <!-- Loading Overlay with Real Progress Bar -->
   <div class="loading-overlay" *ngIf="uploading">
     <div class="upload-progress">
-      <div class="progress-spinner"></div>
-      <h3>Görüntü Yükleniyor</h3>
-      <p>Lütfen bekleyin...</p>
-      <div class="progress-bar">
-        <div class="progress-fill"></div>
+      <div class="upload-header">
+        <i class="fas fa-cloud-upload-alt" *ngIf="uploadStatus === 'uploading'"></i>
+        <i class="fas fa-cogs fa-spin" *ngIf="uploadStatus === 'processing'"></i>
+        <i class="fas fa-check-circle" *ngIf="uploadStatus === 'completed'"></i>
+        <i class="fas fa-exclamation-triangle" *ngIf="uploadStatus === 'error'"></i>
+
+        <h3>
+          <span *ngIf="uploadStatus === 'uploading'">Görüntü Yükleniyor</span>
+          <span *ngIf="uploadStatus === 'processing'">Sunucuda İşleniyor</span>
+          <span *ngIf="uploadStatus === 'completed'">Yükleme Tamamlandı</span>
+          <span *ngIf="uploadStatus === 'error'">Yükleme Hatası</span>
+        </h3>
+
+        <p class="upload-filename">{{ uploadFileName }}</p>
+      </div>
+
+      <!-- Real Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+        </div>
+        <div class="progress-text">
+          <span class="progress-percentage">{{ uploadProgress }}%</span>
+          <span class="progress-status">
+            <span *ngIf="uploadStatus === 'uploading'">Yükleniyor...</span>
+            <span *ngIf="uploadStatus === 'processing'">İşleniyor...</span>
+            <span *ngIf="uploadStatus === 'completed'">Tamamlandı</span>
+            <span *ngIf="uploadStatus === 'error'">Hata oluştu</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="upload-actions">
+        <button
+          class="btn btn-secondary"
+          (click)="cancelUpload()"
+          *ngIf="uploadStatus === 'uploading' || uploadStatus === 'error'">
+          <i class="fas fa-times"></i>
+          {{ uploadStatus === 'error' ? 'Kapat' : 'İptal Et' }}
+        </button>
+
+        <button
+          class="btn btn-success"
+          (click)="uploading = false"
+          *ngIf="uploadStatus === 'completed'">
+          <i class="fas fa-check"></i>
+          Tamam
+        </button>
       </div>
     </div>
   </div>

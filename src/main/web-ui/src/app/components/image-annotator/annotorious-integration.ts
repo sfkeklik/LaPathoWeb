@@ -1,6 +1,7 @@
 // annotorious-integration.ts
 import SelectorPack from '@recogito/annotorious-selector-pack';
 import BetterPolygon from '@recogito/annotorious-better-polygon';
+import { AnnotationService } from '../../services/annotation.service';
 
 // Global Annotorious (UMD) için
 declare const OpenSeadragon: any;
@@ -8,6 +9,10 @@ declare const OpenSeadragon: any;
 export class AnnotoriousIntegration {
   private annotorious: any;
   private viewer: any;
+  private imageId: number | null = null;
+
+  // AnnotationService'i constructor'da alacağız
+  private annotationService: AnnotationService | null = null;
 
   // UI'dan güncelleyebilmek için state
   private tagVocabulary: string[] = ['Nucleus', 'Tumor', 'Necrosis', 'Stroma'];
@@ -38,8 +43,14 @@ export class AnnotoriousIntegration {
     return wrap;
   };
 
-  async initAnnotorious(viewer: any) {
+  setImageId(imageId: number) {
+    this.imageId = imageId;
+  }
+
+  async initAnnotorious(viewer: any, imageId: number, annotationService: AnnotationService) {
     this.viewer = viewer;
+    this.imageId = imageId;
+    this.annotationService = annotationService;
 
     // Çizim jestleri ile çatışmasın
     this.viewer.gestureSettingsMouse.clickToZoom = false;
@@ -74,6 +85,10 @@ export class AnnotoriousIntegration {
 
       console.log('Desteklenen araçlar:', this.annotorious.listDrawingTools?.());
       this.setupEventListeners();
+
+      // Mevcut anotasyonları yükle
+      this.loadExistingAnnotations();
+
       console.log('✅ Annotorious successfully initialized');
       return true;
     } catch (e) {
@@ -82,12 +97,130 @@ export class AnnotoriousIntegration {
     }
   }
 
+  private loadExistingAnnotations() {
+    if (!this.imageId || !this.annotationService) return;
+
+    this.annotationService.getAnnotations(this.imageId.toString()).subscribe({
+      next: (annotations) => {
+        console.log('📥 Mevcut anotasyonlar yüklendi:', annotations.length);
+        const annotoriousFormat = annotations.map(ann => {
+          const annotationData = ann.annotation;
+          // Database ID'sini annotation objesine ekle
+          if (ann.databaseId) {
+            annotationData.databaseId = ann.databaseId;
+          }
+          return annotationData;
+        });
+        if (this.annotorious?.setAnnotations) {
+          this.annotorious.setAnnotations(annotoriousFormat);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Anotasyonlar yüklenemedi:', error);
+      }
+    });
+  }
+
   private setupEventListeners() {
     if (!this.annotorious) return;
-    this.annotorious.on('createAnnotation', (a: any) => console.log('create', a));
-    this.annotorious.on('updateAnnotation', (a: any) => console.log('update', a));
+
+    this.annotorious.on('createAnnotation', (annotation: any) => {
+      console.log('🆕 Yeni anotasyon oluşturuldu:', annotation);
+      this.saveAnnotationToBackend(annotation);
+    });
+
+    this.annotorious.on('updateAnnotation', (annotation: any, previous: any) => {
+      console.log('🔄 Anotasyon güncellendi:', annotation);
+      this.updateAnnotationInBackend(annotation);
+    });
+
+    this.annotorious.on('deleteAnnotation', (annotation: any) => {
+      console.log('🗑️ Anotasyon silindi:', annotation);
+      this.deleteAnnotationFromBackend(annotation);
+    });
+
     this.annotorious.on('selectAnnotation', (a: any) => console.log('select', a));
-    this.annotorious.on('deleteAnnotation', (a: any) => console.log('delete', a));
+  }
+
+  private saveAnnotationToBackend(annotation: any) {
+    if (!this.imageId || !this.annotationService) {
+      console.error('❌ Image ID veya AnnotationService bulunamadı, anotasyon kaydedilemedi');
+      return;
+    }
+
+    const annotationEntity = {
+      creator: 'default_user', // Bu değeri gerçek kullanıcı bilgisine göre değiştirin
+      type: 'annotation',
+      geometry: JSON.stringify(annotation)
+    };
+
+    this.annotationService.saveAnnotation(this.imageId.toString(), annotationEntity).subscribe({
+      next: (result) => {
+        console.log('✅ Anotasyon backend\'e kaydedildi:', result);
+        // Annotation'a database ID'sini ekle
+        if (result.id && annotation.id !== result.id) {
+          annotation.databaseId = result.id;
+        }
+      },
+      error: (error) => {
+        console.error('❌ Anotasyon backend\'e kaydedilemedi:', error);
+        // Hata durumunda anotasyonu frontend'den de kaldır
+        if (this.annotorious?.removeAnnotation) {
+          this.annotorious.removeAnnotation(annotation);
+        }
+      }
+    });
+  }
+
+  private updateAnnotationInBackend(annotation: any) {
+    if (!this.imageId || !this.annotationService || !annotation.databaseId) {
+      console.warn('❌ Update için gerekli bilgiler eksik:', {
+        imageId: this.imageId,
+        hasAnnotationService: !!this.annotationService,
+        databaseId: annotation.databaseId
+      });
+      return;
+    }
+
+    const annotationEntity = {
+      creator: 'default_user',
+      type: 'annotation',
+      geometry: JSON.stringify(annotation)
+    };
+
+    this.annotationService.updateAnnotation(this.imageId, annotation.databaseId, annotationEntity).subscribe({
+      next: (result) => {
+        console.log('✅ Anotasyon güncellendi:', result);
+      },
+      error: (error) => {
+        console.error('❌ Anotasyon güncellenemedi:', error);
+      }
+    });
+  }
+
+  private deleteAnnotationFromBackend(annotation: any) {
+    if (!this.imageId || !this.annotationService || !annotation.databaseId) {
+      console.warn('❌ Delete için gerekli bilgiler eksik:', {
+        imageId: this.imageId,
+        hasAnnotationService: !!this.annotationService,
+        databaseId: annotation.databaseId
+      });
+      return;
+    }
+
+    // DELETE API call'u yap
+    this.annotationService.deleteAnnotation(this.imageId, annotation.databaseId).subscribe({
+      next: () => {
+        console.log('✅ Anotasyon backend\'den silindi:', annotation.databaseId);
+      },
+      error: (error) => {
+        console.error('❌ Anotasyon backend\'den silinemedi:', error);
+        // Hata durumunda anotasyonu tekrar ekle
+        if (this.annotorious?.addAnnotation) {
+          this.annotorious.addAnnotation(annotation);
+        }
+      }
+    });
   }
 
   // Toolbar’dan çağrılıyor (mevcutta kullanıyorsun)

@@ -23,15 +23,6 @@ public class AnnotationController {
     @Autowired
     private ObjectMapper objectMapper;
 
-//    @PutMapping("/{annotationId}")
-//    public ResponseEntity<JsonNode> updateAnnotation(
-//            @PathVariable Long imageId,
-//            @PathVariable String annotationId,    // JSON-LD id (örneğin "#uuid")
-//            @RequestBody JsonNode payload
-//    ) {
-//        JsonNode updated = annotationService.updateAnnotation(imageId, annotationId, payload);
-//        return ResponseEntity.ok(updated);
-//    }
 
     // GET all annotations for image
     @GetMapping
@@ -177,33 +168,5 @@ public class AnnotationController {
     }
 }
 
-/*@RestController
-@RequestMapping("/api/images")
-public class AnnotationController {
 
-    @PostMapping("/{imageId}/annotations")
-    public ResponseEntity<Void> saveAnnotation(
-            @PathVariable String imageId,
-            @RequestBody AnnotationDTO annotation
-    ) {
-        System.out.println("Anotasyon alındı: " + annotation);
-        // veritabanına kaydedebilirsin burada
-        return ResponseEntity.ok().build();
-    }
-    @GetMapping("/{imageId}/annotations")
-    public ResponseEntity<List<AnnotationDTO>> getAnnotations(@PathVariable String imageId) {
-        // Geçici örnek veri, ileride DB'den çekebilirsin
-        List<AnnotationDTO> annotations = List.of(
-                new AnnotationDTO(
-                        "anno-1",
-                        "Annotation",
-                        Map.of("type", "TextualBody", "value", "Not 1", "purpose", "commenting"),
-                        Map.of("selector", Map.of("type", "FragmentSelector", "value", "xywh=pixel:100,100,200,100"))
-                )
-        );
-
-        return ResponseEntity.ok(annotations);
-    }
-
-}*/
 

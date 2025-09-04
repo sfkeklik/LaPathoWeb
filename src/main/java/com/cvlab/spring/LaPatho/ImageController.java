@@ -93,33 +93,3 @@ public class ImageController {
     }
 
 }
-/*private final TileService tileService;
-
-    @PostMapping("/generate-tiles")
-    public ResponseEntity<?> generateTiles() {
-        try {
-            String inputPath = "C:/Users/user/Desktop/openslide/wsi/B-16303-24-S1-K2.bif";
-            String outputBasePath = "C:/Users/user/Desktop/openslide/tiles/";
-            String imageId = "philips2"; // TODO: veya UUID.randomUUID().toString();
-
-            tileService.generateTiles(inputPath, imageId, outputBasePath);
-            return ResponseEntity.ok("Tile üretimi tamamlandı.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Hata oluştu: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/{imageId}/metadata")
-    public ResponseEntity<ImageMetadataDTO> getImageMetadata(@PathVariable String imageId) {
-        // Örnek olarak, tiles klasöründen ilk tile'ın boyutunu okuyalım
-        // Gerçek çözünürlüğü daha doğru olarak kaydederek getirmek daha sağlıklı olur
-
-        int width = 50744;     // TODO: Gerçek width'i buraya yaz
-        int height = 51200;    // TODO: Gerçek height
-        int tileSize = 512;   // TileService ile uyumlu olmalı
-        int maxLevel = 7;   // TileService ile uyumlu olmalı
-
-        ImageMetadataDTO metadata = new ImageMetadataDTO(width, height, tileSize, maxLevel);
-        return ResponseEntity.ok(metadata);
-    }*/
