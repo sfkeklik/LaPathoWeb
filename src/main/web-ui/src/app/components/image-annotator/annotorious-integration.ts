@@ -56,62 +56,79 @@ export class AnnotoriousIntegration {
     'Muscle': '#800080'
   };
 
-  // Custom widget for grade and tag selection
+  // Custom widget for grade and tag selection - DÜZELTME BURADA
   private createGradeWidget() {
-    const tagVocabulary = this.tagVocabulary; // Capture in closure
+    return {
+      widget: 'GradeWidget',
 
-    return (args: any) => {
-      const grades = ['G1', 'G2', 'G3'];
-      const tags = tagVocabulary; // Use captured vocabulary
+      onInitialize: (args: any) => {
+        console.log('GradeWidget onInitialize called');
 
-      const currentGrade = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
-      const currentTag = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
+        // Widget state
+        const state = {
+          grades: ['G1', 'G2', 'G3'],
+          tags: this.tagVocabulary,
+          currentGrade: null as string | null,
+          currentTag: null as string | null
+        };
 
-      // Main container
-      const container = document.createElement('div');
-      container.className = 'a9s-custom-widget-container';
+        // Create widget element
+        const createWidget = () => {
+          const currentGrade = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+          const currentTag = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
 
-      // Add error handling and logging for debugging
-      try {
-        // Grade selection section
-        const gradeSection = document.createElement('div');
-        gradeSection.className = 'a9s-grade-section';
+          state.currentGrade = currentGrade?.value || null;
+          state.currentTag = currentTag?.value || null;
 
-        // Use div with role="group" and aria-labelledby instead of label
-        const gradeLabel = document.createElement('div');
-        gradeLabel.textContent = 'Grade:';
-        gradeLabel.className = 'a9s-widget-label';
-        gradeLabel.id = 'grade-label-' + Date.now();
+          // Main container
+          const container = document.createElement('div');
+          container.className = 'a9s-custom-widget-container';
+          container.style.padding = '10px';
+          container.style.minWidth = '300px';
 
-        // Grade buttons with proper ARIA attributes
-        const gradeButtons = document.createElement('div');
-        gradeButtons.className = 'a9s-grade-buttons';
-        gradeButtons.setAttribute('role', 'group');
-        gradeButtons.setAttribute('aria-labelledby', gradeLabel.id);
+          // Grade section
+          const gradeSection = document.createElement('div');
+          gradeSection.className = 'a9s-grade-section';
+          gradeSection.style.marginBottom = '10px';
 
-        grades.forEach(grade => {
-          const button = document.createElement('button');
-          button.textContent = grade;
-          button.className = `a9s-grade-button ${currentGrade?.value === grade ? 'active' : ''}`;
-          button.type = 'button';
-          button.setAttribute('aria-label', `Grade ${grade}`);
+          const gradeLabel = document.createElement('div');
+          gradeLabel.textContent = 'Grade:';
+          gradeLabel.className = 'a9s-widget-label';
+          gradeLabel.style.fontWeight = 'bold';
+          gradeLabel.style.marginBottom = '5px';
 
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+          const gradeButtons = document.createElement('div');
+          gradeButtons.className = 'a9s-grade-buttons';
+          gradeButtons.style.display = 'flex';
+          gradeButtons.style.gap = '5px';
 
-            try {
-              // Remove active class from all buttons
-              gradeButtons.querySelectorAll('.a9s-grade-button').forEach(btn => {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-pressed', 'false');
+          state.grades.forEach(grade => {
+            const button = document.createElement('button');
+            button.textContent = grade;
+            button.className = 'a9s-grade-button';
+            button.type = 'button';
+
+            // Inline styles for Docker environment
+            button.style.padding = '5px 10px';
+            button.style.border = '1px solid #ccc';
+            button.style.borderRadius = '4px';
+            button.style.cursor = 'pointer';
+            button.style.backgroundColor = state.currentGrade === grade ? '#007bff' : '#fff';
+            button.style.color = state.currentGrade === grade ? '#fff' : '#333';
+
+            button.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              state.currentGrade = grade;
+
+              // Update all buttons
+              gradeButtons.querySelectorAll('button').forEach(btn => {
+                btn.style.backgroundColor = btn.textContent === grade ? '#007bff' : '#fff';
+                btn.style.color = btn.textContent === grade ? '#fff' : '#333';
               });
 
-              // Add active class to clicked button
-              button.classList.add('active');
-              button.setAttribute('aria-pressed', 'true');
-
-              // Update annotation with error handling
+              // Update annotation
               if (args.onAppendBody && args.onUpdateBody) {
                 const gradeBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
                 if (gradeBody) {
@@ -119,61 +136,58 @@ export class AnnotoriousIntegration {
                 } else {
                   args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value: grade });
                 }
-                console.log('Grade updated:', grade);
-              } else {
-                console.error('Widget callback functions not available');
               }
-            } catch (error) {
-              console.error('Error updating grade:', error);
-            }
+            };
+
+            gradeButtons.appendChild(button);
           });
 
-          gradeButtons.appendChild(button);
-        });
+          gradeSection.appendChild(gradeLabel);
+          gradeSection.appendChild(gradeButtons);
 
-        gradeSection.appendChild(gradeLabel);
-        gradeSection.appendChild(gradeButtons);
+          // Tag section
+          const tagSection = document.createElement('div');
+          tagSection.className = 'a9s-tag-section';
 
-        // Tag selection section
-        const tagSection = document.createElement('div');
-        tagSection.className = 'a9s-tag-section';
+          const tagLabel = document.createElement('div');
+          tagLabel.textContent = 'Tag:';
+          tagLabel.className = 'a9s-widget-label';
+          tagLabel.style.fontWeight = 'bold';
+          tagLabel.style.marginBottom = '5px';
 
-        // Use div with role="group" and aria-labelledby instead of label
-        const tagLabel = document.createElement('div');
-        tagLabel.textContent = 'Tag:';
-        tagLabel.className = 'a9s-widget-label';
-        tagLabel.id = 'tag-label-' + Date.now();
+          const tagButtons = document.createElement('div');
+          tagButtons.className = 'a9s-tag-buttons';
+          tagButtons.style.display = 'flex';
+          tagButtons.style.flexWrap = 'wrap';
+          tagButtons.style.gap = '5px';
 
-        // Tag buttons with proper ARIA attributes
-        const tagButtons = document.createElement('div');
-        tagButtons.className = 'a9s-tag-buttons';
-        tagButtons.setAttribute('role', 'group');
-        tagButtons.setAttribute('aria-labelledby', tagLabel.id);
+          state.tags.forEach(tag => {
+            const button = document.createElement('button');
+            button.textContent = tag;
+            button.className = 'a9s-tag-button';
+            button.type = 'button';
 
-        tags.forEach(tag => {
-          const button = document.createElement('button');
-          button.textContent = tag;
-          button.className = `a9s-tag-button ${currentTag?.value === tag ? 'active' : ''}`;
-          button.setAttribute('data-tag', tag);
-          button.type = 'button';
-          button.setAttribute('aria-label', `Tag ${tag}`);
+            // Inline styles for Docker environment
+            button.style.padding = '5px 10px';
+            button.style.border = '1px solid #ccc';
+            button.style.borderRadius = '4px';
+            button.style.cursor = 'pointer';
+            button.style.backgroundColor = state.currentTag === tag ? '#28a745' : '#fff';
+            button.style.color = state.currentTag === tag ? '#fff' : '#333';
 
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            button.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-            try {
-              // Remove active class from all buttons
-              tagButtons.querySelectorAll('.a9s-tag-button').forEach(btn => {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-pressed', 'false');
+              state.currentTag = tag;
+
+              // Update all buttons
+              tagButtons.querySelectorAll('button').forEach(btn => {
+                btn.style.backgroundColor = btn.textContent === tag ? '#28a745' : '#fff';
+                btn.style.color = btn.textContent === tag ? '#fff' : '#333';
               });
 
-              // Add active class to clicked button
-              button.classList.add('active');
-              button.setAttribute('aria-pressed', 'true');
-
-              // Update annotation with error handling
+              // Update annotation
               if (args.onAppendBody && args.onUpdateBody) {
                 const tagBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
                 if (tagBody) {
@@ -181,36 +195,24 @@ export class AnnotoriousIntegration {
                 } else {
                   args.onAppendBody({ type: 'TextualBody', purpose: 'tagging', value: tag });
                 }
-                console.log('Tag updated:', tag);
-              } else {
-                console.error('Widget callback functions not available');
               }
-            } catch (error) {
-              console.error('Error updating tag:', error);
-            }
+            };
+
+            tagButtons.appendChild(button);
           });
 
-          tagButtons.appendChild(button);
-        });
+          tagSection.appendChild(tagLabel);
+          tagSection.appendChild(tagButtons);
 
-        tagSection.appendChild(tagLabel);
-        tagSection.appendChild(tagButtons);
+          // Assemble widget
+          container.appendChild(gradeSection);
+          container.appendChild(tagSection);
 
-        // Assemble the widget
-        container.appendChild(gradeSection);
-        container.appendChild(tagSection);
+          return container;
+        };
 
-        console.log('GradeWidget created successfully');
-        return container;
-
-      } catch (error) {
-        console.error('Error creating GradeWidget:', error);
-
-        // Return a fallback widget
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = 'Widget Error';
-        errorDiv.style.color = 'red';
-        return errorDiv;
+        // Return the widget DOM element
+        return createWidget();
       }
     };
   }
@@ -240,6 +242,7 @@ export class AnnotoriousIntegration {
     this.viewer = viewer;
     this.imageId = imageId;
     this.annotationService = annotationService;
+
     // Disable gestures that conflict with drawing
     this.viewer.gestureSettingsMouse.clickToZoom = false;
     this.viewer.gestureSettingsMouse.dblClickToZoom = false;
@@ -250,22 +253,47 @@ export class AnnotoriousIntegration {
         return false;
       }
 
-      this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
-        readOnly: false,
-        drawingEnabled: false, // ⚠️ DEĞİŞTİ: false ile başlıyor
-        hotkey: { key: 'Shift', inverted: true },
-        drawOnSingleClick: false, // ⚠️ DEĞİŞTİ: false yapıldı
-        widgets: [
+      // Farklı widget konfigürasyonları dene
+      let widgetConfig: any[] = [];
+
+      // Docker ortamında basit widget kullan
+      const isDocker = this.detectDockerEnvironment();
+
+      if (isDocker) {
+        console.log('Docker environment detected, using simple widgets');
+        widgetConfig = [
+          'COMMENT',
+          { widget: 'TAG', vocabulary: this.tagVocabulary }
+        ];
+      } else {
+        console.log('Non-Docker environment, using custom widgets');
+        widgetConfig = [
           'COMMENT',
           { widget: 'TAG', vocabulary: this.tagVocabulary },
           this.createGradeWidget()
-        ],
-        locale: 'tr'
+        ];
+      }
+
+      this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
+        readOnly: false,
+        drawingEnabled: false,
+        hotkey: { key: 'Shift', inverted: true },
+        drawOnSingleClick: false,
+        widgets: widgetConfig,
+        locale: 'tr',
+        // Widget mount stratejisi için ek config
+        widgetTemplate: 'default',
+        allowEmpty: true
       });
 
       // Add extra drawing tools
       SelectorPack(this.annotorious, { tools: ['point','circle','ellipse','freehand'] });
       BetterPolygon(this.annotorious);
+
+      // Docker ortamında custom widget'ı manuel olarak ekle
+      if (isDocker) {
+        this.addCustomWidgetManually();
+      }
 
       this.setupEventListeners();
       this.loadExistingAnnotations();
@@ -276,6 +304,78 @@ export class AnnotoriousIntegration {
       console.error('Annotorious init error:', e);
       return false;
     }
+  }
+
+  private detectDockerEnvironment(): boolean {
+    // Docker ortamını tespit et
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isDevelopment = hostname.includes('dev') || hostname.includes('local');
+
+    // Docker genellikle localhost olmayan IP veya domain kullanır
+    return !isLocalhost && !isDevelopment;
+  }
+
+  private addCustomWidgetManually(): void {
+    // Widget'ı manuel olarak eklemeyi dene
+    setTimeout(() => {
+      if (this.annotorious && this.annotorious.widgets) {
+        try {
+          // Custom widget'ı runtime'da ekle
+          const gradeWidget = this.createSimpleGradeWidget();
+          this.annotorious.widgets.register('GradeWidget', gradeWidget);
+          console.log('Manual widget registration attempted');
+        } catch (error) {
+          console.warn('Manual widget registration failed:', error);
+        }
+      }
+    }, 1000);
+  }
+
+  private createSimpleGradeWidget() {
+    // Docker için basitleştirilmiş widget
+    return (args: any) => {
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <div style="padding: 10px; min-width: 250px;">
+          <div style="margin-bottom: 10px;">
+            <strong>Grade:</strong>
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+              <button data-grade="G1" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">G1</button>
+              <button data-grade="G2" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">G2</button>
+              <button data-grade="G3" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">G3</button>
+            </div>
+          </div>
+          <div>
+            <strong>Additional Tags:</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+              ${this.tagVocabulary.map(tag =>
+                `<button data-tag="${tag}" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">${tag}</button>`
+              ).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Event handlers
+      container.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const target = e.target as HTMLButtonElement;
+          // TypeScript hatası için bracket notation kullan
+          const grade = target.dataset['grade'];
+          const tag = target.dataset['tag'];
+
+          if (grade && args.onAppendBody) {
+            args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value: grade });
+          }
+          if (tag && args.onAppendBody) {
+            args.onAppendBody({ type: 'TextualBody', purpose: 'tagging', value: tag });
+          }
+        });
+      });
+
+      return container;
+    };
   }
 
   private loadExistingAnnotations() {
@@ -373,7 +473,7 @@ export class AnnotoriousIntegration {
       metadata.updated = new Date();
       metadata.geometry = annotation;
 
-      // ⚠️ YENİ: Apply layer color after update
+      // Apply layer color after update
       const layerColor = this.layerColors.get(metadata.type);
       if (layerColor) {
         this.applyColorToAnnotation(annotation, layerColor);
@@ -399,88 +499,88 @@ export class AnnotoriousIntegration {
 
   // Layer Management Methods
   public toggleLayerVisibility(layerType: string, visible: boolean) {
-      this.layerVisibility.set(layerType, visible);
+    this.layerVisibility.set(layerType, visible);
 
-      const layer = this.layers.get(layerType);
-      if (layer) {
-        layer.visible = visible;
-      }
-
-      // Re-apply visibility to all annotations
-      this.restoreAndFilterAnnotations();
+    const layer = this.layers.get(layerType);
+    if (layer) {
+      layer.visible = visible;
     }
 
-    private restoreAndFilterAnnotations() {
-      if (!this.annotorious) return;
+    // Re-apply visibility to all annotations
+    this.restoreAndFilterAnnotations();
+  }
 
-      // Get all annotations from our map (includes hidden ones)
-      const allAnnotations: any[] = [];
+  private restoreAndFilterAnnotations() {
+    if (!this.annotorious) return;
 
-      this.annotationsMap.forEach((metadata) => {
-        if (metadata.geometry) {
-          const type = metadata.type;
-          const isVisible = this.layerVisibility.get(type) !== false;
+    // Get all annotations from our map (includes hidden ones)
+    const allAnnotations: any[] = [];
 
-          if (isVisible) {
-            // Clean up any hidden markers
-            delete metadata.geometry.hidden;
-            allAnnotations.push(metadata.geometry);
-          }
-        }
-      });
-
-      // Clear and re-add only visible annotations
-      this.annotorious.clearAnnotations();
-      allAnnotations.forEach(ann => {
-        this.annotorious.addAnnotation(ann);
-      });
-    }
-
-  private applyLayerVisibility() {
-      if (!this.annotorious) return;
-
-      const allAnnotations = this.annotorious.getAnnotations();
-      const visibleAnnotations: any[] = [];
-      const hiddenAnnotations: any[] = [];
-
-      allAnnotations.forEach((annotation: any) => {
-        const type = this.extractAnnotationType(annotation);
+    this.annotationsMap.forEach((metadata) => {
+      if (metadata.geometry) {
+        const type = metadata.type;
         const isVisible = this.layerVisibility.get(type) !== false;
 
         if (isVisible) {
-          // Remove any hidden markers from visible annotations
-          delete annotation.hidden;
-          if (annotation.target?.selector?.value) {
-            // Clean up any display:none styles
-            annotation.target.selector.value = annotation.target.selector.value.replace(
-              /<style[^>]*>.*?display:\s*none.*?<\/style>/gi,
-              ''
-            );
-          }
-          visibleAnnotations.push(annotation);
-        } else {
-          // Mark as hidden
-          annotation.hidden = true;
-          hiddenAnnotations.push(annotation);
+          // Clean up any hidden markers
+          delete metadata.geometry.hidden;
+          allAnnotations.push(metadata.geometry);
         }
-      });
+      }
+    });
 
-      // Clear all annotations first
-      this.annotorious.clearAnnotations();
+    // Clear and re-add only visible annotations
+    this.annotorious.clearAnnotations();
+    allAnnotations.forEach(ann => {
+      this.annotorious.addAnnotation(ann);
+    });
+  }
 
-      // Only add back visible annotations
-      visibleAnnotations.forEach(ann => {
-        this.annotorious.addAnnotation(ann);
-      });
+  private applyLayerVisibility() {
+    if (!this.annotorious) return;
 
-      // Store hidden annotations in our map for later restoration
-      hiddenAnnotations.forEach(ann => {
-        const metadata = this.annotationsMap.get(ann.id);
-        if (metadata) {
-          metadata.geometry = ann;
+    const allAnnotations = this.annotorious.getAnnotations();
+    const visibleAnnotations: any[] = [];
+    const hiddenAnnotations: any[] = [];
+
+    allAnnotations.forEach((annotation: any) => {
+      const type = this.extractAnnotationType(annotation);
+      const isVisible = this.layerVisibility.get(type) !== false;
+
+      if (isVisible) {
+        // Remove any hidden markers from visible annotations
+        delete annotation.hidden;
+        if (annotation.target?.selector?.value) {
+          // Clean up any display:none styles
+          annotation.target.selector.value = annotation.target.selector.value.replace(
+            /<style[^>]*>.*?display:\s*none.*?<\/style>/gi,
+            ''
+          );
         }
-      });
-    }
+        visibleAnnotations.push(annotation);
+      } else {
+        // Mark as hidden
+        annotation.hidden = true;
+        hiddenAnnotations.push(annotation);
+      }
+    });
+
+    // Clear all annotations first
+    this.annotorious.clearAnnotations();
+
+    // Only add back visible annotations
+    visibleAnnotations.forEach(ann => {
+      this.annotorious.addAnnotation(ann);
+    });
+
+    // Store hidden annotations in our map for later restoration
+    hiddenAnnotations.forEach(ann => {
+      const metadata = this.annotationsMap.get(ann.id);
+      if (metadata) {
+        metadata.geometry = ann;
+      }
+    });
+  }
 
   public updateLayerColor(layerType: string, color: string) {
     this.layerColors.set(layerType, color);
@@ -583,7 +683,7 @@ export class AnnotoriousIntegration {
       this.applyColorToAnnotation(annotation, updates.color);
     }
 
-    // ⚠️ DEĞİŞTİ: updateAnnotation yerine remove/add kullanılıyor
+    // Use remove/add instead of updateAnnotation
     if (this.annotorious) {
       // Instead of updateAnnotation, remove and re-add
       this.annotorious.removeAnnotation(annotation);
@@ -731,253 +831,227 @@ export class AnnotoriousIntegration {
       const widthMatch = svgValue.match(/width="([^"]*)"/);
       const heightMatch = svgValue.match(/height="([^"]*)"/);
 
-      if (xMatch && yMatch && widthMatch && heightMatch) {
-        return {
-          x: parseFloat(xMatch[1]),
-          y: parseFloat(yMatch[1]),
-          width: parseFloat(widthMatch[1]),
-          height: parseFloat(heightMatch[1])
-        };
-      }
-    }
+            if (xMatch && yMatch && widthMatch && heightMatch) {
+              return {
+                x: parseFloat(xMatch[1]),
+                y: parseFloat(yMatch[1]),
+                width: parseFloat(widthMatch[1]),
+                height: parseFloat(heightMatch[1])
+              };
+            }
+          }
 
-    // Add more shape types as needed
-    return null;
-  }
-
-  public highlightAnnotation(annotationId: string) {
-    if (!this.annotorious) return;
-
-    const annotation = this.getAnnotationById(annotationId);
-    if (annotation) {
-      this.annotorious.selectAnnotation(annotation);
-    }
-  }
-
-  // Backend sync methods
-  private saveAnnotationToBackend(annotation: any, metadata: AnnotationData) {
-    if (!this.imageId || !this.annotationService) {
-      console.error('❌ Cannot save annotation - missing dependencies');
-      return;
-    }
-
-    const annotationEntity = {
-      creator: metadata.creator,
-      type: metadata.type,
-      geometry: JSON.stringify(annotation)
-    };
-
-    this.annotationService.saveAnnotation(this.imageId.toString(), annotationEntity).subscribe({
-      next: (result) => {
-        console.log('✅ Annotation saved to backend:', result);
-        if (result.id) {
-          annotation.databaseId = result.id;
-          metadata.databaseId = result.id;
+          // Add more shape types as needed
+          return null;
         }
-      },
-      error: (error) => {
-        console.error('❌ Failed to save annotation:', error);
-        if (this.annotorious?.removeAnnotation) {
-          this.annotorious.removeAnnotation(annotation);
+
+        public highlightAnnotation(annotationId: string) {
+          if (!this.annotorious) return;
+
+          const annotation = this.getAnnotationById(annotationId);
+          if (annotation) {
+            this.annotorious.selectAnnotation(annotation);
+          }
         }
-        this.annotationsMap.delete(annotation.id);
-        this.notifyAnnotationChanges();
-      }
-    });
-  }
 
-  private updateAnnotationInBackend(annotation: any, metadata: AnnotationData) {
-    if (!this.imageId || !this.annotationService || !annotation.databaseId) {
-      console.warn('❌ Cannot update annotation - missing data');
-      return;
-    }
+        // Backend sync methods
+        private saveAnnotationToBackend(annotation: any, metadata: AnnotationData) {
+          if (!this.imageId || !this.annotationService) {
+            console.error('❌ Cannot save annotation - missing dependencies');
+            return;
+          }
 
-    const annotationEntity = {
-      creator: metadata.creator,
-      type: metadata.type,
-      notes: metadata.notes,
-      geometry: JSON.stringify(annotation)
-    };
+          const annotationEntity = {
+            creator: metadata.creator,
+            type: metadata.type,
+            geometry: JSON.stringify(annotation)
+          };
 
-    this.annotationService.updateAnnotation(this.imageId, annotation.databaseId, annotationEntity).subscribe({
-      next: (result) => {
-        console.log('✅ Annotation updated in backend:', result);
-      },
-      error: (error) => {
-        console.error('❌ Failed to update annotation:', error);
-      }
-    });
-  }
+          this.annotationService.saveAnnotation(this.imageId.toString(), annotationEntity).subscribe({
+            next: (result) => {
+              console.log('✅ Annotation saved to backend:', result);
+              if (result.id) {
+                annotation.databaseId = result.id;
+                metadata.databaseId = result.id;
+              }
+            },
+            error: (error) => {
+              console.error('❌ Failed to save annotation:', error);
+              if (this.annotorious?.removeAnnotation) {
+                this.annotorious.removeAnnotation(annotation);
+              }
+              this.annotationsMap.delete(annotation.id);
+              this.notifyAnnotationChanges();
+            }
+          });
+        }
 
-  private deleteAnnotationFromBackend(annotation: any) {
-    if (!this.imageId || !this.annotationService || !annotation.databaseId) {
-      console.warn('❌ Cannot delete annotation - missing data');
-      return;
-    }
+        private updateAnnotationInBackend(annotation: any, metadata: AnnotationData) {
+          if (!this.imageId || !this.annotationService || !annotation.databaseId) {
+            console.warn('❌ Cannot update annotation - missing data');
+            return;
+          }
 
-    this.annotationService.deleteAnnotation(this.imageId, annotation.databaseId).subscribe({
-      next: () => {
-        console.log('✅ Annotation deleted from backend:', annotation.databaseId);
-      },
-      error: (error) => {
-        console.error('❌ Failed to delete annotation:', error);
-        if (this.annotorious?.addAnnotation) {
-          this.annotorious.addAnnotation(annotation);
+          const annotationEntity = {
+            creator: metadata.creator,
+            type: metadata.type,
+            notes: metadata.notes,
+            geometry: JSON.stringify(annotation)
+          };
+
+          this.annotationService.updateAnnotation(this.imageId, annotation.databaseId, annotationEntity).subscribe({
+            next: (result) => {
+              console.log('✅ Annotation updated in backend:', result);
+            },
+            error: (error) => {
+              console.error('❌ Failed to update annotation:', error);
+            }
+          });
+        }
+
+        private deleteAnnotationFromBackend(annotation: any) {
+          if (!this.imageId || !this.annotationService || !annotation.databaseId) {
+            console.warn('❌ Cannot delete annotation - missing data');
+            return;
+          }
+
+          this.annotationService.deleteAnnotation(this.imageId, annotation.databaseId).subscribe({
+            next: () => {
+              console.log('✅ Annotation deleted from backend:', annotation.databaseId);
+            },
+            error: (error) => {
+              console.error('❌ Failed to delete annotation:', error);
+              if (this.annotorious?.addAnnotation) {
+                this.annotorious.addAnnotation(annotation);
+              }
+            }
+          });
+        }
+
+        private notifyAnnotationChanges() {
+          const annotations = Array.from(this.annotationsMap.values());
+          this.annotationsChanged$.next(annotations);
+        }
+
+        // Public API
+        public getAnnotations(): AnnotationData[] {
+          return Array.from(this.annotationsMap.values());
+        }
+
+        public deleteAnnotationById(annotationId: string) {
+          const annotation = this.getAnnotationById(annotationId);
+          if (annotation && this.annotorious) {
+            this.annotorious.removeAnnotation(annotation);
+          }
+        }
+
+        public setTool(toolId: string | null) {
+          if (!this.annotorious) return;
+
+          if (toolId === null) {
+            // Selection mode - only disable drawing
+            this.annotorious.setDrawingEnabled(false);
+          } else {
+            // Drawing mode - enable drawing and set tool
+            this.annotorious.setDrawingEnabled(true);
+            this.annotorious.setDrawingTool(toolId);
+          }
+        }
+
+        public setTagVocabulary(vocab: string[]) {
+          this.tagVocabulary = vocab;
+          this.reinitPreservingAnnotations();
+        }
+
+        private reinitPreservingAnnotations() {
+          if (!this.viewer) return;
+
+          const existing = (this.annotorious?.getAnnotations?.() || []).slice();
+          this.annotorious?.destroy?.();
+
+          // Docker kontrolü ile yeniden başlat
+          const isDocker = this.detectDockerEnvironment();
+          const widgetConfig = isDocker ?
+            ['COMMENT', { widget: 'TAG', vocabulary: this.tagVocabulary }] :
+            ['COMMENT', { widget: 'TAG', vocabulary: this.tagVocabulary }, this.createGradeWidget()];
+
+          this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
+            readOnly: false,
+            drawingEnabled: false,
+            hotkey: { key: 'Shift', inverted: true },
+            drawOnSingleClick: false,
+            widgets: widgetConfig,
+            locale: 'tr'
+          });
+
+          SelectorPack(this.annotorious, { tools: ['point','circle','ellipse','freehand'] });
+          BetterPolygon(this.annotorious);
+          this.setupEventListeners();
+
+          if (existing.length && this.annotorious.setAnnotations) {
+            this.annotorious.setAnnotations(existing);
+          }
+
+          if (isDocker) {
+            this.addCustomWidgetManually();
+          }
+        }
+
+        public exportAnnotations() {
+          return this.annotorious ? this.annotorious.getAnnotations() : [];
+        }
+
+        public loadAnnotations(annotations: any[]) {
+          if (this.annotorious?.setAnnotations) {
+            this.annotorious.setAnnotations(annotations);
+          }
+        }
+
+        public clearAnnotations() {
+          if (this.annotorious?.setAnnotations) {
+            this.annotorious.setAnnotations([]);
+            this.annotationsMap.clear();
+            this.notifyAnnotationChanges();
+          }
+        }
+
+        public getAnnotationCount(): number {
+          return this.annotationsMap.size;
+        }
+
+        public destroy() {
+          if (this.annotorious?.destroy) {
+            this.annotorious.destroy();
+          }
+          this.annotationsMap.clear();
+          this.layers.clear();
+          this.layerVisibility.clear();
+          this.layerColors.clear();
+        }
+
+        // Debugging methods for Docker environment
+        public debugEnvironment() {
+          console.log('🔍 Environment Debug Info:');
+          console.log('- OpenSeadragon available:', typeof OpenSeadragon !== 'undefined');
+          console.log('- Annotorious available:', typeof OpenSeadragon?.Annotorious !== 'undefined');
+          console.log('- Viewer initialized:', !!this.viewer);
+          console.log('- Annotorious initialized:', !!this.annotorious);
+          console.log('- ImageId:', this.imageId);
+          console.log('- Tag vocabulary:', this.tagVocabulary);
+          console.log('- Current URL:', window.location.href);
+          console.log('- User agent:', navigator.userAgent);
+          console.log('- Is Docker Environment:', this.detectDockerEnvironment());
+        }
+
+        public logAnnotoriousConfig() {
+          if (!this.annotorious) {
+            console.log('❌ Annotorious not initialized');
+            return;
+          }
+
+          console.log('🔧 Annotorious Configuration:');
+          console.log('- Drawing enabled:', this.annotorious.getDrawingEnabled?.());
+          console.log('- Current tool:', this.annotorious.getDrawingTool?.());
+          console.log('- Annotation count:', this.annotorious.getAnnotations?.().length);
         }
       }
-    });
-  }
-
-  private notifyAnnotationChanges() {
-    const annotations = Array.from(this.annotationsMap.values());
-    this.annotationsChanged$.next(annotations);
-  }
-
-  // Public API
-  public getAnnotations(): AnnotationData[] {
-    return Array.from(this.annotationsMap.values());
-  }
-
-  public deleteAnnotationById(annotationId: string) {
-    const annotation = this.getAnnotationById(annotationId);
-    if (annotation && this.annotorious) {
-      this.annotorious.removeAnnotation(annotation);
-    }
-  }
-
-  public setTool(toolId: string | null) {
-    if (!this.annotorious) return;
-
-    if (toolId === null) {
-      // Selection mode - only disable drawing
-      this.annotorious.setDrawingEnabled(false);
-      // Don't call setDrawingTool with null - just disable drawing is enough
-    } else {
-      // Drawing mode - enable drawing and set tool
-      this.annotorious.setDrawingEnabled(true);
-      this.annotorious.setDrawingTool(toolId);
-    }
-  }
-
-  public setTagVocabulary(vocab: string[]) {
-    this.tagVocabulary = vocab;
-    this.reinitPreservingAnnotations();
-  }
-
-  private reinitPreservingAnnotations() {
-    if (!this.viewer) return;
-
-    const existing = (this.annotorious?.getAnnotations?.() || []).slice();
-    this.annotorious?.destroy?.();
-
-    this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
-      readOnly: false,
-      drawingEnabled: false,
-      hotkey: { key: 'Shift', inverted: true },
-      drawOnSingleClick: false,
-      widgets: [
-        'COMMENT',
-        { widget: 'TAG', vocabulary: this.tagVocabulary },
-        this.createGradeWidget()
-      ],
-      locale: 'tr'
-    });
-
-    SelectorPack(this.annotorious, { tools: ['point','circle','ellipse','freehand'] });
-    BetterPolygon(this.annotorious);
-    this.setupEventListeners();
-
-    if (existing.length && this.annotorious.setAnnotations) {
-      this.annotorious.setAnnotations(existing);
-    }
-  }
-
-  public exportAnnotations() {
-    return this.annotorious ? this.annotorious.getAnnotations() : [];
-  }
-
-  public loadAnnotations(annotations: any[]) {
-    if (this.annotorious?.setAnnotations) {
-      this.annotorious.setAnnotations(annotations);
-    }
-  }
-
-  public clearAnnotations() {
-    if (this.annotorious?.setAnnotations) {
-      this.annotorious.setAnnotations([]);
-      this.annotationsMap.clear();
-      this.notifyAnnotationChanges();
-    }
-  }
-
-  public getAnnotationCount(): number {
-    return this.annotationsMap.size;
-  }
-
-  public destroy() {
-    if (this.annotorious?.destroy) {
-      this.annotorious.destroy();
-    }
-    this.annotationsMap.clear();
-    this.layers.clear();
-    this.layerVisibility.clear();
-    this.layerColors.clear();
-  }
-
-  // Debugging methods for Docker environment
-  public debugEnvironment() {
-    console.log('🔍 Environment Debug Info:');
-    console.log('- OpenSeadragon available:', typeof OpenSeadragon !== 'undefined');
-    console.log('- Annotorious available:', typeof OpenSeadragon?.Annotorious !== 'undefined');
-    console.log('- Viewer initialized:', !!this.viewer);
-    console.log('- Annotorious initialized:', !!this.annotorious);
-    console.log('- ImageId:', this.imageId);
-    console.log('- Tag vocabulary:', this.tagVocabulary);
-    console.log('- Current URL:', window.location.href);
-    console.log('- User agent:', navigator.userAgent);
-
-    // Test widget creation
-    try {
-      const testWidget = this.createGradeWidget();
-      console.log('- Widget factory works:', typeof testWidget === 'function');
-
-      // Test widget execution
-      const mockArgs = {
-        annotation: { bodies: [] },
-        onAppendBody: () => console.log('Mock onAppendBody called'),
-        onUpdateBody: () => console.log('Mock onUpdateBody called')
-      };
-
-      const widgetElement = testWidget(mockArgs);
-      console.log('- Widget creation works:', widgetElement instanceof HTMLElement);
-      console.log('- Widget class name:', widgetElement.className);
-    } catch (error) {
-      console.error('- Widget creation failed:', error);
-    }
-  }
-
-  public logAnnotoriousConfig() {
-    if (!this.annotorious) {
-      console.log('❌ Annotorious not initialized');
-      return;
-    }
-
-    console.log('🔧 Annotorious Configuration:');
-    console.log('- Drawing enabled:', this.annotorious.getDrawingEnabled?.());
-    console.log('- Current tool:', this.annotorious.getDrawingTool?.());
-    console.log('- Annotation count:', this.annotorious.getAnnotations?.().length);
-
-    // Check if widgets are properly registered
-    try {
-      const testAnnotation = {
-        id: 'test-' + Date.now(),
-        body: [],
-        target: { selector: { value: '<rect x="0" y="0" width="100" height="100"/>' } }
-      };
-
-      console.log('- Test annotation structure:', testAnnotation);
-    } catch (error) {
-      console.error('- Error testing annotation structure:', error);
-    }
-  }
-}
