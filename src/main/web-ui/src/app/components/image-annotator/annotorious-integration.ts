@@ -47,38 +47,113 @@ export class AnnotoriousIntegration {
   public annotationsChanged$ = new BehaviorSubject<AnnotationData[]>([]);
 
   // UI state
-  private tagVocabulary: string[] = ['Nucleus', 'Tumor', 'Necrosis', 'Stroma'];
+  private tagVocabulary: string[] = ['Nucleus', 'Tumor', 'Necrosis', 'Stroma', 'Muscle'];
   private defaultColors: Record<string, string> = {
     'Nucleus': '#ff0000',
     'Tumor': '#00ff00',
     'Necrosis': '#0000ff',
-    'Stroma': '#ffff00'
+    'Stroma': '#ffff00',
+    'Muscle': '#800080'
   };
 
-  // Custom widget for grade selection
+  // Custom widget for grade and tag selection
   private GradeWidget = (args: any) => {
     const grades = ['G1', 'G2', 'G3'];
-    const current = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+    const tags = this.tagVocabulary;
 
-    const select = document.createElement('select');
-    select.className = 'a9s-widget a9s-grade';
-    select.innerHTML = [
-      `<option value="">Grade seçin</option>`,
-      ...grades.map(g => `<option ${current?.value===g?'selected':''}>${g}</option>`)
-    ].join('');
+    const currentGrade = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+    const currentTag = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
 
-    select.addEventListener('change', () => {
-      const value = select.value || null;
-      if (current) {
-        args.onUpdateBody(current, { type: 'TextualBody', purpose: 'grading', value });
-      } else if (value) {
-        args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value });
-      }
+    // Main container
+    const container = document.createElement('div');
+    container.className = 'a9s-custom-widget-container';
+
+    // Grade selection section
+    const gradeSection = document.createElement('div');
+    gradeSection.className = 'a9s-grade-section';
+
+    const gradeLabel = document.createElement('label');
+    gradeLabel.textContent = 'Grade:';
+    gradeLabel.className = 'a9s-widget-label';
+
+    // Grade buttons
+    const gradeButtons = document.createElement('div');
+    gradeButtons.className = 'a9s-grade-buttons';
+
+    grades.forEach(grade => {
+      const button = document.createElement('button');
+      button.textContent = grade;
+      button.className = `a9s-grade-button ${currentGrade?.value === grade ? 'active' : ''}`;
+      button.type = 'button';
+
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        gradeButtons.querySelectorAll('.a9s-grade-button').forEach(btn => btn.classList.remove('active'));
+
+        // Add active class to clicked button
+        button.classList.add('active');
+
+        // Update annotation
+        const gradeBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+        if (gradeBody) {
+          args.onUpdateBody(gradeBody, { type: 'TextualBody', purpose: 'grading', value: grade });
+        } else {
+          args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value: grade });
+        }
+      });
+
+      gradeButtons.appendChild(button);
     });
 
-    const wrap = document.createElement('div');
-    wrap.appendChild(select);
-    return wrap;
+    gradeSection.appendChild(gradeLabel);
+    gradeSection.appendChild(gradeButtons);
+
+    // Tag selection section
+    const tagSection = document.createElement('div');
+    tagSection.className = 'a9s-tag-section';
+
+    const tagLabel = document.createElement('label');
+    tagLabel.textContent = 'Tag:';
+    tagLabel.className = 'a9s-widget-label';
+
+    // Tag buttons
+    const tagButtons = document.createElement('div');
+    tagButtons.className = 'a9s-tag-buttons';
+
+    tags.forEach(tag => {
+      const button = document.createElement('button');
+      button.textContent = tag;
+      button.className = `a9s-tag-button ${currentTag?.value === tag ? 'active' : ''}`;
+      button.setAttribute('data-tag', tag); // Add data attribute for CSS styling
+      button.type = 'button';
+
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        tagButtons.querySelectorAll('.a9s-tag-button').forEach(btn => btn.classList.remove('active'));
+
+        // Add active class to clicked button
+        button.classList.add('active');
+
+        // Update annotation
+        const tagBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
+        if (tagBody) {
+          args.onUpdateBody(tagBody, { type: 'TextualBody', purpose: 'tagging', value: tag });
+        } else {
+          args.onAppendBody({ type: 'TextualBody', purpose: 'tagging', value: tag });
+        }
+      });
+
+      tagButtons.appendChild(button);
+    });
+
+    tagSection.appendChild(tagLabel);
+    tagSection.appendChild(tagButtons);
+
+    // Assemble the widget
+    container.appendChild(gradeSection);
+    container.appendChild(tagSection);
+
+    return container;
   };
 
   constructor() {
@@ -91,7 +166,8 @@ export class AnnotoriousIntegration {
       { id: 'nucleus', name: 'Nucleus', type: 'Nucleus', visible: true, color: '#ff0000' },
       { id: 'tumor', name: 'Tumor', type: 'Tumor', visible: true, color: '#00ff00' },
       { id: 'necrosis', name: 'Necrosis', type: 'Necrosis', visible: true, color: '#0000ff' },
-      { id: 'stroma', name: 'Stroma', type: 'Stroma', visible: true, color: '#ffff00' }
+      { id: 'stroma', name: 'Stroma', type: 'Stroma', visible: true, color: '#ffff00' },
+      { id: 'muscle', name: 'Muscle', type: 'Muscle', visible: true, color: '#800080' }
     ];
 
     defaultLayers.forEach(layer => {
