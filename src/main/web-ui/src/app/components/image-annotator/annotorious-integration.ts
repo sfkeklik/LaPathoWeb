@@ -57,104 +57,163 @@ export class AnnotoriousIntegration {
   };
 
   // Custom widget for grade and tag selection
-  private GradeWidget = (args: any) => {
-    const grades = ['G1', 'G2', 'G3'];
-    const tags = this.tagVocabulary;
+  private createGradeWidget() {
+    const tagVocabulary = this.tagVocabulary; // Capture in closure
 
-    const currentGrade = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
-    const currentTag = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
+    return (args: any) => {
+      const grades = ['G1', 'G2', 'G3'];
+      const tags = tagVocabulary; // Use captured vocabulary
 
-    // Main container
-    const container = document.createElement('div');
-    container.className = 'a9s-custom-widget-container';
+      const currentGrade = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+      const currentTag = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
 
-    // Grade selection section
-    const gradeSection = document.createElement('div');
-    gradeSection.className = 'a9s-grade-section';
+      // Main container
+      const container = document.createElement('div');
+      container.className = 'a9s-custom-widget-container';
 
-    const gradeLabel = document.createElement('label');
-    gradeLabel.textContent = 'Grade:';
-    gradeLabel.className = 'a9s-widget-label';
+      // Add error handling and logging for debugging
+      try {
+        // Grade selection section
+        const gradeSection = document.createElement('div');
+        gradeSection.className = 'a9s-grade-section';
 
-    // Grade buttons
-    const gradeButtons = document.createElement('div');
-    gradeButtons.className = 'a9s-grade-buttons';
+        // Use div with role="group" and aria-labelledby instead of label
+        const gradeLabel = document.createElement('div');
+        gradeLabel.textContent = 'Grade:';
+        gradeLabel.className = 'a9s-widget-label';
+        gradeLabel.id = 'grade-label-' + Date.now();
 
-    grades.forEach(grade => {
-      const button = document.createElement('button');
-      button.textContent = grade;
-      button.className = `a9s-grade-button ${currentGrade?.value === grade ? 'active' : ''}`;
-      button.type = 'button';
+        // Grade buttons with proper ARIA attributes
+        const gradeButtons = document.createElement('div');
+        gradeButtons.className = 'a9s-grade-buttons';
+        gradeButtons.setAttribute('role', 'group');
+        gradeButtons.setAttribute('aria-labelledby', gradeLabel.id);
 
-      button.addEventListener('click', () => {
-        // Remove active class from all buttons
-        gradeButtons.querySelectorAll('.a9s-grade-button').forEach(btn => btn.classList.remove('active'));
+        grades.forEach(grade => {
+          const button = document.createElement('button');
+          button.textContent = grade;
+          button.className = `a9s-grade-button ${currentGrade?.value === grade ? 'active' : ''}`;
+          button.type = 'button';
+          button.setAttribute('aria-label', `Grade ${grade}`);
 
-        // Add active class to clicked button
-        button.classList.add('active');
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-        // Update annotation
-        const gradeBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
-        if (gradeBody) {
-          args.onUpdateBody(gradeBody, { type: 'TextualBody', purpose: 'grading', value: grade });
-        } else {
-          args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value: grade });
-        }
-      });
+            try {
+              // Remove active class from all buttons
+              gradeButtons.querySelectorAll('.a9s-grade-button').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
+              });
 
-      gradeButtons.appendChild(button);
-    });
+              // Add active class to clicked button
+              button.classList.add('active');
+              button.setAttribute('aria-pressed', 'true');
 
-    gradeSection.appendChild(gradeLabel);
-    gradeSection.appendChild(gradeButtons);
+              // Update annotation with error handling
+              if (args.onAppendBody && args.onUpdateBody) {
+                const gradeBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'grading');
+                if (gradeBody) {
+                  args.onUpdateBody(gradeBody, { type: 'TextualBody', purpose: 'grading', value: grade });
+                } else {
+                  args.onAppendBody({ type: 'TextualBody', purpose: 'grading', value: grade });
+                }
+                console.log('Grade updated:', grade);
+              } else {
+                console.error('Widget callback functions not available');
+              }
+            } catch (error) {
+              console.error('Error updating grade:', error);
+            }
+          });
 
-    // Tag selection section
-    const tagSection = document.createElement('div');
-    tagSection.className = 'a9s-tag-section';
+          gradeButtons.appendChild(button);
+        });
 
-    const tagLabel = document.createElement('label');
-    tagLabel.textContent = 'Tag:';
-    tagLabel.className = 'a9s-widget-label';
+        gradeSection.appendChild(gradeLabel);
+        gradeSection.appendChild(gradeButtons);
 
-    // Tag buttons
-    const tagButtons = document.createElement('div');
-    tagButtons.className = 'a9s-tag-buttons';
+        // Tag selection section
+        const tagSection = document.createElement('div');
+        tagSection.className = 'a9s-tag-section';
 
-    tags.forEach(tag => {
-      const button = document.createElement('button');
-      button.textContent = tag;
-      button.className = `a9s-tag-button ${currentTag?.value === tag ? 'active' : ''}`;
-      button.setAttribute('data-tag', tag); // Add data attribute for CSS styling
-      button.type = 'button';
+        // Use div with role="group" and aria-labelledby instead of label
+        const tagLabel = document.createElement('div');
+        tagLabel.textContent = 'Tag:';
+        tagLabel.className = 'a9s-widget-label';
+        tagLabel.id = 'tag-label-' + Date.now();
 
-      button.addEventListener('click', () => {
-        // Remove active class from all buttons
-        tagButtons.querySelectorAll('.a9s-tag-button').forEach(btn => btn.classList.remove('active'));
+        // Tag buttons with proper ARIA attributes
+        const tagButtons = document.createElement('div');
+        tagButtons.className = 'a9s-tag-buttons';
+        tagButtons.setAttribute('role', 'group');
+        tagButtons.setAttribute('aria-labelledby', tagLabel.id);
 
-        // Add active class to clicked button
-        button.classList.add('active');
+        tags.forEach(tag => {
+          const button = document.createElement('button');
+          button.textContent = tag;
+          button.className = `a9s-tag-button ${currentTag?.value === tag ? 'active' : ''}`;
+          button.setAttribute('data-tag', tag);
+          button.type = 'button';
+          button.setAttribute('aria-label', `Tag ${tag}`);
 
-        // Update annotation
-        const tagBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
-        if (tagBody) {
-          args.onUpdateBody(tagBody, { type: 'TextualBody', purpose: 'tagging', value: tag });
-        } else {
-          args.onAppendBody({ type: 'TextualBody', purpose: 'tagging', value: tag });
-        }
-      });
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-      tagButtons.appendChild(button);
-    });
+            try {
+              // Remove active class from all buttons
+              tagButtons.querySelectorAll('.a9s-tag-button').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
+              });
 
-    tagSection.appendChild(tagLabel);
-    tagSection.appendChild(tagButtons);
+              // Add active class to clicked button
+              button.classList.add('active');
+              button.setAttribute('aria-pressed', 'true');
 
-    // Assemble the widget
-    container.appendChild(gradeSection);
-    container.appendChild(tagSection);
+              // Update annotation with error handling
+              if (args.onAppendBody && args.onUpdateBody) {
+                const tagBody = args.annotation?.bodies?.find((b: any) => b.purpose === 'tagging');
+                if (tagBody) {
+                  args.onUpdateBody(tagBody, { type: 'TextualBody', purpose: 'tagging', value: tag });
+                } else {
+                  args.onAppendBody({ type: 'TextualBody', purpose: 'tagging', value: tag });
+                }
+                console.log('Tag updated:', tag);
+              } else {
+                console.error('Widget callback functions not available');
+              }
+            } catch (error) {
+              console.error('Error updating tag:', error);
+            }
+          });
 
-    return container;
-  };
+          tagButtons.appendChild(button);
+        });
+
+        tagSection.appendChild(tagLabel);
+        tagSection.appendChild(tagButtons);
+
+        // Assemble the widget
+        container.appendChild(gradeSection);
+        container.appendChild(tagSection);
+
+        console.log('GradeWidget created successfully');
+        return container;
+
+      } catch (error) {
+        console.error('Error creating GradeWidget:', error);
+
+        // Return a fallback widget
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = 'Widget Error';
+        errorDiv.style.color = 'red';
+        return errorDiv;
+      }
+    };
+  }
 
   constructor() {
     // Initialize default layers
@@ -199,7 +258,7 @@ export class AnnotoriousIntegration {
         widgets: [
           'COMMENT',
           { widget: 'TAG', vocabulary: this.tagVocabulary },
-          this.GradeWidget
+          this.createGradeWidget()
         ],
         locale: 'tr'
       });
@@ -819,7 +878,7 @@ export class AnnotoriousIntegration {
       widgets: [
         'COMMENT',
         { widget: 'TAG', vocabulary: this.tagVocabulary },
-        this.GradeWidget
+        this.createGradeWidget()
       ],
       locale: 'tr'
     });
@@ -863,5 +922,62 @@ export class AnnotoriousIntegration {
     this.layers.clear();
     this.layerVisibility.clear();
     this.layerColors.clear();
+  }
+
+  // Debugging methods for Docker environment
+  public debugEnvironment() {
+    console.log('🔍 Environment Debug Info:');
+    console.log('- OpenSeadragon available:', typeof OpenSeadragon !== 'undefined');
+    console.log('- Annotorious available:', typeof OpenSeadragon?.Annotorious !== 'undefined');
+    console.log('- Viewer initialized:', !!this.viewer);
+    console.log('- Annotorious initialized:', !!this.annotorious);
+    console.log('- ImageId:', this.imageId);
+    console.log('- Tag vocabulary:', this.tagVocabulary);
+    console.log('- Current URL:', window.location.href);
+    console.log('- User agent:', navigator.userAgent);
+
+    // Test widget creation
+    try {
+      const testWidget = this.createGradeWidget();
+      console.log('- Widget factory works:', typeof testWidget === 'function');
+
+      // Test widget execution
+      const mockArgs = {
+        annotation: { bodies: [] },
+        onAppendBody: () => console.log('Mock onAppendBody called'),
+        onUpdateBody: () => console.log('Mock onUpdateBody called')
+      };
+
+      const widgetElement = testWidget(mockArgs);
+      console.log('- Widget creation works:', widgetElement instanceof HTMLElement);
+      console.log('- Widget class name:', widgetElement.className);
+    } catch (error) {
+      console.error('- Widget creation failed:', error);
+    }
+  }
+
+  public logAnnotoriousConfig() {
+    if (!this.annotorious) {
+      console.log('❌ Annotorious not initialized');
+      return;
+    }
+
+    console.log('🔧 Annotorious Configuration:');
+    console.log('- Drawing enabled:', this.annotorious.getDrawingEnabled?.());
+    console.log('- Current tool:', this.annotorious.getDrawingTool?.());
+    console.log('- Annotation count:', this.annotorious.getAnnotations?.().length);
+
+    // Check if widgets are properly registered
+    try {
+      const testAnnotation = {
+        id: 'test-' + Date.now(),
+        body: [],
+        target: { selector: { value: '<rect x="0" y="0" width="100" height="100"/>' } }
+      };
+
+      console.log('- Test annotation structure:', testAnnotation);
+    } catch (error) {
+      console.error('- Error testing annotation structure:', error);
+    }
   }
 }
