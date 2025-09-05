@@ -15,9 +15,11 @@ public class CorsConfig implements WebMvcConfigurer {
                     "http://localhost:4200",      // Development
                     "http://localhost",           // Production (port 80)
                     "http://localhost:80",        // Production explicit port
+
                     "http://192.168.18.245",
                     "http://192.168.18.245:80",
                     "http://192.168.18.245:8080",
+
                     "http://193.140.169.245",     // Your specific IP
                     "http://193.140.169.245:80",  // Your specific IP with port 80
                     "http://193.140.169.245:8080", // Your specific IP with port 8080

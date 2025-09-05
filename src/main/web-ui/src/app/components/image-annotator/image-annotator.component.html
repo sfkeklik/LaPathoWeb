@@ -35,11 +35,6 @@
         <i class="fas fa-draw-polygon"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('point')" title="Nokta"
-              [class.active]="currentTool==='point'">
-        <i class="fas fa-dot-circle"></i>
-      </button>
-
       <button class="toolbar-btn" (click)="setTool('circle')" title="Daire"
               [class.active]="currentTool==='circle'">
         <i class="fas fa-circle"></i>
@@ -53,6 +48,11 @@
       <button class="toolbar-btn" (click)="setTool('freehand')" title="Serbest Çizim"
               [class.active]="currentTool==='freehand'">
         <i class="fas fa-signature"></i>
+      </button>
+
+      <button class="toolbar-btn" (click)="setTool('point')" title="Nokta"
+              [class.active]="currentTool==='point'">
+        <i class="fas fa-dot-circle"></i>
       </button>
 
 <!--      <button class="toolbar-btn" (click)="exportAnnotations()" title="Anotasyonları Dışa Aktar">-->

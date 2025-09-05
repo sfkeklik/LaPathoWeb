@@ -113,7 +113,8 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
     { id: 'nucleus', name: 'Nucleus', visible: true, color: '#ff0000', count: 0, type: 'Nucleus' },
     { id: 'tumor', name: 'Tumor', visible: true, color: '#00ff00', count: 0, type: 'Tumor' },
     { id: 'necrosis', name: 'Necrosis', visible: true, color: '#0000ff', count: 0, type: 'Necrosis' },
-    { id: 'stroma', name: 'Stroma', visible: true, color: '#ffff00', count: 0, type: 'Stroma' }
+    { id: 'stroma', name: 'Stroma', visible: true, color: '#ffff00', count: 0, type: 'Stroma' },
+    { id: 'muscle', name: 'Muscle', visible: true, color: '#800080', count: 0, type: 'Muscle'}
   ];
 
   statistics: Statistics = {
@@ -126,7 +127,7 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
   recentActivity: ActivityItem[] = [];
 
   // Settings
-  tagVocabInput = 'Nucleus,Tumor,Necrosis,Stroma';
+  tagVocabInput = 'Nucleus,Tumor,Necrosis,Stroma,Muscle';
 
   // Viewer State
   viewerState: ViewerState = {
