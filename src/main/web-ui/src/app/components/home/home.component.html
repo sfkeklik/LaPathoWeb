@@ -77,20 +77,25 @@
       </div>
 
       <!-- Filter -->
-      <select class="filter-select" (change)="onFilterChange($event)">
-        <option value="all">Tüm Görüntüler</option>
-        <option value="ready">Hazır</option>
-        <option value="processing">İşleniyor</option>
-        <option value="failed">Başarısız</option>
-      </select>
+      <div>
+        <select class="filter-select" (change)="onFilterChange($event)">
+          <option value="all">Tüm Görüntüler</option>
+          <option value="ready">Hazır</option>
+          <option value="processing">İşleniyor</option>
+          <option value="failed">Başarısız</option>
+        </select>
+      </div>
+
 
       <!-- Sort -->
-      <select class="sort-select" (change)="onSortChange($event)">
-        <option value="date-desc">En Yeni</option>
-        <option value="date-asc">En Eski</option>
-        <option value="name-asc">İsme Göre (A-Z)</option>
-        <option value="name-desc">İsme Göre (Z-A)</option>
-      </select>
+      <div>
+        <select class="sort-select" (change)="onSortChange($event)">
+          <option value="date-desc">En Yeni</option>
+          <option value="date-asc">En Eski</option>
+          <option value="name-asc">İsme Göre (A-Z)</option>
+          <option value="name-desc">İsme Göre (Z-A)</option>
+        </select>
+      </div>
     </div>
   </div>
 

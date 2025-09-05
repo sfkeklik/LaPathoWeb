@@ -158,6 +158,7 @@ export class ImageAnnotatorComponent implements OnInit, AfterViewInit, OnDestroy
   ) {}
 
   ngOnInit(): void {
+    this.currentTool = null;
     this.route.paramMap.subscribe(params => {
       const idStr = params.get('id');
       if (idStr) {
@@ -786,6 +787,12 @@ private getAnnotationDensity(): string {
     try {
       await this.anno.initAnnotorious(this.viewer, this.imageId, this.annotationService);
       console.log('✅ Annotorious hazır');
+
+      // Default aracı ayarla (Annotorious hazır olduktan sonra)
+      if (this.currentTool) {
+        this.anno.setTool(this.currentTool);
+        console.log('✅ Default tool ayarlandı:', this.currentTool);
+      }
     } catch (e) {
       console.error('Annotorious başlatılamadı', e);
     }

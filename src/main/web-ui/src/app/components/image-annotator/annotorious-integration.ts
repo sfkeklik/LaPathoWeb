@@ -105,7 +105,6 @@ export class AnnotoriousIntegration {
     this.viewer = viewer;
     this.imageId = imageId;
     this.annotationService = annotationService;
-
     // Disable gestures that conflict with drawing
     this.viewer.gestureSettingsMouse.clickToZoom = false;
     this.viewer.gestureSettingsMouse.dblClickToZoom = false;
@@ -118,9 +117,9 @@ export class AnnotoriousIntegration {
 
       this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
         readOnly: false,
-        drawingEnabled: true,
+        drawingEnabled: false, // ⚠️ DEĞİŞTİ: false ile başlıyor
         hotkey: { key: 'Shift', inverted: true },
-        drawOnSingleClick: true,
+        drawOnSingleClick: false, // ⚠️ DEĞİŞTİ: false yapıldı
         widgets: [
           'COMMENT',
           { widget: 'TAG', vocabulary: this.tagVocabulary },
@@ -209,7 +208,7 @@ export class AnnotoriousIntegration {
 
       if (layerColor) {
         this.applyColorToAnnotation(annotation, layerColor);
-        // Update the annotation with the new color (remove and re-add to update)
+        // Update the annotation with the new color
         this.annotorious.removeAnnotation(annotation);
         this.annotorious.addAnnotation(annotation);
       }
@@ -239,6 +238,12 @@ export class AnnotoriousIntegration {
       metadata.updated = new Date();
       metadata.geometry = annotation;
 
+      // ⚠️ YENİ: Apply layer color after update
+      const layerColor = this.layerColors.get(metadata.type);
+      if (layerColor) {
+        this.applyColorToAnnotation(annotation, layerColor);
+      }
+
       this.annotationsMap.set(annotation.id, metadata);
       this.updateAnnotationInBackend(annotation, metadata);
       this.notifyAnnotationChanges();
@@ -259,53 +264,88 @@ export class AnnotoriousIntegration {
 
   // Layer Management Methods
   public toggleLayerVisibility(layerType: string, visible: boolean) {
-    this.layerVisibility.set(layerType, visible);
+      this.layerVisibility.set(layerType, visible);
 
-    const layer = this.layers.get(layerType);
-    if (layer) {
-      layer.visible = visible;
+      const layer = this.layers.get(layerType);
+      if (layer) {
+        layer.visible = visible;
+      }
+
+      // Re-apply visibility to all annotations
+      this.restoreAndFilterAnnotations();
     }
 
-    this.applyLayerVisibility();
-  }
+    private restoreAndFilterAnnotations() {
+      if (!this.annotorious) return;
 
-  private applyLayerVisibility() {
-    if (!this.annotorious) return;
+      // Get all annotations from our map (includes hidden ones)
+      const allAnnotations: any[] = [];
 
-    const allAnnotations = this.annotorious.getAnnotations();
+      this.annotationsMap.forEach((metadata) => {
+        if (metadata.geometry) {
+          const type = metadata.type;
+          const isVisible = this.layerVisibility.get(type) !== false;
 
-    allAnnotations.forEach((annotation: any) => {
-      const type = this.extractAnnotationType(annotation);
-      const isVisible = this.layerVisibility.get(type) !== false;
-
-      // Apply visibility by modifying the annotation's style
-      if (!isVisible) {
-        annotation.hidden = true;
-        if (annotation.target?.selector?.value) {
-          // Add display:none style to hide the annotation
-          const originalValue = annotation.target.selector.value;
-          if (!originalValue.includes('display:none')) {
-            annotation.target.selector.value = originalValue.replace(
-              /(<svg[^>]*>)/,
-              '$1<style>.a9s-annotation { display: none !important; }</style>'
-            );
+          if (isVisible) {
+            // Clean up any hidden markers
+            delete metadata.geometry.hidden;
+            allAnnotations.push(metadata.geometry);
           }
         }
-      } else {
-        delete annotation.hidden;
-        if (annotation.target?.selector?.value) {
-          // Remove display:none style
-          annotation.target.selector.value = annotation.target.selector.value.replace(
-            /<style>\.a9s-annotation[^<]*<\/style>/g,
-            ''
-          );
-        }
-      }
-    });
+      });
 
-    // Refresh all annotations
-    this.annotorious.setAnnotations(allAnnotations);
-  }
+      // Clear and re-add only visible annotations
+      this.annotorious.clearAnnotations();
+      allAnnotations.forEach(ann => {
+        this.annotorious.addAnnotation(ann);
+      });
+    }
+
+  private applyLayerVisibility() {
+      if (!this.annotorious) return;
+
+      const allAnnotations = this.annotorious.getAnnotations();
+      const visibleAnnotations: any[] = [];
+      const hiddenAnnotations: any[] = [];
+
+      allAnnotations.forEach((annotation: any) => {
+        const type = this.extractAnnotationType(annotation);
+        const isVisible = this.layerVisibility.get(type) !== false;
+
+        if (isVisible) {
+          // Remove any hidden markers from visible annotations
+          delete annotation.hidden;
+          if (annotation.target?.selector?.value) {
+            // Clean up any display:none styles
+            annotation.target.selector.value = annotation.target.selector.value.replace(
+              /<style[^>]*>.*?display:\s*none.*?<\/style>/gi,
+              ''
+            );
+          }
+          visibleAnnotations.push(annotation);
+        } else {
+          // Mark as hidden
+          annotation.hidden = true;
+          hiddenAnnotations.push(annotation);
+        }
+      });
+
+      // Clear all annotations first
+      this.annotorious.clearAnnotations();
+
+      // Only add back visible annotations
+      visibleAnnotations.forEach(ann => {
+        this.annotorious.addAnnotation(ann);
+      });
+
+      // Store hidden annotations in our map for later restoration
+      hiddenAnnotations.forEach(ann => {
+        const metadata = this.annotationsMap.get(ann.id);
+        if (metadata) {
+          metadata.geometry = ann;
+        }
+      });
+    }
 
   public updateLayerColor(layerType: string, color: string) {
     this.layerColors.set(layerType, color);
@@ -408,9 +448,12 @@ export class AnnotoriousIntegration {
       this.applyColorToAnnotation(annotation, updates.color);
     }
 
-    // Update in Annotorious (remove and re-add to update)
-    this.annotorious.removeAnnotation(annotation);
-    this.annotorious.addAnnotation(annotation);
+    // ⚠️ DEĞİŞTİ: updateAnnotation yerine remove/add kullanılıyor
+    if (this.annotorious) {
+      // Instead of updateAnnotation, remove and re-add
+      this.annotorious.removeAnnotation(annotation);
+      this.annotorious.addAnnotation(annotation);
+    }
 
     // Save to backend
     this.updateAnnotationInBackend(annotation, metadata);
@@ -669,7 +712,16 @@ export class AnnotoriousIntegration {
 
   public setTool(toolId: string | null) {
     if (!this.annotorious) return;
-    this.annotorious.setDrawingTool(toolId);
+
+    if (toolId === null) {
+      // Selection mode - only disable drawing
+      this.annotorious.setDrawingEnabled(false);
+      // Don't call setDrawingTool with null - just disable drawing is enough
+    } else {
+      // Drawing mode - enable drawing and set tool
+      this.annotorious.setDrawingEnabled(true);
+      this.annotorious.setDrawingTool(toolId);
+    }
   }
 
   public setTagVocabulary(vocab: string[]) {
@@ -685,9 +737,9 @@ export class AnnotoriousIntegration {
 
     this.annotorious = OpenSeadragon.Annotorious(this.viewer, {
       readOnly: false,
-      drawingEnabled: true,
+      drawingEnabled: false,
       hotkey: { key: 'Shift', inverted: true },
-      drawOnSingleClick: true,
+      drawOnSingleClick: false,
       widgets: [
         'COMMENT',
         { widget: 'TAG', vocabulary: this.tagVocabulary },
