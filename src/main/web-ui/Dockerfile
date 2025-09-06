@@ -8,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install ALL dependencies including devDependencies (Angular CLI is needed for build)
-RUN npm ci
+# Prefer reproducible ci; if lockfile is out of sync, fall back to npm install
+RUN npm ci || npm install
 
 # Copy source code
 COPY . .
