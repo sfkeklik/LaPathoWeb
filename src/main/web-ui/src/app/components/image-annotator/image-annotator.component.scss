@@ -1072,7 +1072,10 @@ $toolbar-height: 56px;
 
 .sidebar-content {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // prevent double scrollbars; inner lists will scroll
+  min-height: 0; // allow children to shrink within available height
   @include scrollbar;
 }
 
@@ -1127,6 +1130,11 @@ $toolbar-height: 56px;
 // Tab Content
 .tab-content {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 // Properties Section

@@ -982,21 +982,6 @@ import {
       this.cdr.detectChanges();
     }
 
-    createNewLayer(): void {
-      const name = prompt('Yeni katman adı:');
-      if (name && name.trim()) {
-        const newLayer: LayerItem = {
-          id: 'custom_' + Date.now(),
-          name: name.trim(),
-          visible: true,
-          color: '#' + Math.floor(Math.random()*16777215).toString(16),
-          count: 0,
-          type: name.trim()
-        };
-        this.annotationLayers.push(newLayer);
-        this.addActivity('create', `${newLayer.name} katmanı oluşturuldu`);
-      }
-    }
 
     // Statistics Methods
     calculateStats(): void {

@@ -364,116 +364,82 @@
               <p>Henüz anotasyon bulunmuyor</p>
             </div>
           </div>
-
-          <!--          &lt;!&ndash; Selected Annotation Properties Panel &ndash;&gt;-->
-          <!--          <div class="annotation-properties" *ngIf="selectedAnnotation">-->
-          <!--            <h4>Anotasyon Özellikleri</h4>-->
-          <!--            <div class="property-form">-->
-          <!--              <div class="form-group">-->
-          <!--                <label>Tip:</label>-->
-          <!--                <select [(ngModel)]="selectedAnnotation.type" (change)="updateAnnotationProperty('type', $event)">-->
-          <!--                  <option value="Nucleus">Nucleus</option>-->
-          <!--                  <option value="Tumor">Tumor</option>-->
-          <!--                  <option value="Necrosis">Necrosis</option>-->
-          <!--                  <option value="Stroma">Stroma</option>-->
-          <!--                  <option value="Stroma">Muscle</option>-->
-          <!--                </select>-->
-          <!--              </div>-->
-          <!--              <div class="form-group">-->
-          <!--                <label>Renk:</label>-->
-          <!--                <input type="color" [(ngModel)]="selectedAnnotation.color" (change)="updateAnnotationProperty('color', $event)">-->
-          <!--              </div>-->
-          <!--              <div class="form-group">-->
-          <!--                <label>Oluşturan:</label>-->
-          <!--                <input type="text" [(ngModel)]="selectedAnnotation.creator" (change)="updateAnnotationProperty('creator', $event)">-->
-          <!--              </div>-->
-          <!--              <div class="form-group">-->
-          <!--                <label>Notlar:</label>-->
-          <!--                <textarea [(ngModel)]="selectedAnnotation.notes" (change)="updateAnnotationProperty('notes', $event)" rows="3"></textarea>-->
-          <!--              </div>-->
-          <!--              <div class="form-actions">-->
-          <!--                <button class="btn btn-primary" (click)="saveAnnotationProperties()">Kaydet</button>-->
-          <!--                <button class="btn btn-secondary" (click)="resetAnnotationProperties()">İptal</button>-->
-          <!--              </div>-->
-          <!--            </div>-->
-        </div>
-      </div>
-
-      <!-- Layers Tab -->
-      <div class="tab-content" *ngIf="activeTab === 'layers'">
-        <div class="layers-header">
-          <h4>Katman Yönetimi</h4>
-          <button class="btn btn-sm btn-primary" (click)="createNewLayer()">
-            <i class="fas fa-plus"></i> Yeni Katman
-          </button>
         </div>
 
-        <div class="layer-controls">
-          <button class="btn btn-sm" (click)="toggleAllLayers()">
-            <i class="fas fa-eye"></i> Tümünü Aç/Kapat
-          </button>
-        </div>
+        <!-- Layers Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'layers'">
+          <div class="layers-header">
+            <h4>Katman Yönetimi</h4>
+            <!-- Yeni Katman butonu kaldırıldı -->
+          </div>
 
-        <div class="layer-list">
-          <div
-            *ngFor="let layer of annotationLayers"
-            class="layer-item">
+          <div class="layer-controls">
+            <button class="btn btn-sm" (click)="toggleAllLayers()">
+              <i class="fas fa-eye"></i> Tümünü Aç/Kapat
+            </button>
+          </div>
 
-            <div class="layer-header">
-              <div class="layer-visibility">
-                <input
-                  type="checkbox"
-                  [checked]="layer.visible"
-                  (change)="toggleLayerVisibility(layer)">
-              </div>
-              <div class="layer-color">
-                <input
-                  type="color"
-                  [value]="layer.color"
-                  (change)="updateLayerColor(layer, $event)">
-              </div>
-              <div class="layer-info">
-                <span class="layer-name">{{ layer.name }}</span>
-                <span class="layer-count">({{ layer.count }})</span>
+          <div class="layer-list">
+            <div
+              *ngFor="let layer of annotationLayers"
+              class="layer-item">
+
+              <div class="layer-header">
+                <div class="layer-visibility">
+                  <input
+                    type="checkbox"
+                    [checked]="layer.visible"
+                    (change)="toggleLayerVisibility(layer)">
+                </div>
+                <div class="layer-color">
+                  <input
+                    type="color"
+                    [value]="layer.color"
+                    (change)="updateLayerColor(layer, $event)">
+                </div>
+                <div class="layer-info">
+                  <span class="layer-name">{{ layer.name }}</span>
+                  <span class="layer-count">({{ layer.count }})</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Viewer Container -->
+    <div class="viewer-wrapper" [class.with-sidebar]="!isSidebarCollapsed">
+      <div #viewerContainer class="viewer-container"></div>
+    </div>
   </div>
 
-  <!-- Viewer Container -->
-  <div class="viewer-wrapper" [class.with-sidebar]="!isSidebarCollapsed">
-    <div #viewerContainer class="viewer-container"></div>
-  </div>
-</div>
-
-<!-- Settings Modal -->
-<div class="modal" *ngIf="showSettings" (click)="showSettings = false">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2>Ayarlar</h2>
-      <button class="close-btn" (click)="showSettings = false">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div class="form-row">
-        <label for="tagVocab">Etiket sözlüğü (virgülle ayır):</label>
-        <input id="tagVocab" type="text" [(ngModel)]="tagVocabInput"
-               placeholder="Örn: Nucleus,Tumor,Necrosis,Stroma,Muscle" />
+  <!-- Settings Modal -->
+  <div class="modal" *ngIf="showSettings" (click)="showSettings = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Ayarlar</h2>
+        <button class="close-btn" (click)="showSettings = false">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
-      <div class="form-actions" style="margin-top:12px;">
-        <button class="btn btn-primary" (click)="applySettings()">Uygula</button>
-      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="tagVocab">Etiket sözlüğü (virgülle ayır):</label>
+          <input id="tagVocab" type="text" [(ngModel)]="tagVocabInput"
+                 placeholder="Örn: Nucleus,Tumor,Necrosis,Stroma,Muscle" />
+        </div>
 
-      <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur.</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="showSettings = false">Kapat</button>
+        <div class="form-actions" style="margin-top:12px;">
+          <button class="btn btn-primary" (click)="applySettings()">Uygula</button>
+        </div>
+
+        <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showSettings = false">Kapat</button>
+      </div>
     </div>
   </div>
 </div>
