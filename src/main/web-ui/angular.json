@@ -40,8 +40,11 @@
               "node_modules/@fortawesome/fontawesome-free/css/all.css"
             ],
             "scripts": [
+              "node_modules/openseadragon/build/openseadragon/openseadragon.min.js",
               "src/assets/js/recogito-polyfills.js",
-              "src/assets/js/openseadragon-annotorious.min.js"
+              "src/assets/js/openseadragon-annotorious.min.js",
+              "node_modules/@recogito/annotorious-selector-pack/dist/annotorious-selector-pack.js",
+              "node_modules/@recogito/annotorious-better-polygon/dist/annotorious-better-polygon.js"
             ]
           },
           "configurations": {
@@ -116,11 +119,15 @@
               "node_modules/@fortawesome/fontawesome-free/css/all.css"
             ],
             "scripts": [
+              "node_modules/openseadragon/build/openseadragon/openseadragon.min.js",
               "src/assets/js/recogito-polyfills.js",
-              "src/assets/js/openseadragon-annotorious.min.js"
+              "src/assets/js/openseadragon-annotorious.min.js",
+              "node_modules/@recogito/annotorious-selector-pack/dist/annotorious-selector-pack.js",
+              "node_modules/@recogito/annotorious-better-polygon/dist/annotorious-better-polygon.js"
             ]
+          }
         }
       }
     }
   }
-}}
+}

@@ -1646,3 +1646,74 @@ $toolbar-height: 56px;
     margin-left: 0;
   }
 }
+// Kompakt anotasyon listesi stilleri
+.annotation-item-compact {
+  padding: 8px;
+  margin-bottom: 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+
+  &:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+  }
+
+  &.selected {
+    background: #e7f3ff;
+    border-color: #007bff;
+  }
+}
+
+.annotation-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.annotation-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.annotation-info-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-text {
+  font-size: 11px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-icon-small {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  font-size: 12px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #007bff;
+  }
+}
+
+.annotation-actions {
+  display: flex;
+  gap: 4px;
+}

@@ -1,4 +1,4 @@
-  import {
+import {
     Component,
     ElementRef,
     AfterViewInit,
@@ -11,7 +11,9 @@
   import { ActivatedRoute, Router } from '@angular/router';
   import { CommonModule } from '@angular/common';
   import { FormsModule } from '@angular/forms';
-  import OpenSeadragon from 'openseadragon';
+  // Removed ESM import to avoid duplicate OpenSeadragon instances
+  // import OpenSeadragon from 'openseadragon';
+  declare const OpenSeadragon: any;
   import { ImageService, ImageMetadata as ImageMetadataType } from '../../services/image.service';
   import { AnnotationService } from '../../services/annotation.service';
   import { TilesApi } from '../../app-const/api-gateway';
@@ -39,6 +41,7 @@
     created?: Date;
     updated?: Date;
     geometry?: any;
+    grade?: string;
   }
 
   interface LayerItem {
@@ -80,7 +83,7 @@
 
     // Core Properties
     imageId!: number;
-    viewer!: OpenSeadragon.Viewer;
+    viewer!: any; // Use global OpenSeadragon viewer
     private anno = new AnnotoriousIntegration();
     currentTool: string | null = null;
 
@@ -789,11 +792,10 @@
         await this.anno.initAnnotorious(this.viewer, this.imageId, this.annotationService);
         console.log('✅ Annotorious hazır');
 
-        // Default aracı ayarla (Annotorious hazır olduktan sonra)
-        if (this.currentTool) {
-          this.anno.setTool(this.currentTool);
-          console.log('✅ Default tool ayarlandı:', this.currentTool);
-        }
+        // Her zaman seçim modunda başla (çizim kapalı)
+        this.anno.setTool(null);
+        this.currentTool = null;
+        console.log('✅ Başlangıç aracı: Seçim modu');
       } catch (e) {
         console.error('Annotorious başlatılamadı', e);
       }
@@ -904,17 +906,14 @@
       }
     }
 
-    selectAnnotation(annotation: AnnotationItem): void {
-      this.selectedAnnotation = annotation;
+   selectAnnotation(annotation: AnnotationItem): void {
+     this.selectedAnnotation = annotation;
 
-      // Highlight annotation in viewer using the fixed method
-      if (this.anno) {
-        this.anno.highlightAnnotation(annotation.id);
-      }
-
-      // Switch to properties tab
-      this.activeTab = 'annotations';
-    }
+     // Highlight annotation in viewer
+     if (this.anno) {
+       this.anno.highlightAnnotation(annotation.id);
+     }
+   }
 
     zoomToAnnotation(annotation: AnnotationItem): void {
       if (this.anno) {
@@ -942,38 +941,6 @@
       }
     }
 
-    // Properties Panel Methods
-    updateAnnotationProperty(property: string, event: any): void {
-      if (!this.selectedAnnotation) return;
-
-      const value = event.target ? event.target.value : event;
-      (this.selectedAnnotation as any)[property] = value;
-
-      this.addActivity('update', `${this.selectedAnnotation.type} özellikleri güncellendi`);
-    }
-
-    saveAnnotationProperties(): void {
-      if (!this.selectedAnnotation || !this.anno) return;
-
-      // Use the new updateAnnotationProperties method
-      this.anno.updateAnnotationProperties(this.selectedAnnotation.id, {
-        type: this.selectedAnnotation.type,
-        creator: this.selectedAnnotation.creator,
-        notes: this.selectedAnnotation.notes,
-        color: this.selectedAnnotation.color
-      });
-
-      this.addActivity('update', `${this.selectedAnnotation.type} özellikleri kaydedildi`);
-      alert('Özellikler kaydedildi!');
-    }
-
-    resetAnnotationProperties(): void {
-      if (!this.selectedAnnotation) return;
-
-      // Restore original values from database
-      this.refreshAnnotations();
-      alert('Özellikler sıfırlandı!');
-    }
 
     // Layer Management Methods
     toggleLayerVisibility(layer: LayerItem): void {
@@ -1262,7 +1229,9 @@
           const homeZoom = this.viewer.viewport.getHomeZoom();
           const targetZoom = homeZoom * magnification;
 
-          this.viewer.viewport.zoomTo(targetZoom, undefined, true);
+          // Use current center as reference point to avoid issues with undefined ref
+          const refPoint = this.viewer.viewport.getCenter();
+          this.viewer.viewport.zoomTo(targetZoom, refPoint, true);
           this.currentMagnification = magnification;
 
           console.log(`Magnification set to: ${magnification}x (OpenSeadragon zoom: ${targetZoom})`);
