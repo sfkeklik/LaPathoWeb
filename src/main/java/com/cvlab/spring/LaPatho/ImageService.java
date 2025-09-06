@@ -12,6 +12,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -55,19 +58,31 @@ public class ImageService {
         img.setPath(inputPath);
         img.setStatus(Status.PENDING);
 
-        // 2) Bio-Formats ImageReader ile boyutları oku
+        // Dosya boyutu ve formatı (uzantıdan) önden tespit et
+        try {
+            Path p = Paths.get(inputPath);
+            if (Files.exists(p)) {
+                img.setFileSize(Files.size(p));
+            }
+        } catch (Exception e) {
+            log.debug("Dosya boyutu okunamadı: {}", e.getMessage());
+        }
+        // Uzantıya göre formatı belirle (BIF gibi vendor formatlarını doğru göster)
+        img.setFormat(detectFormatFromPath(inputPath));
+
+        // 2) Bio-Formats ImageReader ile boyutları ve teknik bilgileri oku
         ImageReader reader = new ImageReader();
         try {
             log.info("Bio-Formats ile dosya okunuyor: {}", inputPath);
 
-            // Format bilgisini al
-            String format = reader.getFormat(inputPath);
-            log.info("Tespit edilen format: {}", format);
+            // Bio-Formats format bilgisini al
+            String bfFormat = reader.getFormat(inputPath);
+            log.info("Tespit edilen BF format: {}", bfFormat);
 
             reader.setId(inputPath);
 
             // Format'a özgü yapılandırma
-            configureReaderForFormat(reader, format);
+            configureReaderForFormat(reader, bfFormat);
 
             int seriesCount = reader.getSeriesCount();
             log.info("Toplam seri sayısı: {}", seriesCount);
@@ -80,15 +95,39 @@ public class ImageService {
             int width  = reader.getSizeX();
             int height = reader.getSizeY();
             int channels = reader.getSizeC();
+            int bitsPerPixel = reader.getBitsPerPixel();
+            boolean isRgb = reader.isRGB();
 
             img.setWidth(width);
             img.setHeight(height);
+            img.setChannels(channels);
+            img.setBitDepth(bitsPerPixel);
+            // Renk uzayı temel çıkarımı
+            if (isRgb || channels >= 3) {
+                img.setColorSpace("RGB");
+            } else if (channels == 1) {
+                img.setColorSpace("Grayscale");
+            } else {
+                img.setColorSpace(channels + "-channel");
+            }
 
-            log.info("WSI Serisi - Seri: {}, Kanallar: {}, Boyutları: {}x{}",
-                    wsiSeriesIndex, channels, width, height);
+            // BF'nin tespit ettiği format bilgisi Ventana/BIF içeriyorsa formatı buna göre güncelle
+            if (bfFormat != null) {
+                String lf = bfFormat.toLowerCase();
+                if (lf.contains("ventana") || lf.contains("bif")) {
+                    img.setFormat("BIF");
+                } else if (lf.contains("tiff") || lf.contains("tif")) {
+                    img.setFormat("TIFF");
+                } else if (lf.contains("svs")) {
+                    img.setFormat("SVS");
+                }
+            }
+
+            log.info("WSI Serisi - Seri: {}, Kanallar: {}, BPP: {}, Boyutları: {}x{}",
+                    wsiSeriesIndex, channels, bitsPerPixel, width, height);
 
             // BIF dosyaları için ek bilgileri logla
-            if (format != null && format.toLowerCase().contains("ventana")) {
+            if (bfFormat != null && bfFormat.toLowerCase().contains("ventana")) {
                 log.info("Ventana BIF dosyası işleniyor - WSI Series: {}", wsiSeriesIndex);
                 logBifMetadata(reader);
             }
@@ -105,7 +144,7 @@ public class ImageService {
                 }
             }
 
-            // Fallback: Default değerler ata
+            // Fallback: Default değerler ata (format ve dosya boyutu zaten set edildi)
             img.setWidth(1024);
             img.setHeight(1024);
             log.warn("Default boyutlar atandı: 1024x1024");
@@ -146,6 +185,19 @@ public class ImageService {
                 img.getMaxLevel(),
                 img.getPath()
         );
+    }
+
+    // Uzantıya göre format tespiti (kısa ve kullanıcı dostu)
+    private String detectFormatFromPath(String filePath) {
+        String lower = filePath == null ? "" : filePath.toLowerCase();
+        if (lower.endsWith(".bif")) return "BIF";
+        if (lower.endsWith(".ome.tiff") || lower.endsWith(".ome.tif")) return "OME-TIFF";
+        if (lower.endsWith(".tiff") || lower.endsWith(".tif")) return "TIFF";
+        if (lower.endsWith(".svs")) return "SVS";
+        if (lower.endsWith(".ndpi")) return "NDPI";
+        if (lower.endsWith(".scn")) return "SCN";
+        if (lower.endsWith(".mrxs")) return "MRXS";
+        return "Unknown";
     }
 
     public Status getStatus(Long id) {

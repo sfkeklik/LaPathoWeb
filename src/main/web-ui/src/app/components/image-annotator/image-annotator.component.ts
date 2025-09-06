@@ -321,21 +321,15 @@ import {
 
     const count = this.selectedAnnotationIds.size;
     if (confirm(`${count} anotasyonu silmek istediğinize emin misiniz?`)) {
-      // Delete using Annotorious methods
+      // Fire persistent deletes; UI will sync from integration stream
       Array.from(this.selectedAnnotationIds).forEach(id => {
-        this.anno.deleteAnnotationById(id);
+        this.anno!.deleteAnnotationById(id);
       });
 
-      // Update local state
-      this.annotations = this.annotations.filter(ann =>
-        !this.selectedAnnotationIds.has(ann.id)
-      );
-
-      this.addActivity('delete', `${count} anotasyon toplu silindi`);
+      this.addActivity('delete', `${count} anotasyon için silme isteği gönderildi`);
       this.selectedAnnotationIds.clear();
       this.batchSelectionMode = false;
-      this.updateLayerCounts();
-      this.calculateStats();
+      // Do not mutate local list/counts; subscription will update
       this.cdr.detectChanges();
     }
   }
@@ -847,15 +841,25 @@ import {
       if (this.annotations.length === 0) return;
 
       if (confirm('Tüm anotasyonları silmek istediğinize emin misiniz?')) {
-        if (this.anno) {
-          this.anno.clearAnnotations();
-          this.annotations = [];
-          this.selectedAnnotation = null;
-          this.updateLayerCounts();
-          this.calculateStats();
-          this.addActivity('delete', 'Tüm anotasyonlar temizlendi');
-          this.cdr.detectChanges();
-        }
+        // First delete from backend to persist removal
+        this.annotationService.deleteAnnotationsByImage(this.imageId).subscribe({
+          next: () => {
+            // Clear Annotorious and local state
+            if (this.anno) {
+              this.anno.clearAnnotations();
+            }
+            this.annotations = [];
+            this.selectedAnnotation = null;
+            this.updateLayerCounts();
+            this.calculateStats();
+            this.addActivity('delete', 'Tüm anotasyonlar temizlendi');
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.error('❌ Tüm anotasyonları silme başarısız:', err);
+            alert('Anotasyonlar silinemedi. Lütfen tekrar deneyin.');
+          }
+        });
       }
     }
 
@@ -924,19 +928,13 @@ import {
     deleteAnnotation(annotation: AnnotationItem): void {
       if (confirm(`"${annotation.type}" anotasyonunu silmek istediğinize emin misiniz?`)) {
         if (this.anno) {
+          // Trigger persistent delete; UI will update via annotationsChanged$ on success
           this.anno.deleteAnnotationById(annotation.id);
 
-          // Remove from local list
-          this.annotations = this.annotations.filter(a => a.id !== annotation.id);
-          this.addActivity('delete', `${annotation.type} anotasyonu silindi`, annotation.id);
-          this.updateLayerCounts();
-          this.calculateStats();
-
+          // Do not mutate local state here; wait for integration emission
           if (this.selectedAnnotation?.id === annotation.id) {
             this.selectedAnnotation = null;
           }
-
-          this.cdr.detectChanges();
         }
       }
     }

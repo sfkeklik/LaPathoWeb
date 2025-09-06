@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/api/images")
@@ -57,8 +59,20 @@ public class ImageController {
 
                     // File information
                     metadata.setFileName(img.getName());
-                    metadata.setFileSize(img.getFileSize());
-                    metadata.setFormat(img.getFormat());
+                    // Fallback: file size from disk if missing
+                    Long fileSize = img.getFileSize();
+                    if (fileSize == null && img.getPath() != null) {
+                        try { fileSize = Files.size(Paths.get(img.getPath())); } catch (Exception ignored) {}
+                    }
+                    metadata.setFileSize(fileSize);
+
+                    // Format with fallback detection by extension
+                    String format = img.getFormat();
+                    if (format == null || format.isBlank() || "Unknown".equalsIgnoreCase(format)) {
+                        format = detectFormatFromPath(img.getPath());
+                    }
+                    metadata.setFormat(format);
+
                     metadata.setPath(img.getPath());
 
                     // Technical details
@@ -90,6 +104,20 @@ public class ImageController {
                     return ResponseEntity.ok(metadata);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Simple extension-based format detector for legacy records
+    private String detectFormatFromPath(String path) {
+        if (path == null) return "Unknown";
+        String lower = path.toLowerCase();
+        if (lower.endsWith(".bif")) return "BIF";
+        if (lower.endsWith(".ome.tiff") || lower.endsWith(".ome.tif")) return "OME-TIFF";
+        if (lower.endsWith(".tiff") || lower.endsWith(".tif")) return "TIFF";
+        if (lower.endsWith(".svs")) return "SVS";
+        if (lower.endsWith(".ndpi")) return "NDPI";
+        if (lower.endsWith(".scn")) return "SCN";
+        if (lower.endsWith(".mrxs")) return "MRXS";
+        return "Unknown";
     }
 
     @GetMapping("/get-images-list")

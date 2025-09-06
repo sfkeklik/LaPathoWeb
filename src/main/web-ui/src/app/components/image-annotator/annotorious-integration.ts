@@ -45,6 +45,8 @@ export class AnnotoriousIntegration {
 
   // Annotation storage with metadata
   private annotationsMap: Map<string, AnnotationData> = new Map();
+  // Deletion guard to avoid duplicate backend calls
+  private deletingIds: Set<string> = new Set();
 
   // Observable for annotation changes
   public annotationsChanged$ = new BehaviorSubject<AnnotationData[]>([]);
@@ -173,9 +175,9 @@ export class AnnotoriousIntegration {
           <h4>${isNew ? 'Yeni Anotasyon' : 'Anotasyon Detayları'}</h4>
           <button class="popup-close">×</button>
         </div>
-        <div class="popup-body">
-          <div class="popup-section">
-            <label>Tip:</label>
+        <div class="popup-body compact">
+          <div class="popup-section inline">
+            <label>Tip</label>
             <select class="popup-select" id="type-select">
               ${this.tagVocabulary.map(tag =>
                 `<option value="${tag}" ${metadata.type === tag ? 'selected' : ''}>${tag}</option>`
@@ -184,7 +186,7 @@ export class AnnotoriousIntegration {
           </div>
 
           <div class="popup-section">
-            <label>Grade:</label>
+            <label>Grade</label>
             <div class="grade-buttons">
               <button class="grade-btn" data-grade="G1">G1</button>
               <button class="grade-btn" data-grade="G2">G2</button>
@@ -193,13 +195,8 @@ export class AnnotoriousIntegration {
           </div>
 
           <div class="popup-section">
-            <label>Notlar:</label>
-            <textarea class="popup-textarea" id="notes-textarea" rows="3" placeholder="Notlarınızı buraya yazın...">${metadata.notes || ''}</textarea>
-          </div>
-
-          <div class="popup-section">
-            <label>Renk:</label>
-            <input type="color" class="popup-color" id="color-input" value="${metadata.color || '#ff0000'}">
+            <label>Notlar</label>
+            <textarea class="popup-textarea" id="notes-textarea" rows="2" placeholder="Notlarınızı yazın...">${metadata.notes || ''}</textarea>
           </div>
 
           <div class="popup-actions">
@@ -238,13 +235,9 @@ export class AnnotoriousIntegration {
       if (typeSelect) {
         typeSelect.addEventListener('change', () => {
           metadata.type = typeSelect.value;
-          // Rengi otomatik güncelle
+          // Otomatik katman rengi uygula (UI'da renk seçimi yok)
           const newColor = this.defaultColors[typeSelect.value] || metadata.color || '#ff0000';
           metadata.color = newColor;
-          const colorInput = popup.querySelector('#color-input') as HTMLInputElement;
-          if (colorInput && newColor) {
-            colorInput.value = newColor;
-          }
         });
       }
 
@@ -270,13 +263,6 @@ export class AnnotoriousIntegration {
       if (notesTextarea) {
         notesTextarea.addEventListener('input', () => {
           metadata.notes = notesTextarea.value;
-        });
-      }
-
-      const colorInput = popup.querySelector('#color-input') as HTMLInputElement;
-      if (colorInput) {
-        colorInput.addEventListener('change', () => {
-          metadata.color = colorInput.value;
         });
       }
 
@@ -311,7 +297,8 @@ export class AnnotoriousIntegration {
         if (deleteBtn) {
           deleteBtn.addEventListener('click', () => {
             if (confirm('Bu anotasyonu silmek istediğinize emin misiniz?')) {
-              this.annotorious.removeAnnotation(annotation);
+              // Persist delete to backend and then remove from viewer
+              this.deleteByAnnotation(annotation);
               this.closeCustomPopup();
             }
           });
@@ -450,19 +437,22 @@ export class AnnotoriousIntegration {
       style.textContent = `
         .custom-annotation-popup {
           background: white;
-          border: 1px solid #ddd;
+          border: 1px solid #e5e7eb;
           border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
           padding: 0;
-          min-width: 300px;
+          min-width: 240px;
           z-index: 10000;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
+        /* Ensure children don't overflow due to padding/borders */
+        .custom-annotation-popup, .custom-annotation-popup * { box-sizing: border-box; }
+
         .popup-header {
-          background: #f5f5f5;
-          padding: 12px 16px;
-          border-bottom: 1px solid #ddd;
+          background: #f8fafc;
+          padding: 8px 12px;
+          border-bottom: 1px solid #e5e7eb;
           border-radius: 8px 8px 0 0;
           display: flex;
           justify-content: space-between;
@@ -471,16 +461,17 @@ export class AnnotoriousIntegration {
 
         .popup-header h4 {
           margin: 0;
-          font-size: 14px;
-          color: #333;
+          font-size: 13px;
+          color: #111827;
+          font-weight: 600;
         }
 
         .popup-close {
           background: none;
           border: none;
-          font-size: 24px;
+          font-size: 20px;
           cursor: pointer;
-          color: #666;
+          color: #6b7280;
           padding: 0;
           width: 24px;
           height: 24px;
@@ -489,103 +480,63 @@ export class AnnotoriousIntegration {
           justify-content: center;
         }
 
-        .popup-close:hover {
-          color: #000;
-        }
+        .popup-close:hover { color: #111827; }
 
-        .popup-body {
-          padding: 16px;
-        }
+        .popup-body.compact { padding: 12px; }
 
-        .popup-section {
-          margin-bottom: 12px;
-        }
-
+        .popup-section { margin-bottom: 8px; }
+        .popup-section.inline { display: flex; align-items: center; gap: 8px; }
         .popup-section label {
           display: block;
-          font-size: 12px;
-          color: #666;
+          font-size: 11px;
+          color: #6b7280;
           margin-bottom: 4px;
-          font-weight: 500;
+          font-weight: 600;
         }
 
         .popup-select,
-        .popup-textarea,
-        .popup-color {
-          width: 100%;
-          padding: 6px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 13px;
-        }
-
         .popup-textarea {
-          resize: vertical;
-          min-height: 50px;
+          width: 100%;
+          max-width: 100%;
+          padding: 6px 8px;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          font-size: 12px;
+          background: #fff;
+          /* Make sure padding/border don't cause overflow */
+          box-sizing: border-box;
+          display: block;
         }
+        .popup-textarea { resize: vertical; min-height: 40px; max-height: 160px; overflow: auto; }
 
-        .popup-color {
-          height: 32px;
-          cursor: pointer;
-        }
-
-        .grade-buttons {
-          display: flex;
-          gap: 8px;
-        }
-
+        .grade-buttons { display: flex; gap: 6px; }
         .grade-btn {
           flex: 1;
-          padding: 6px 12px;
-          border: 1px solid #ddd;
+          padding: 4px 8px;
+          border: 1px solid #e5e7eb;
           background: white;
-          border-radius: 4px;
+          border-radius: 6px;
           cursor: pointer;
-          font-size: 13px;
-          transition: all 0.2s;
+          font-size: 12px;
+          transition: all 0.15s;
         }
+        .grade-btn:hover { background: #f3f4f6; }
+        .grade-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
 
-        .grade-btn:hover {
-          background: #f0f0f0;
-        }
-
-        .grade-btn.active {
-          background: #007bff;
-          color: white;
-          border-color: #007bff;
-        }
-
-        .popup-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 16px;
-          padding-top: 12px;
-          border-top: 1px solid #eee;
-        }
-
+        .popup-actions { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
         .popup-btn {
           flex: 1;
-          padding: 8px 16px;
+          padding: 6px 10px;
           border: none;
-          border-radius: 4px;
-          font-size: 13px;
+          border-radius: 6px;
+          font-size: 12px;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: opacity 0.15s;
         }
-
-        .popup-btn:hover {
-          opacity: 0.9;
-        }
-
-        .save-btn {
-          background: #28a745;
-          color: white;
-        }
-
-        .delete-btn {
-          background: #dc3545;
-          color: white;
-        }
+        .popup-btn:hover { opacity: 0.95; }
+        .save-btn { background: #10b981; color: white; }
+        .delete-btn { background: #ef4444; color: white; }
+        .cancel-btn { background: #e5e7eb; color: #111827; }
       `;
 
       document.head.appendChild(style);
@@ -634,7 +585,7 @@ export class AnnotoriousIntegration {
         this.setupEventListeners();
         this.loadExistingAnnotations();
 
-        console.log('✅ Annotorious successfully initialized');
+        console.log('�� Annotorious successfully initialized');
         return true;
       } catch (e) {
         console.error('Annotorious init error:', e);
@@ -758,9 +709,42 @@ export class AnnotoriousIntegration {
    this.annotorious.on('deleteAnnotation', (annotation: any) => {
      console.log('🗑️ Annotation deleted:', annotation);
 
-     this.annotationsMap.delete(annotation.id);
-     this.deleteAnnotationFromBackend(annotation);
-     this.notifyAnnotationChanges();
+     // If this deletion is triggered programmatically after successful backend delete, skip backend call
+     if (this.deletingIds.has(annotation.id)) {
+       this.deletingIds.delete(annotation.id);
+       // Ensure local store is clean (it should already be updated by caller)
+       this.annotationsMap.delete(annotation.id);
+       this.notifyAnnotationChanges();
+       return;
+     }
+
+     // Attempt backend deletion using databaseId from annotation or metadata map
+     const meta = this.annotationsMap.get(annotation.id);
+     const databaseId = annotation.databaseId || meta?.databaseId;
+
+     if (!this.imageId || !this.annotationService || !databaseId) {
+       console.warn('❌ Cannot delete annotation - missing data (imageId or databaseId)');
+       // Still remove locally to reflect UI change
+       this.annotationsMap.delete(annotation.id);
+       this.notifyAnnotationChanges();
+       return;
+     }
+
+     // Call backend; on success update local store
+     this.annotationService.deleteAnnotation(this.imageId, databaseId).subscribe({
+       next: () => {
+         console.log('✅ Annotation deleted from backend:', databaseId);
+         this.annotationsMap.delete(annotation.id);
+         this.notifyAnnotationChanges();
+       },
+       error: (error) => {
+         console.error('❌ Failed to delete annotation:', error);
+         // Re-add annotation to viewer to keep UI consistent with backend
+         if (this.annotorious?.addAnnotation) {
+           this.annotorious.addAnnotation(annotation);
+         }
+       }
+    });
    });
  }
 
@@ -1247,15 +1231,58 @@ export class AnnotoriousIntegration {
     });
   }
 
+  // Perform backend delete for a given annotation object, then update UI/map
+  private deleteByAnnotation(annotation: any) {
+    const meta = this.annotationsMap.get(annotation.id);
+    const databaseId = annotation.databaseId || meta?.databaseId;
+
+    if (!this.imageId || !this.annotationService) {
+      console.warn('❌ Cannot delete annotation - missing imageId or service');
+      // Fallback: remove locally
+      if (this.annotorious) this.annotorious.removeAnnotation(annotation);
+      this.annotationsMap.delete(annotation.id);
+      this.notifyAnnotationChanges();
+      return;
+    }
+
+    if (!databaseId) {
+      // No DB id means nothing to delete on server; remove locally
+      if (this.annotorious) this.annotorious.removeAnnotation(annotation);
+      this.annotationsMap.delete(annotation.id);
+      this.notifyAnnotationChanges();
+      return;
+    }
+
+    this.annotationService.deleteAnnotation(this.imageId, databaseId).subscribe({
+      next: () => {
+        // Mark as programmatic deletion to skip backend call in delete event
+        this.deletingIds.add(annotation.id);
+        // Remove from viewer and map on success
+        if (this.annotorious) this.annotorious.removeAnnotation(annotation);
+        // Map will be cleaned via delete event guard, but ensure cleanup here too in case event is suppressed
+        this.annotationsMap.delete(annotation.id);
+        this.notifyAnnotationChanges();
+        console.log('✅ Annotation deleted from backend:', databaseId);
+      },
+      error: (error) => {
+        console.error('❌ Failed to delete annotation:', error);
+        // Keep annotation visible since backend failed
+      }
+    });
+  }
+
   private deleteAnnotationFromBackend(annotation: any) {
-    if (!this.imageId || !this.annotationService || !annotation.databaseId) {
+    // Kept for backward compatibility; prefer inline delete in event handler
+    const meta = this.annotationsMap.get(annotation.id);
+    const databaseId = annotation.databaseId || meta?.databaseId;
+    if (!this.imageId || !this.annotationService || !databaseId) {
       console.warn('❌ Cannot delete annotation - missing data');
       return;
     }
 
-    this.annotationService.deleteAnnotation(this.imageId, annotation.databaseId).subscribe({
+    this.annotationService.deleteAnnotation(this.imageId, databaseId).subscribe({
       next: () => {
-        console.log('✅ Annotation deleted from backend:', annotation.databaseId);
+        console.log('✅ Annotation deleted from backend:', databaseId);
       },
       error: (error) => {
         console.error('❌ Failed to delete annotation:', error);
@@ -1278,9 +1305,9 @@ export class AnnotoriousIntegration {
 
   public deleteAnnotationById(annotationId: string) {
     const annotation = this.getAnnotationById(annotationId);
-    if (annotation && this.annotorious) {
-      this.annotorious.removeAnnotation(annotation);
-    }
+    if (!annotation) return;
+    // Use persistent delete to ensure backend is updated
+    this.deleteByAnnotation(annotation);
   }
 
   public setTool(toolId: string | null) {

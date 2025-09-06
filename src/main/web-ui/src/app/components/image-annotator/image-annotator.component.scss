@@ -301,6 +301,71 @@ $toolbar-height: 56px;
       }
     }
   }
+
+  /* Compact styles for Image Properties inside the sidebar */
+  .properties-section {
+    margin-bottom: 12px;
+
+    h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: $dark-color;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid $border-color;
+    }
+
+    .property-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px; /* row gap / column gap */
+
+      .property-item {
+        display: block;
+        padding: 4px 0;
+        border-bottom: none; /* remove heavy separators */
+
+        .property-label {
+          display: block;
+          font-size: 11px;
+          font-weight: 600;
+          color: #94A3B8; /* lighter label */
+          min-width: 0;
+          text-transform: none;
+          letter-spacing: 0;
+          margin-bottom: 2px;
+        }
+
+        .property-value {
+          display: block;
+          font-size: 12px;
+          font-weight: 600;
+          color: $dark-color;
+          line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis; /* trim long values nicely */
+        }
+      }
+    }
+  }
+
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    @include scrollbar;
+
+    .panel {
+      padding: 20px;
+
+      .panel-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: $dark-color;
+        margin-bottom: 16px;
+      }
+    }
+  }
 }
 
 // Tools Panel
@@ -1134,7 +1199,9 @@ $toolbar-height: 56px;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto; // allow scroll inside sidebar tab content
+  overflow-x: hidden;
+  @include scrollbar;
 }
 
 // Properties Section
