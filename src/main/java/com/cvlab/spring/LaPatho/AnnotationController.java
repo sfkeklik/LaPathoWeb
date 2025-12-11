@@ -1,11 +1,12 @@
 package com.cvlab.spring.LaPatho;
 
-import com.cvlab.spring.LaPatho.AnnotationDTO;
+import com.cvlab.spring.LaPatho.security.entity.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,13 +25,16 @@ public class AnnotationController {
     private ObjectMapper objectMapper;
 
 
-    // GET all annotations for image
+    // GET all annotations for image (filtered by user for doctors)
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAnnotations(@PathVariable Long imageId) {
+    public ResponseEntity<List<Map<String, Object>>> getAnnotations(
+            @PathVariable Long imageId,
+            @AuthenticationPrincipal User currentUser) {
         System.out.println("=== ANNOTATION OKUMA ===");
         System.out.println("Image ID: " + imageId);
+        System.out.println("User: " + (currentUser != null ? currentUser.getUsername() : "null"));
 
-        List<AnnotationEntity> entities = annotationService.getForImage(imageId);
+        List<AnnotationEntity> entities = annotationService.getForImage(imageId, currentUser);
         System.out.println("Bulunan annotation sayısı: " + entities.size());
 
         List<Map<String, Object>> out = entities
@@ -72,12 +76,13 @@ public class AnnotationController {
     @PostMapping
     public ResponseEntity<AnnotationEntity> createAnnotation(
             @PathVariable Long imageId,
-            @RequestBody AnnotationEntity annotation) {
+            @RequestBody AnnotationEntity annotation,
+            @AuthenticationPrincipal User currentUser) {
 
         System.out.println("=== ANNOTATION KAYDETME ===");
         System.out.println("Image ID: " + imageId);
+        System.out.println("User: " + (currentUser != null ? currentUser.getUsername() : "null"));
         System.out.println("Gelen annotation: " + annotation);
-        System.out.println("Creator: " + annotation.getCreator());
         System.out.println("Type: " + annotation.getType());
         System.out.println("Geometry: " + annotation.getGeometry());
 
@@ -104,18 +109,13 @@ public class AnnotationController {
         }
 
         // Required fields validation
-        if (annotation.getCreator() == null || annotation.getCreator().trim().isEmpty()) {
-            System.out.println("HATA: Creator boş!");
-            return ResponseEntity.badRequest().build();
-        }
-
         if (annotation.getType() == null || annotation.getType().trim().isEmpty()) {
             System.out.println("HATA: Type boş!");
             return ResponseEntity.badRequest().build();
         }
 
         try {
-            AnnotationEntity saved = annotationService.save(imageId, annotation);
+            AnnotationEntity saved = annotationService.save(imageId, annotation, currentUser);
 
             System.out.println("✅ Annotation başarıyla kaydedildi");
             System.out.println("Kaydedilen ID: " + saved.getId());
@@ -134,8 +134,10 @@ public class AnnotationController {
 
     // GET specific annotation by ID
     @GetMapping("/{annotationId}")
-    public ResponseEntity<AnnotationEntity> getAnnotation(@PathVariable Long annotationId) {
-        AnnotationEntity annotation = annotationService.findById(annotationId);
+    public ResponseEntity<AnnotationEntity> getAnnotation(
+            @PathVariable Long annotationId,
+            @AuthenticationPrincipal User currentUser) {
+        AnnotationEntity annotation = annotationService.findById(annotationId, currentUser);
         return ResponseEntity.ok(annotation);
     }
 
@@ -144,15 +146,18 @@ public class AnnotationController {
     public ResponseEntity<AnnotationEntity> updateAnnotation(
             @PathVariable Long imageId,
             @PathVariable Long annotationId,
-            @RequestBody AnnotationEntity annotationData) {
-        AnnotationEntity updated = annotationService.update(annotationId, annotationData);
+            @RequestBody AnnotationEntity annotationData,
+            @AuthenticationPrincipal User currentUser) {
+        AnnotationEntity updated = annotationService.update(annotationId, annotationData, currentUser);
         return ResponseEntity.ok(updated);
     }
 
     // DELETE annotation
     @DeleteMapping("/{annotationId}")
-    public ResponseEntity<Void> deleteAnnotation(@PathVariable Long annotationId) {
-        annotationService.delete(annotationId);
+    public ResponseEntity<Void> deleteAnnotation(
+            @PathVariable Long annotationId,
+            @AuthenticationPrincipal User currentUser) {
+        annotationService.delete(annotationId, currentUser);
         return ResponseEntity.noContent().build();
     }
 

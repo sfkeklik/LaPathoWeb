@@ -12,10 +12,12 @@ import java.util.Optional;
 public interface AnnotationRepository extends JpaRepository<AnnotationEntity, Long> {
     List<AnnotationEntity> findByImageId(Long imageId);
 
-//    @Query("SELECT a FROM AnnotationEntity a " +
-//            "WHERE a.image.id = :imageId AND a.body LIKE %:jsonId%")
-//    Optional<AnnotationEntity> findByImageIdAndJsonId(
-//            @Param("imageId") Long imageId,
-//            @Param("jsonId") String jsonId
-//    );
+    // Find annotations by image and user (doctor)
+    List<AnnotationEntity> findByImageIdAndUserId(Long imageId, Long userId);
+
+    // Find all annotations by user
+    List<AnnotationEntity> findByUserId(Long userId);
+
+    // Check if annotation belongs to user
+    boolean existsByIdAndUserId(Long id, Long userId);
 }

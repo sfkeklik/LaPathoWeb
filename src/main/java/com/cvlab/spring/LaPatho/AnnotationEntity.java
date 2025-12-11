@@ -1,5 +1,6 @@
 package com.cvlab.spring.LaPatho;
 
+import com.cvlab.spring.LaPatho.security.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,11 +15,25 @@ import java.time.Instant;
 @Data
 public class AnnotationEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
-    @ManyToOne @JoinColumn(name = "image_id") private ImageEntity image;
-    private String creator;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "image_id")
+    private ImageEntity image;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(name = "creator")
+    private String creator; // Legacy field, kept for backward compatibility
+
     private String type;
-    @Column(columnDefinition = "TEXT") private String geometry;
+
+    @Column(columnDefinition = "TEXT")
+    private String geometry;
+
     private Instant created;
     private Instant updated;
 
@@ -32,6 +47,4 @@ public class AnnotationEntity {
     public void preUpdate() {
         updated = Instant.now();
     }
-
-    // getters/setters, lifecycle callbacks
 }

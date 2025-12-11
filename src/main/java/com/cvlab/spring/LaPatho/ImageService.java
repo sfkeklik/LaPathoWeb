@@ -28,7 +28,8 @@ public class ImageService {
 
     // Desteklenen formatların listesi
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(
-        ".tiff", ".tif", ".bif", ".ome.tiff", ".ome.tif", ".svs", ".ndpi", ".scn", ".mrxs"
+        ".tiff", ".tif", ".bif", ".ome.tiff", ".ome.tif", ".svs", ".ndpi", ".scn", ".mrxs",
+        ".png", ".jpg", ".jpeg"  // Standard image formats for dental imaging
     );
 
     public ImageEntity save(ImageEntity img) {
