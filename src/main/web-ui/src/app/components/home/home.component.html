@@ -4,10 +4,10 @@
     <div class="header-content">
       <div class="header-left">
         <div class="logo">
-          <i class="fas fa-microscope"></i>
-          <h1>Patoloji Görüntü Yönetimi</h1>
+          <i class="fas fa-tooth"></i>
+          <h1>🦷 LaPatho - Dental Annotation</h1>
         </div>
-        <p class="subtitle">Tıbbi görüntü görüntüleme ve etiketleme uygulaması</p>
+        <p class="subtitle">Diş hekimleri için görüntü etiketleme uygulaması</p>
       </div>
 
       <div class="header-right">
@@ -26,6 +26,20 @@
             <span class="stats-label">Hazır</span>
           </div>
         </div>
+
+        <!-- User Info & Logout -->
+        <div class="user-menu">
+          <span class="user-name">
+            <i class="fas fa-user-md"></i>
+            {{ authService.getCurrentUser()?.firstName }} {{ authService.getCurrentUser()?.lastName }}
+          </span>
+          <a *ngIf="authService.isAdmin()" routerLink="/admin" class="btn-admin">
+            <i class="fas fa-cog"></i> Admin
+          </a>
+          <button class="btn-logout" (click)="authService.logout()">
+            <i class="fas fa-sign-out-alt"></i> Çıkış
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -38,7 +52,7 @@
         #fileInput
         id="fileInput"
         type="file"
-        accept=".tiff,.tif,.bif,.ome.tiff,.ome.tif,.svs,.ndpi,.scn,.mrxs"
+        accept=".tiff,.tif,.bif,.ome.tiff,.ome.tif,.svs,.ndpi,.scn,.mrxs,.png,.jpg,.jpeg"
         hidden
         (change)="startUpload()"
       />

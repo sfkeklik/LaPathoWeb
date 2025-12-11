@@ -5,6 +5,7 @@ import { interval, Subject, switchMap, takeUntil, startWith } from 'rxjs';
 import { ImageOverview, ImageService } from '../../services/image.service';
 import { ImageUploadService, UploadProgress } from '../../services/image-upload.service';
 import { ImageEditModalComponent } from '../image-edit-modal/image-edit-modal.component';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -73,7 +74,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private imageService: ImageService,
     private uploadService: ImageUploadService,
-    private router: Router
+    private router: Router,
+    public authService: AuthService
   ) {}
 
   ngOnInit() {

@@ -1,29 +1,28 @@
 package com.cvlab.spring.LaPatho.security.controller;
-}
-    }
-        return ResponseEntity.ok(authService.register(request));
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-    @PostMapping("/register")
 
-    }
-        return ResponseEntity.ok(authService.login(request));
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-    @PostMapping("/login")
+import com.cvlab.spring.LaPatho.security.dto.AuthResponse;
+import com.cvlab.spring.LaPatho.security.dto.LoginRequest;
+import com.cvlab.spring.LaPatho.security.dto.RegisterRequest;
+import com.cvlab.spring.LaPatho.security.service.AuthService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
 
     private final AuthService authService;
 
-public class AuthController {
-@RequiredArgsConstructor
-@RequestMapping("/api/auth")
-@RestController
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
-import lombok.RequiredArgsConstructor;
-import jakarta.validation.Valid;
-import com.cvlab.spring.LaPatho.security.service.AuthService;
-import com.cvlab.spring.LaPatho.security.dto.RegisterRequest;
-import com.cvlab.spring.LaPatho.security.dto.LoginRequest;
-import com.cvlab.spring.LaPatho.security.dto.AuthResponse;
-
-
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
+}
