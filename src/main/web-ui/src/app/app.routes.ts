@@ -16,6 +16,11 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'annotate/:id',
+    loadComponent: () => import('./components/image-annotator/image-annotator.component').then(m => m.ImageAnnotatorComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent),
     canActivate: [authGuard]
