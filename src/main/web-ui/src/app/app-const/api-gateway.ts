@@ -1,33 +1,11 @@
 export const API_VERSION = '/api';
 
-// Check if we're in a browser environment and get the current host
+// Use relative URLs to work with Angular proxy in development
+// In production, the backend serves the frontend, so relative URLs still work
 const getApiEndpoint = (): string => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-
-    console.log('🔍 API Gateway Debug:', {
-      hostname,
-      protocol,
-      fullURL: window.location.href
-    });
-
-    // If accessing via localhost or 127.0.0.1, keep the original behavior
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      const endpoint = 'http://localhost:8080';
-      console.log('🌐 Using localhost endpoint:', endpoint);
-      return endpoint;
-    }
-
-    // For remote access, use the same hostname but port 8080 for API
-    const endpoint = `${protocol}//${hostname}:8080`;
-    console.log('🌐 Using remote endpoint:', endpoint);
-    return endpoint;
-  }
-
-  // Fallback for server-side rendering or non-browser environments
-  console.log('🌐 Using fallback endpoint: http://localhost:8080');
-  return 'http://localhost:8080';
+  // Always use relative URL - proxy will handle it in development
+  // In production, same origin will be used
+  return '';
 };
 
 export const API_ENDPOINT = getApiEndpoint();
