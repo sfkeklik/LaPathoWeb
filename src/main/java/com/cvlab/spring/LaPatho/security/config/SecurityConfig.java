@@ -45,6 +45,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                         .requestMatchers("/assets/**", "/*.js", "/*.css").permitAll()
+                        // Tiles and thumbnails - public access for image viewing
+                        .requestMatchers("/api/tiles/**").permitAll()
+                        .requestMatchers("/api/images/*/thumbnail").permitAll()
+                        .requestMatchers("/api/images/thumbnail/**").permitAll()
                         // Admin only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Authenticated endpoints
