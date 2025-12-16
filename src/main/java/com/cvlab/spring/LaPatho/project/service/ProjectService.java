@@ -23,6 +23,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
+    private final LabelService labelService;
 
     @Transactional
     public ProjectDTO createProject(CreateProjectRequest request, User createdBy) {
@@ -44,6 +45,11 @@ public class ProjectService {
         }
 
         project = projectRepository.save(project);
+
+        // Note: Default labels are created via database schema (schema.sql)
+        // For new projects created through admin panel, no default labels are added
+        // Admin can add labels manually through the Labels management modal
+
         return toDTO(project);
     }
 
@@ -147,6 +153,13 @@ public class ProjectService {
         return projectRepository.findByAssignedDoctor(doctor).stream()
                 .flatMap(p -> p.getImages().stream())
                 .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<ProjectDTO> getProjectsContainingImage(Long imageId) {
+        return projectRepository.findByActiveTrue().stream()
+                .filter(p -> p.getImages().stream().anyMatch(i -> i.getId().equals(imageId)))
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 

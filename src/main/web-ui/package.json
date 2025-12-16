@@ -19,6 +19,8 @@
     "@angular/router": "^19.2.0",
     "@annotorious/openseadragon": "^3.3.6",
     "@fortawesome/fontawesome-free": "^7.0.0",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
     "@recogito/annotorious": "^2.7.13",
     "@recogito/annotorious-better-polygon": "^0.2.0",
     "@recogito/annotorious-openseadragon": "^2.7.18",

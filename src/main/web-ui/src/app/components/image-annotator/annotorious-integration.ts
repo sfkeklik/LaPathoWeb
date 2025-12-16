@@ -51,15 +51,9 @@ export class AnnotoriousIntegration {
   // Observable for annotation changes
   public annotationsChanged$ = new BehaviorSubject<AnnotationData[]>([]);
 
-  // UI state
-  private tagVocabulary: string[] = ['Nucleus', 'Tumor', 'Necrosis', 'Stroma', 'Muscle'];
-  private defaultColors: Record<string, string> = {
-    'Nucleus': '#ff0000',
-    'Tumor': '#00ff00',
-    'Necrosis': '#0000ff',
-    'Stroma': '#ffff00',
-    'Muscle': '#800080'
-  };
+  // UI state - will be populated from database
+  private tagVocabulary: string[] = [];
+  private defaultColors: Record<string, string> = {};
 
   // Custom widget for grade and tag selection
   // Custom formatter for displaying annotation metadata
@@ -101,24 +95,46 @@ export class AnnotoriousIntegration {
     }
 
   constructor() {
-    // Initialize default layers
-    this.initializeDefaultLayers();
+    // Layers will be initialized dynamically from database via updateTagVocab()
   }
 
-  private initializeDefaultLayers() {
-    const defaultLayers = [
-      { id: 'nucleus', name: 'Nucleus', type: 'Nucleus', visible: true, color: '#ff0000' },
-      { id: 'tumor', name: 'Tumor', type: 'Tumor', visible: true, color: '#00ff00' },
-      { id: 'necrosis', name: 'Necrosis', type: 'Necrosis', visible: true, color: '#0000ff' },
-      { id: 'stroma', name: 'Stroma', type: 'Stroma', visible: true, color: '#ffff00' },
-      { id: 'muscle', name: 'Muscle', type: 'Muscle', visible: true, color: '#800080' }
-    ];
+  /**
+   * Update tag vocabulary and layer definitions dynamically from database
+   */
+  updateTagVocab(layers: Layer[]): void {
+    if (!layers || layers.length === 0) {
+      // Clear all layers if none provided
+      this.layers.clear();
+      this.layerVisibility.clear();
+      this.layerColors.clear();
+      this.tagVocabulary = [];
+      this.defaultColors = {};
+      console.warn('No labels provided to annotorious integration');
+      return;
+    }
 
-    defaultLayers.forEach(layer => {
+    this.updateLayers(layers);
+  }
+
+  private updateLayers(layers: Layer[]): void {
+    // Clear existing layers
+    this.layers.clear();
+    this.layerVisibility.clear();
+    this.layerColors.clear();
+
+    // Update tag vocabulary
+    this.tagVocabulary = layers.map(l => l.name);
+
+    // Update default colors
+    this.defaultColors = {};
+    layers.forEach(layer => {
       this.layers.set(layer.type, layer);
       this.layerVisibility.set(layer.type, layer.visible);
       this.layerColors.set(layer.type, layer.color);
+      this.defaultColors[layer.name] = layer.color;
     });
+
+    console.log('Annotorious layers updated:', this.tagVocabulary);
   }
   // Setup custom popup for annotations
     private setupCustomPopup() {
@@ -357,42 +373,122 @@ export class AnnotoriousIntegration {
   }
     private positionPopup(popup: HTMLElement, annotation: any) {
       try {
-        if (!this.viewer || !this.viewer.viewport) {
-          popup.style.position = 'absolute';
-          popup.style.left = '50%';
-          popup.style.top = '30%';
-          popup.style.transform = 'translate(-50%, -50%)';
-          return;
+        // Popup'ın boyutlarını öğrenmek için önce görünür yap
+        popup.style.visibility = 'hidden';
+        popup.style.position = 'fixed'; // fixed kullan, scroll ile kaymasın
+        popup.style.left = '0';
+        popup.style.top = '0';
+
+        // Popup boyutlarını al
+        const popupRect = popup.getBoundingClientRect();
+        const popupWidth = popupRect.width || 280;
+        const popupHeight = popupRect.height || 300;
+
+        // Ekran boyutları
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Margin from screen edges
+        const margin = 20;
+
+        let targetX = viewportWidth / 2;
+        let targetY = viewportHeight / 3;
+        let foundPosition = false;
+
+        // Önce DOM'dan seçili annotation elementini bulmaya çalış
+        const selectedElement = document.querySelector('.a9s-annotation.selected, .a9s-selection, .a9s-point.selected');
+        if (selectedElement) {
+          const elemRect = selectedElement.getBoundingClientRect();
+          if (elemRect.width > 0 || elemRect.height > 0) {
+            targetX = elemRect.left + elemRect.width / 2;
+            targetY = elemRect.top + elemRect.height / 2;
+            foundPosition = true;
+            console.log('Popup position from DOM element:', targetX, targetY);
+          }
         }
 
-        const bounds = this.getAnnotationBounds(annotation);
-        if (bounds) {
-          const vp = this.viewer.viewport.imageToViewportCoordinates(
-            bounds.x + bounds.width / 2,
-            bounds.y
-          );
-          if (vp) {
-            const winPt = this.viewer.viewport.viewportToWindowCoordinates(vp);
-            if (winPt) {
-              popup.style.position = 'absolute';
-              popup.style.left = `${winPt.x}px`;
-              popup.style.top = `${winPt.y - 10}px`;
-              popup.style.transform = 'translateX(-50%) translateY(-100%)';
-              return;
+        // DOM'dan bulunamadıysa, annotation bounds'dan almayı dene
+        if (!foundPosition && this.viewer && this.viewer.viewport) {
+          const bounds = this.getAnnotationBounds(annotation);
+          if (bounds && bounds.width > 0 && bounds.height > 0) {
+            // Annotation'ın merkez noktası
+            const centerVp = this.viewer.viewport.imageToViewportCoordinates(
+              bounds.x + bounds.width / 2,
+              bounds.y + bounds.height / 2
+            );
+
+            if (centerVp) {
+              const centerPt = this.viewer.viewport.viewportToWindowCoordinates(centerVp);
+              if (centerPt && centerPt.x > 0 && centerPt.y > 0) {
+                targetX = centerPt.x;
+                targetY = centerPt.y;
+                foundPosition = true;
+                console.log('Popup position from annotation bounds:', targetX, targetY);
+              }
             }
           }
         }
 
-        // Fallback
-        popup.style.position = 'absolute';
+        // Hala bulunamadıysa, fare pozisyonunu kullan (varsa)
+        if (!foundPosition) {
+          const lastMouseEvent = (window as any).__lastMouseEvent;
+          if (lastMouseEvent) {
+            targetX = lastMouseEvent.clientX;
+            targetY = lastMouseEvent.clientY;
+            foundPosition = true;
+            console.log('Popup position from mouse:', targetX, targetY);
+          }
+        }
+
+        // Popup konumunu hesapla - ekran sınırlarına göre ayarla
+        let finalX = targetX - popupWidth / 2;
+        let finalY = targetY;
+
+        // Yatay sınır kontrolü
+        if (finalX < margin) {
+          finalX = margin;
+        } else if (finalX + popupWidth > viewportWidth - margin) {
+          finalX = viewportWidth - popupWidth - margin;
+        }
+
+        // Dikey konum - önce aşağıda açmayı dene (daha doğal)
+        const spaceAbove = targetY - margin;
+        const spaceBelow = viewportHeight - targetY - margin;
+
+        if (spaceBelow >= popupHeight + 20) {
+          // Aşağıda yeterli alan var, aşağı aç
+          finalY = targetY + 20;
+        } else if (spaceAbove >= popupHeight + 20) {
+          // Yukarıda yeterli alan var, yukarı aç
+          finalY = targetY - popupHeight - 20;
+        } else {
+          // Ne yukarı ne aşağı sığmıyor, ekranın ortasına yerleştir
+          finalY = Math.max(margin, (viewportHeight - popupHeight) / 2);
+        }
+
+        // Son konum kontrolü - ekran dışına çıkmasın
+        if (finalY < margin) {
+          finalY = margin;
+        } else if (finalY + popupHeight > viewportHeight - margin) {
+          finalY = viewportHeight - popupHeight - margin;
+        }
+
+        // Konumu uygula
+        popup.style.left = `${finalX}px`;
+        popup.style.top = `${finalY}px`;
+        popup.style.transform = 'none';
+        popup.style.visibility = 'visible';
+
+        console.log('Final popup position:', finalX, finalY);
+
+      } catch (e) {
+        console.warn('Popup positioning error:', e);
+        // Fallback - ekranın ortasına yerleştir
+        popup.style.position = 'fixed';
         popup.style.left = '50%';
-        popup.style.top = '30%';
+        popup.style.top = '50%';
         popup.style.transform = 'translate(-50%, -50%)';
-      } catch {
-        popup.style.position = 'absolute';
-        popup.style.left = '50%';
-        popup.style.top = '30%';
-        popup.style.transform = 'translate(-50%, -50%)';
+        popup.style.visibility = 'visible';
       }
     }
 
@@ -442,6 +538,9 @@ export class AnnotoriousIntegration {
           box-shadow: 0 4px 12px rgba(0,0,0,0.12);
           padding: 0;
           min-width: 240px;
+          max-width: 320px;
+          max-height: calc(100vh - 40px);
+          overflow-y: auto;
           z-index: 10000;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
@@ -457,6 +556,9 @@ export class AnnotoriousIntegration {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          position: sticky;
+          top: 0;
+          z-index: 1;
         }
 
         .popup-header h4 {
@@ -585,13 +687,29 @@ export class AnnotoriousIntegration {
         this.setupEventListeners();
         this.loadExistingAnnotations();
 
-        console.log('�� Annotorious successfully initialized');
+        // Track mouse position for popup positioning
+        this.setupMouseTracking();
+
+        console.log('✅ Annotorious successfully initialized');
         return true;
       } catch (e) {
         console.error('Annotorious init error:', e);
         return false;
       }
     }
+
+  private setupMouseTracking() {
+    // Track last mouse position for popup positioning fallback
+    const viewerContainer = this.viewer?.container || this.viewer?.element || document.querySelector('.openseadragon-container');
+    if (viewerContainer) {
+      viewerContainer.addEventListener('mouseup', (e: MouseEvent) => {
+        (window as any).__lastMouseEvent = { clientX: e.clientX, clientY: e.clientY };
+      });
+      viewerContainer.addEventListener('click', (e: MouseEvent) => {
+        (window as any).__lastMouseEvent = { clientX: e.clientX, clientY: e.clientY };
+      });
+    }
+  }
 
   private loadExistingAnnotations() {
     if (!this.imageId || !this.annotationService) return;

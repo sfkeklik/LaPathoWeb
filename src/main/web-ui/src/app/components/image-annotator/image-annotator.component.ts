@@ -11,11 +11,13 @@ import {
   import { ActivatedRoute, Router } from '@angular/router';
   import { CommonModule } from '@angular/common';
   import { FormsModule } from '@angular/forms';
+  import { TranslateModule } from '@ngx-translate/core';
   // Removed ESM import to avoid duplicate OpenSeadragon instances
   // import OpenSeadragon from 'openseadragon';
   declare const OpenSeadragon: any;
   import { ImageService, ImageMetadata as ImageMetadataType } from '../../services/image.service';
   import { AnnotationService } from '../../services/annotation.service';
+  import { AdminService, Label } from '../../services/admin.service';
   import { TilesApi } from '../../app-const/api-gateway';
   import { AnnotoriousIntegration } from './annotorious-integration'; // yolu konumuna göre düzelt
   // Basic Interfaces
@@ -74,7 +76,7 @@ import {
   @Component({
     selector: 'app-image-annotator',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, TranslateModule],
     templateUrl: './image-annotator.component.html',
     styleUrls: ['./image-annotator.component.scss']
   })
@@ -112,13 +114,13 @@ import {
     // Sidebar Data
     annotations: AnnotationItem[] = [];
     selectedAnnotation: AnnotationItem | null = null;
-    annotationLayers: LayerItem[] = [
-      { id: 'nucleus', name: 'Nucleus', visible: true, color: '#ff0000', count: 0, type: 'Nucleus' },
-      { id: 'tumor', name: 'Tumor', visible: true, color: '#00ff00', count: 0, type: 'Tumor' },
-      { id: 'necrosis', name: 'Necrosis', visible: true, color: '#0000ff', count: 0, type: 'Necrosis' },
-      { id: 'stroma', name: 'Stroma', visible: true, color: '#ffff00', count: 0, type: 'Stroma' },
-      { id: 'muscle', name: 'Muscle', visible: true, color: '#800080', count: 0, type: 'Muscle'}
-    ];
+    annotationLayers: LayerItem[] = [];
+
+    // Current project ID (if image belongs to a project)
+    currentProjectId: number | null = null;
+
+    // Loading state for labels
+    labelsLoading: boolean = true;
 
     statistics: Statistics = {
       total: 0,
@@ -129,8 +131,8 @@ import {
 
     recentActivity: ActivityItem[] = [];
 
-    // Settings
-    tagVocabInput = 'Nucleus,Tumor,Necrosis,Stroma,Muscle';
+    // Settings - will be populated from database
+    tagVocabInput = '';
 
     // Viewer State
     viewerState: ViewerState = {
@@ -158,6 +160,7 @@ import {
       private router: Router,
       private imageService: ImageService,
       private annotationService: AnnotationService,
+      private adminService: AdminService,
       private cdr: ChangeDetectorRef
     ) {}
 
@@ -168,12 +171,89 @@ import {
         if (idStr) {
           this.imageId = Number(idStr);
           if (!isNaN(this.imageId)) {
+            // Load labels before initializing viewer
+            this.loadLabelsForImage(this.imageId);
             this.initializeViewer();
             // Subscribe to annotation changes
             this.subscribeToAnnotationChanges();
           }
         }
       });
+    }
+
+    /**
+     * Load labels for the current image based on its project
+     */
+    /**
+     * Load labels for the current image based on its project
+     */
+    loadLabelsForImage(imageId: number): void {
+      this.labelsLoading = true;
+      this.adminService.getProjectsByImage(imageId).subscribe({
+        next: (projects) => {
+          if (projects && projects.length > 0) {
+            // Use the first project's labels
+            this.currentProjectId = projects[0].id;
+            this.loadProjectLabels(projects[0].id);
+          } else {
+            // No project assigned - show warning
+            console.warn('Image is not assigned to any project. No labels available.');
+            this.annotationLayers = [];
+            this.labelsLoading = false;
+            this.updateTagVocab();
+          }
+        },
+        error: (err) => {
+          console.error('Error loading projects for image:', err);
+          this.annotationLayers = [];
+          this.labelsLoading = false;
+          this.updateTagVocab();
+        }
+      });
+    }
+
+    loadProjectLabels(projectId: number): void {
+      this.adminService.getLabelsForProject(projectId).subscribe({
+        next: (labels) => {
+          if (labels && labels.length > 0) {
+            this.annotationLayers = labels.map(label => ({
+              id: label.name.toLowerCase().replace(/\s+/g, '-'),
+              name: label.name,
+              visible: true,
+              color: label.color,
+              count: 0,
+              type: label.name
+            }));
+            console.log('Loaded', labels.length, 'labels from database for project', projectId);
+          } else {
+            // No labels defined for project
+            console.warn('No labels defined for project', projectId);
+            this.annotationLayers = [];
+          }
+          this.labelsLoading = false;
+          this.updateTagVocab();
+        },
+        error: (err) => {
+          console.error('Error loading labels for project:', err);
+          this.annotationLayers = [];
+          this.labelsLoading = false;
+          this.updateTagVocab();
+        }
+      });
+    }
+
+    updateTagVocab(): void {
+      this.tagVocabInput = this.annotationLayers.map(l => l.name).join(',');
+      // Update annotorious integration with new labels if needed
+      if (this.anno) {
+        this.anno.updateTagVocab(this.annotationLayers.map(l => ({
+          id: l.id,
+          name: l.name,
+          type: l.type,
+          visible: l.visible,
+          color: l.color
+        })));
+      }
     }
 
     ngAfterViewInit(): void {

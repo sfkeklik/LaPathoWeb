@@ -35,6 +35,10 @@ export interface ImageDTO {
  * Enhanced metadata interface matching the backend ImageMetadataDTO
  */
 export interface ImageMetadata {
+  // ID
+  id: number;
+  name: string;
+
   // Basic image properties
   width: number;
   height: number;
@@ -130,5 +134,12 @@ export class ImageService {
    */
   deleteImage(imageId: number): Observable<void> {
     return this.http.delete<void>(`${ImagesApi.deleteImage}${imageId}`);
+  }
+
+  /**
+   * Tüm görüntüleri metadata ile birlikte getirir
+   */
+  getAllImages(): Observable<ImageMetadata[]> {
+    return this.http.get<ImageMetadata[]>('/api/images');
   }
 }

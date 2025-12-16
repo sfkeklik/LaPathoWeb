@@ -10,6 +10,12 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ImageMetadataDTO {
+    // ID for admin panel
+    private Long id;
+
+    // Name for frontend compatibility
+    private String name;
+
     // Basic image properties
     private int width;
     private int height;

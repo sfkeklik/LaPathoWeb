@@ -99,5 +99,11 @@ public class ProjectController {
     public ResponseEntity<List<ProjectDTO>> getMyProjects(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(projectService.getProjectsForDoctor(currentUser));
     }
+
+    // Get projects containing a specific image
+    @GetMapping("/by-image/{imageId}")
+    public ResponseEntity<List<ProjectDTO>> getProjectsByImage(@PathVariable Long imageId) {
+        return ResponseEntity.ok(projectService.getProjectsContainingImage(imageId));
+    }
 }
 

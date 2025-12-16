@@ -48,6 +48,10 @@ public class Project {
     @Builder.Default
     private Set<ImageEntity> images = new HashSet<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Label> labels = new HashSet<>();
+
     @ManyToOne
     @JoinColumn(name = "created_by")
     private User createdBy;

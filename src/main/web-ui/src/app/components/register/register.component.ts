@@ -2,24 +2,29 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, RegisterRequest } from '../../services/auth.service';
+import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, LanguageSwitcherComponent],
   template: `
     <div class="register-container">
+      <div class="language-selector">
+        <app-language-switcher></app-language-switcher>
+      </div>
       <div class="register-card">
         <div class="register-header">
-          <h1>🦷 LaPatho</h1>
-          <p>Create Your Account</p>
+          <h1>🦷 {{ 'app.title' | translate }}</h1>
+          <p>{{ 'auth.register' | translate }}</p>
         </div>
 
         <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
           <div class="form-row">
             <div class="form-group">
-              <label for="firstName">First Name</label>
+              <label for="firstName">{{ 'auth.firstName' | translate }}</label>
               <input
                 type="text"
                 id="firstName"
@@ -31,7 +36,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
             </div>
 
             <div class="form-group">
-              <label for="lastName">Last Name</label>
+              <label for="lastName">{{ 'auth.lastName' | translate }}</label>
               <input
                 type="text"
                 id="lastName"
@@ -44,7 +49,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
           </div>
 
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">{{ 'auth.email' | translate }}</label>
             <input
               type="email"
               id="email"
@@ -56,7 +61,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
           </div>
 
           <div class="form-group">
-            <label for="username">Username</label>
+            <label for="username">{{ 'auth.username' | translate }}</label>
             <input
               type="text"
               id="username"
@@ -69,7 +74,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{{ 'auth.password' | translate }}</label>
             <input
               type="password"
               id="password"
@@ -77,7 +82,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
               [(ngModel)]="registerData.password"
               required
               minlength="6"
-              placeholder="At least 6 characters"
+              [placeholder]="'auth.enterPassword' | translate"
             />
           </div>
 
@@ -86,25 +91,33 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
           </div>
 
           <button type="submit" [disabled]="loading || !registerForm.valid" class="btn-register">
-            <span *ngIf="!loading">Create Account</span>
-            <span *ngIf="loading">Creating...</span>
+            <span *ngIf="!loading">{{ 'auth.register' | translate }}</span>
+            <span *ngIf="loading">{{ 'common.loading' | translate }}</span>
           </button>
         </form>
 
         <div class="register-footer">
-          <p>Already have an account? <a routerLink="/login">Login</a></p>
+          <p>{{ 'auth.haveAccount' | translate }} <a routerLink="/login">{{ 'auth.login' | translate }}</a></p>
         </div>
       </div>
     </div>
   `,
   styles: [`
     .register-container {
+      position: relative;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       padding: 20px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .language-selector {
+      position: absolute;
+      top: 20px;
+      right: 20px;
     }
 
     .register-card {
@@ -122,14 +135,15 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
     }
 
     .register-header h1 {
-      font-size: 2rem;
-      color: #333;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1F2937;
       margin-bottom: 8px;
     }
 
     .register-header p {
-      color: #666;
-      font-size: 0.9rem;
+      color: #6B7280;
+      font-size: 0.875rem;
     }
 
     .form-row {
@@ -149,49 +163,58 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
-      color: #333;
+      font-size: 0.875rem;
+      color: #374151;
     }
 
     .form-group input {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e1e1e1;
+      border: 1px solid #E5E7EB;
       border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
     }
 
     .form-group input:focus {
       outline: none;
       border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #9CA3AF;
     }
 
     .error-message {
-      background: #ffe6e6;
-      color: #cc0000;
+      background: #FEE2E2;
+      color: #DC2626;
       padding: 12px;
       border-radius: 8px;
       margin-bottom: 20px;
       text-align: center;
+      font-size: 0.875rem;
     }
 
     .btn-register {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.875rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: opacity 0.2s, transform 0.2s;
     }
 
     .btn-register:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      opacity: 0.9;
+      transform: translateY(-1px);
     }
 
     .btn-register:disabled {
@@ -202,7 +225,8 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
     .register-footer {
       text-align: center;
       margin-top: 24px;
-      color: #666;
+      color: #6B7280;
+      font-size: 0.875rem;
     }
 
     .register-footer a {

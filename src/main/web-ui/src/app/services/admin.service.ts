@@ -17,6 +17,20 @@ export interface Project {
   createdByName: string;
 }
 
+export interface Label {
+  id: number;
+  projectId: number;
+  name: string;
+  color: string;
+  description?: string;
+}
+
+export interface CreateLabelRequest {
+  name: string;
+  color?: string;
+  description?: string;
+}
+
 export interface CreateProjectRequest {
   name: string;
   description?: string;
@@ -93,6 +107,32 @@ export class AdminService {
 
   removeImageFromProject(projectId: number, imageId: number): Observable<Project> {
     return this.http.delete<Project>(`${this.PROJECT_URL}/${projectId}/images/${imageId}`);
+  }
+
+  // Label Management
+  getLabelsForProject(projectId: number): Observable<Label[]> {
+    return this.http.get<Label[]>(`${this.PROJECT_URL}/${projectId}/labels`);
+  }
+
+  createLabel(projectId: number, label: CreateLabelRequest): Observable<Label> {
+    return this.http.post<Label>(`${this.PROJECT_URL}/${projectId}/labels`, label);
+  }
+
+  updateLabel(projectId: number, labelId: number, label: CreateLabelRequest): Observable<Label> {
+    return this.http.put<Label>(`${this.PROJECT_URL}/${projectId}/labels/${labelId}`, label);
+  }
+
+  deleteLabel(projectId: number, labelId: number): Observable<void> {
+    return this.http.delete<void>(`${this.PROJECT_URL}/${projectId}/labels/${labelId}`);
+  }
+
+  createDefaultLabels(projectId: number): Observable<Label[]> {
+    return this.http.post<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/defaults`, {});
+  }
+
+  // Get projects containing a specific image
+  getProjectsByImage(imageId: number): Observable<Project[]> {
+    return this.http.get<Project[]>(`${this.PROJECT_URL}/by-image/${imageId}`);
   }
 }
 

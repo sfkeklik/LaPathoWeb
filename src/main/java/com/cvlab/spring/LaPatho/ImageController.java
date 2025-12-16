@@ -1,13 +1,18 @@
 package com.cvlab.spring.LaPatho;
 
+import com.cvlab.spring.LaPatho.project.service.ProjectService;
+import com.cvlab.spring.LaPatho.security.entity.Role;
+import com.cvlab.spring.LaPatho.security.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,6 +24,9 @@ public class ImageController {
 
     @Autowired
     private ImageService imageService;
+
+    @Autowired
+    private ProjectService projectService;
 
     @PostMapping
     public ResponseEntity<ImageDTO> createImage(@RequestBody CreateImageDTO dto) {
@@ -121,8 +129,27 @@ public class ImageController {
     }
 
     @GetMapping("/get-images-list")
-    public ResponseEntity<List<ImageOverviewDTO>> listImages(HttpServletRequest request) {
-        List<ImageOverviewDTO> list = imageService.findAll().stream()
+    public ResponseEntity<List<ImageOverviewDTO>> listImages(
+            HttpServletRequest request,
+            @AuthenticationPrincipal User currentUser) {
+
+        List<ImageEntity> imagesToShow;
+
+        // ADMIN sees all images, DOCTOR sees only images from assigned projects
+        if (currentUser != null && currentUser.getRole() == Role.ADMIN) {
+            System.out.println("User " + currentUser.getUsername() + " is ADMIN - showing all images");
+            imagesToShow = imageService.findAll();
+        } else if (currentUser != null) {
+            // Get images from projects assigned to this doctor
+            System.out.println("User " + currentUser.getUsername() + " is DOCTOR - filtering images by assigned projects");
+            imagesToShow = projectService.getImagesForDoctor(currentUser);
+            System.out.println("Found " + imagesToShow.size() + " images for doctor " + currentUser.getUsername());
+        } else {
+            System.out.println("No authenticated user - returning empty list");
+            imagesToShow = List.of(); // No user, no images
+        }
+
+        List<ImageOverviewDTO> list = imagesToShow.stream()
                 .map(img -> {
                     String preview = (img.getStatus() == Status.READY)
                             ? String.format("%s://%s/api/tiles/%d/0/0_0.jpg",
@@ -136,6 +163,30 @@ public class ImageController {
         return ResponseEntity.ok(list);
     }
 
+    // GET all images with metadata for admin panel
+    @GetMapping
+    public ResponseEntity<List<ImageMetadataDTO>> getAllImages() {
+        List<ImageMetadataDTO> list = imageService.findAll().stream()
+                .map(img -> {
+                    ImageMetadataDTO metadata = new ImageMetadataDTO();
+                    metadata.setId(img.getId());
+                    metadata.setFileName(img.getName());
+                    metadata.setName(img.getName()); // For frontend compatibility
+                    metadata.setWidth(img.getWidth());
+                    metadata.setHeight(img.getHeight());
+                    metadata.setTileSize(img.getTileSize());
+                    metadata.setMaxLevel(img.getMaxLevel());
+                    metadata.setFormat(img.getFormat());
+                    metadata.setFileSize(img.getFileSize());
+                    metadata.setStatus(img.getStatus() != null ? img.getStatus().toString() : "UNKNOWN");
+                    metadata.setCreated(img.getCreated());
+                    metadata.setUpdated(img.getUpdated());
+                    return metadata;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(list);
+    }
+
     // GET specific image by ID
     @GetMapping("/{id}")
     public ResponseEntity<ImageEntity> getImage(@PathVariable Long id) {
@@ -144,8 +195,9 @@ public class ImageController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // PUT - Update image
+    // PUT - Update image (ADMIN only)
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ImageEntity> updateImage(
             @PathVariable Long id,
             @RequestBody ImageEntity imageData) {
@@ -153,8 +205,9 @@ public class ImageController {
         return ResponseEntity.ok(updated);
     }
 
-    // DELETE image
+    // DELETE image (ADMIN only)
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) {
         imageService.delete(id);
         return ResponseEntity.noContent().build();

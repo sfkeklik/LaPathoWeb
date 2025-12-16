@@ -2,15 +2,17 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { interval, Subject, switchMap, takeUntil, startWith } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 import { ImageOverview, ImageService } from '../../services/image.service';
 import { ImageUploadService, UploadProgress } from '../../services/image-upload.service';
 import { ImageEditModalComponent } from '../image-edit-modal/image-edit-modal.component';
 import { AuthService } from '../../services/auth.service';
+import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ImageEditModalComponent],
+  imports: [CommonModule, RouterModule, ImageEditModalComponent, TranslateModule, LanguageSwitcherComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
@@ -20,10 +22,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   images: ImageOverview[] = [];
   uploading = false;
 
-  // Upload progress tracking
+  // Upload progress tracking - Multi file support
   uploadProgress = 0;
   uploadStatus: 'uploading' | 'processing' | 'completed' | 'error' = 'uploading';
   uploadFileName = '';
+
+  // Multi-file upload tracking
+  uploadQueue: File[] = [];
+  currentUploadIndex = 0;
+  totalFilesToUpload = 0;
+  completedUploads = 0;
+  failedUploads = 0;
 
   // Image edit modal için
   showEditModal = false;
@@ -79,15 +88,29 @@ export class HomeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // hemen çağır, sonra her 60 saniyede bir tekrar
+    // Hemen yükle
+    this.refreshImages();
+
+    // Sonra her 60 saniyede bir tekrar
     interval(60_000).pipe(
-      startWith(0),
       switchMap(() => this.imageService.getImages()),
       takeUntil(this.destroy$)
     ).subscribe({
       next: list => {
         this.allImages = list;
         this.images = list; // Backward compatibility için
+      },
+      error: err => console.error('Liste yüklenirken hata:', err)
+    });
+  }
+
+  // Manuel yenileme
+  refreshImages(): void {
+    this.imageService.getImages().subscribe({
+      next: list => {
+        console.log('Images refreshed:', list.length, 'images');
+        this.allImages = list;
+        this.images = list;
       },
       error: err => console.error('Liste yüklenirken hata:', err)
     });
@@ -148,38 +171,72 @@ export class HomeComponent implements OnInit, OnDestroy {
     const files = this.fileInput.nativeElement.files;
     if (!files?.length) return;
 
-    const file = files[0];
+    // Convert FileList to array
+    this.uploadQueue = Array.from(files);
+    this.totalFilesToUpload = this.uploadQueue.length;
+    this.currentUploadIndex = 0;
+    this.completedUploads = 0;
+    this.failedUploads = 0;
     this.uploading = true;
-    this.uploadProgress = 0;
-    this.uploadStatus = 'uploading';
-    this.uploadFileName = file.name;
 
-    console.log('Upload başlıyor:', file.name, 'Boyut:', this.formatFileSize(file.size));
+    console.log(`Toplam ${this.totalFilesToUpload} dosya yüklenecek`);
+
+    // Start uploading first file
+    this.uploadNextFile();
+  }
+
+  private uploadNextFile() {
+    if (this.currentUploadIndex >= this.uploadQueue.length) {
+      // All files processed
+      this.uploadStatus = 'completed';
+      this.uploadProgress = 100;
+      this.uploadFileName = `${this.completedUploads}/${this.totalFilesToUpload} dosya yüklendi`;
+
+      console.log(`Yükleme tamamlandı: ${this.completedUploads} başarılı, ${this.failedUploads} başarısız`);
+
+      // Refresh list after all uploads
+      this.loadListOnce();
+
+      // Clear input
+      this.fileInput.nativeElement.value = '';
+      return;
+    }
+
+    const file = this.uploadQueue[this.currentUploadIndex];
+    this.uploadStatus = 'uploading';
+    this.uploadFileName = `(${this.currentUploadIndex + 1}/${this.totalFilesToUpload}) ${file.name}`;
+
+    // Calculate overall progress
+    const baseProgress = (this.currentUploadIndex / this.totalFilesToUpload) * 100;
+
+    console.log(`Yükleniyor (${this.currentUploadIndex + 1}/${this.totalFilesToUpload}):`, file.name);
 
     this.uploadService.uploadWithProgress(file).subscribe({
       next: (progress: UploadProgress) => {
-        this.uploadProgress = progress.progress;
-        this.uploadStatus = progress.status;
+        // Calculate combined progress
+        const fileProgress = progress.progress / this.totalFilesToUpload;
+        this.uploadProgress = Math.round(baseProgress + fileProgress);
 
-        console.log(`Upload progress: ${progress.progress}% - Status: ${progress.status}`);
+        if (progress.status === 'processing') {
+          this.uploadStatus = 'processing';
+        }
 
         if (progress.status === 'completed' && progress.result) {
-          console.log('Upload tamamlandı:', progress.result);
-          this.uploading = false;
-          this.loadListOnce();
+          console.log(`Dosya yüklendi: ${file.name}`);
+          this.completedUploads++;
+          this.currentUploadIndex++;
 
-          // Input'u temizle
-          this.fileInput.nativeElement.value = '';
+          // Upload next file
+          this.uploadNextFile();
         }
       },
       error: err => {
-        console.error('Upload hatası:', err);
-        this.uploading = false;
-        this.uploadStatus = 'error';
-        this.uploadProgress = 0;
+        console.error(`Yükleme hatası (${file.name}):`, err);
+        this.failedUploads++;
+        this.currentUploadIndex++;
 
-        // Input'u temizle
-        this.fileInput.nativeElement.value = '';
+        // Continue with next file even if this one failed
+        this.uploadNextFile();
       }
     });
   }
@@ -198,6 +255,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.uploading = false;
     this.uploadProgress = 0;
     this.uploadStatus = 'uploading';
+    this.uploadQueue = [];
+    this.currentUploadIndex = 0;
+    this.totalFilesToUpload = 0;
+    this.completedUploads = 0;
+    this.failedUploads = 0;
     this.fileInput.nativeElement.value = '';
   }
 

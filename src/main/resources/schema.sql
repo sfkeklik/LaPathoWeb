@@ -66,6 +66,18 @@ CREATE TABLE IF NOT EXISTS project_images (
     PRIMARY KEY (project_id, image_id)
 );
 
+-- Labels table - projeye özel etiketler
+CREATE TABLE IF NOT EXISTS labels (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(20) NOT NULL DEFAULT '#ff0000',
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, name)
+);
+
 -- Annotations table - with user reference
 CREATE TABLE IF NOT EXISTS annotations (
     id BIGSERIAL PRIMARY KEY,
@@ -88,3 +100,86 @@ CREATE INDEX IF NOT EXISTS idx_annotations_type ON annotations(type);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(active);
+CREATE INDEX IF NOT EXISTS idx_labels_project_id ON labels(project_id);
+
+-- Insert default admin user if not exists
+INSERT INTO users (username, password, first_name, last_name, email, role, enabled)
+SELECT 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'Admin', 'User', 'admin@lapatho.com', 'ADMIN', true
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
+
+-- Insert default doctor user if not exists
+INSERT INTO users (username, password, first_name, last_name, email, role, enabled)
+SELECT 'doctor', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'Default', 'Doctor', 'doctor@lapatho.com', 'DOCTOR', true
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'doctor');
+
+-- Insert default Pathology project if not exists
+INSERT INTO projects (name, description, created_by, active, created_at, updated_at)
+SELECT 'Pathology', 'Default pathology project for tissue analysis',
+       (SELECT id FROM users WHERE username = 'admin' LIMIT 1),
+       true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM projects WHERE name = 'Pathology');
+
+-- Insert default Dental project if not exists
+INSERT INTO projects (name, description, created_by, active, created_at, updated_at)
+SELECT 'Dental', 'Default dental imaging project',
+       (SELECT id FROM users WHERE username = 'admin' LIMIT 1),
+       true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM projects WHERE name = 'Dental');
+
+-- Assign default doctor to Pathology project if not already assigned
+INSERT INTO project_doctors (project_id, user_id)
+SELECT p.id, u.id
+FROM projects p, users u
+WHERE p.name = 'Pathology' AND u.username = 'doctor'
+AND NOT EXISTS (
+    SELECT 1 FROM project_doctors pd
+    WHERE pd.project_id = p.id AND pd.user_id = u.id
+);
+
+-- Insert default Pathology labels if not exists
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Nucleus', '#ff0000', 'Cell nucleus region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Pathology'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Nucleus');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Tumor', '#00ff00', 'Tumor tissue region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Pathology'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Tumor');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Necrosis', '#0000ff', 'Necrotic tissue region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Pathology'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Necrosis');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Stroma', '#ffff00', 'Stromal tissue region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Pathology'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Stroma');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Muscle', '#800080', 'Muscle tissue region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Pathology'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Muscle');
+
+-- Insert default Dental labels if not exists
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Cavity', '#ff4444', 'Dental cavity region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Dental'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Cavity');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Enamel', '#44ff44', 'Tooth enamel', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Dental'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Enamel');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Root Canal', '#4444ff', 'Root canal region', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Dental'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Root Canal');
+
+INSERT INTO labels (project_id, name, color, description, created_at, updated_at)
+SELECT p.id, 'Gum', '#ff88ff', 'Gum tissue', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM projects p WHERE p.name = 'Dental'
+AND NOT EXISTS (SELECT 1 FROM labels l WHERE l.project_id = p.id AND l.name = 'Gum');
+

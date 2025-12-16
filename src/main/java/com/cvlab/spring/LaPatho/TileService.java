@@ -119,17 +119,97 @@ public class TileService {
         return CompletableFuture.completedFuture(null);
     }
 
+    /**
+     * Standart görüntü formatı olup olmadığını kontrol eder (PNG, JPEG, JPG)
+     */
+    private boolean isStandardImageFormat(String filePath) {
+        String lowerPath = filePath.toLowerCase();
+        return lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg");
+    }
 
+    /**
+     * Standart görüntüler için tile üretimi (PNG, JPEG, JPG)
+     * Java ImageIO kullanarak doğru renk işleme sağlar
+     */
+    private void generateTilesForStandardImage(String inputPath, String imageId) throws Exception {
+        log.info("Standart görüntü için tile üretimi başlıyor: inputPath={}, imageId={}", inputPath, imageId);
 
+        // Java ImageIO ile görüntüyü oku
+        BufferedImage originalImage = ImageIO.read(new java.io.File(inputPath));
+        if (originalImage == null) {
+            throw new Exception("Görüntü okunamadı: " + inputPath);
+        }
 
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
 
+        log.info("Standart görüntü boyutları: {}x{}", originalWidth, originalHeight);
+
+        // RGB formatına dönüştür (şeffaflık varsa)
+        BufferedImage rgbImage = new BufferedImage(originalWidth, originalHeight, BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g2d = rgbImage.createGraphics();
+        g2d.setColor(java.awt.Color.WHITE);
+        g2d.fillRect(0, 0, originalWidth, originalHeight);
+        g2d.drawImage(originalImage, 0, 0, null);
+        g2d.dispose();
+
+        int maxLevel = (int) Math.ceil(Math.log(Math.max(originalWidth, originalHeight) / (double) tileSize) / Math.log(2));
+
+        for (int level = 0; level <= maxLevel; level++) {
+            double scale = 1.0 / Math.pow(2, maxLevel - level);
+            int scaledWidth = Math.max(1, (int) (originalWidth * scale));
+            int scaledHeight = Math.max(1, (int) (originalHeight * scale));
+
+            Path levelDir = Paths.get(outputBasePath, imageId, String.valueOf(level));
+            Files.createDirectories(levelDir);
+
+            log.debug("Standart görüntü - Level {} işleniyor - Ölçekli boyutlar: {}x{}", level, scaledWidth, scaledHeight);
+
+            // Ölçeklenmiş görüntü oluştur
+            BufferedImage scaledImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g = scaledImage.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+            g.drawImage(rgbImage, 0, 0, scaledWidth, scaledHeight, null);
+            g.dispose();
+
+            // Tile'ları oluştur
+            for (int y = 0; y < scaledHeight; y += tileSize) {
+                for (int x = 0; x < scaledWidth; x += tileSize) {
+                    int tileWidth = Math.min(tileSize, scaledWidth - x);
+                    int tileHeight = Math.min(tileSize, scaledHeight - y);
+
+                    BufferedImage tile = scaledImage.getSubimage(x, y, tileWidth, tileHeight);
+
+                    // Tile'ı kopyala (getSubimage paylaşımlı buffer kullandığı için)
+                    BufferedImage tileCopy = new BufferedImage(tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB);
+                    java.awt.Graphics2D tg = tileCopy.createGraphics();
+                    tg.drawImage(tile, 0, 0, null);
+                    tg.dispose();
+
+                    String filename = String.format("tile_%d_%d.jpg", x / tileSize, y / tileSize);
+                    ImageIO.write(tileCopy, "JPEG", levelDir.resolve(filename).toFile());
+                }
+            }
+            log.debug("Standart görüntü - Level {} tamamlandı", level);
+        }
+
+        log.info("Standart görüntü tile üretimi tamamlandı: imageId={}", imageId);
+    }
 
     /**
      * Ana generateTiles metodu artık sadece inputPath ve imageId ister,
-     * outputBasePath config’ten gelir.
+     * outputBasePath config'ten gelir.
      */
 
     public void generateTiles(String inputPath, String imageId) throws Exception {
+        // Standart görüntüler için özel işleme (PNG, JPEG, JPG)
+        if (isStandardImageFormat(inputPath)) {
+            generateTilesForStandardImage(inputPath, imageId);
+            return;
+        }
+
+        // Tıbbi görüntüler için Bio-Formats işleme
         ImageReader reader = new ImageReader();
         try {
             log.info("Tile üretimi başlıyor: inputPath={}, imageId={}", inputPath, imageId);

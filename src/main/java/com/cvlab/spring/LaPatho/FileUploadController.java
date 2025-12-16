@@ -1,5 +1,9 @@
 package com.cvlab.spring.LaPatho;
 
+import com.cvlab.spring.LaPatho.project.entity.Project;
+import com.cvlab.spring.LaPatho.project.repository.ProjectRepository;
+import com.cvlab.spring.LaPatho.security.entity.Role;
+import com.cvlab.spring.LaPatho.security.entity.User;
 import loci.formats.FormatException;
 import loci.formats.ImageReader;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,13 +37,22 @@ public class FileUploadController {
     @Autowired
     private TileService tileService;
 
+    @Autowired
+    private ImageRepository imageRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
     @Value("${upload.base-path:/app/uploads}")
     private String uploadBasePath;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> upload(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User currentUser) {
         try {
-            log.info("Upload başladı: {}", file.getOriginalFilename());
+            log.info("Upload başladı: {} by user: {}", file.getOriginalFilename(),
+                    currentUser != null ? currentUser.getUsername() : "unknown");
 
             // Dosya kontrolü
             if (file.isEmpty()) {
@@ -104,6 +119,15 @@ public class FileUploadController {
             try {
                 dto = imageService.create(file.getOriginalFilename(), target.toString());
                 log.info("Image entity oluşturuldu: ID={}", dto.getId());
+
+                // Doktor yüklediyse, dahil olduğu projelere otomatik ekle
+                // Admin yüklediyse hiçbir projeye ekleme
+                if (currentUser != null && currentUser.getRole() == Role.DOCTOR) {
+                    assignImageToDoctorProjects(dto.getId(), currentUser);
+                } else {
+                    log.info("Admin uploaded image ID={}, not auto-assigning to any project", dto.getId());
+                }
+
             } catch (Exception e) {
                 log.error("Image entity oluşturma hatası: {}", e.getMessage(), e);
                 // Clean up the uploaded file if database save fails
@@ -202,6 +226,41 @@ public class FileUploadController {
         } catch (Exception e) {
             health.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(health);
+        }
+    }
+
+    /**
+     * Doktor yüklediği görüntüyü dahil olduğu tüm projelere otomatik ekler
+     */
+    private void assignImageToDoctorProjects(Long imageId, User doctor) {
+        try {
+            // Doktorun dahil olduğu projeleri bul
+            List<Project> doctorProjects = projectRepository.findByAssignedDoctor(doctor);
+
+            if (doctorProjects.isEmpty()) {
+                log.info("Doctor {} has no assigned projects, image {} not auto-assigned",
+                        doctor.getUsername(), imageId);
+                return;
+            }
+
+            // Görüntüyü bul
+            ImageEntity image = imageRepository.findById(imageId).orElse(null);
+            if (image == null) {
+                log.warn("Image not found for auto-assignment: {}", imageId);
+                return;
+            }
+
+            // Her projeye görüntüyü ekle
+            for (Project project : doctorProjects) {
+                project.getImages().add(image);
+                projectRepository.save(project);
+                log.info("Auto-assigned image {} to project '{}' for doctor {}",
+                        imageId, project.getName(), doctor.getUsername());
+            }
+
+        } catch (Exception e) {
+            log.error("Error auto-assigning image to doctor projects: {}", e.getMessage(), e);
+            // Don't fail the upload if auto-assignment fails
         }
     }
 }

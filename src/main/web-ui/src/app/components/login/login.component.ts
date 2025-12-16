@@ -2,42 +2,47 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../services/auth.service';
+import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, LanguageSwitcherComponent],
   template: `
     <div class="login-container">
+      <div class="language-selector">
+        <app-language-switcher></app-language-switcher>
+      </div>
       <div class="login-card">
         <div class="login-header">
-          <h1>🦷 LaPatho</h1>
-          <p>Dental Annotation System</p>
+          <h1>🦷 {{ 'app.title' | translate }}</h1>
+          <p>{{ 'app.subtitle' | translate }}</p>
         </div>
 
         <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
           <div class="form-group">
-            <label for="username">Username</label>
+            <label for="username">{{ 'auth.username' | translate }}</label>
             <input
               type="text"
               id="username"
               name="username"
               [(ngModel)]="credentials.username"
               required
-              placeholder="Enter your username"
+              [placeholder]="'auth.enterUsername' | translate"
             />
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{{ 'auth.password' | translate }}</label>
             <input
               type="password"
               id="password"
               name="password"
               [(ngModel)]="credentials.password"
               required
-              placeholder="Enter your password"
+              [placeholder]="'auth.enterPassword' | translate"
             />
           </div>
 
@@ -46,13 +51,13 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
           </div>
 
           <button type="submit" [disabled]="loading || !loginForm.valid" class="btn-login">
-            <span *ngIf="!loading">Login</span>
-            <span *ngIf="loading">Logging in...</span>
+            <span *ngIf="!loading">{{ 'auth.login' | translate }}</span>
+            <span *ngIf="loading">{{ 'auth.loggingIn' | translate }}</span>
           </button>
         </form>
 
         <div class="login-footer">
-          <p>Don't have an account? <a routerLink="/register">Register</a></p>
+          <p>{{ 'auth.noAccount' | translate }} <a routerLink="/register">{{ 'auth.register' | translate }}</a></p>
         </div>
       </div>
     </div>
@@ -65,6 +70,14 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
       justify-content: center;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       padding: 20px;
+      position: relative;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .language-selector {
+      position: absolute;
+      top: 20px;
+      right: 20px;
     }
 
     .login-card {
@@ -82,14 +95,15 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
     }
 
     .login-header h1 {
-      font-size: 2rem;
-      color: #333;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1F2937;
       margin-bottom: 8px;
     }
 
     .login-header p {
-      color: #666;
-      font-size: 0.9rem;
+      color: #6B7280;
+      font-size: 0.875rem;
     }
 
     .form-group {
@@ -100,49 +114,58 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
-      color: #333;
+      font-size: 0.875rem;
+      color: #374151;
     }
 
     .form-group input {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e1e1e1;
+      border: 1px solid #E5E7EB;
       border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
     }
 
     .form-group input:focus {
       outline: none;
       border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #9CA3AF;
     }
 
     .error-message {
-      background: #ffe6e6;
-      color: #cc0000;
+      background: #FEE2E2;
+      color: #DC2626;
       padding: 12px;
       border-radius: 8px;
       margin-bottom: 20px;
       text-align: center;
+      font-size: 0.875rem;
     }
 
     .btn-login {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.875rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: opacity 0.2s, transform 0.2s;
     }
 
     .btn-login:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      opacity: 0.9;
+      transform: translateY(-1px);
     }
 
     .btn-login:disabled {
@@ -153,7 +176,8 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
     .login-footer {
       text-align: center;
       margin-top: 24px;
-      color: #666;
+      color: #6B7280;
+      font-size: 0.875rem;
     }
 
     .login-footer a {
