@@ -147,7 +147,7 @@ npm run build
 1. Tarayıcınızda `http://localhost:4200` adresine gidin
 2. Varsayılan admin hesabı ile giriş yapın:
    - **Kullanıcı Adı**: `admin`
-   - **Şifre**: `admin123`
+   - **Şifre**: `---`
 
 #### Admin Paneli
 
@@ -188,7 +188,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "admin123"
+  "password": "---"
 }
 ```
 
@@ -322,7 +322,7 @@ LaPathoWeb/
 # Veritabanı
 spring.datasource.url=jdbc:postgresql://localhost:5432/lapatho
 spring.datasource.username=postgres
-spring.datasource.password=secretpassword
+spring.datasource.password=----
 
 # Upload ayarları
 upload.base-path=./uploads
@@ -459,7 +459,7 @@ docker-compose up -d
 1. Navigate to `http://localhost:4200` in your browser
 2. Login with default admin credentials:
    - **Username**: `admin`
-   - **Password**: `admin123`
+   - **Password**: `---`
 
 #### Admin Panel
 
@@ -480,7 +480,6 @@ See the Turkish section above for detailed API documentation.
 
 <div align="center">
 
-**Made with ❤️ for Dental Pathology Research**
 
 [⬆ Back to Top](#-lapatho---dental-annotation-system)
 
