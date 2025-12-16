@@ -102,14 +102,14 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(active);
 CREATE INDEX IF NOT EXISTS idx_labels_project_id ON labels(project_id);
 
--- Insert default admin user if not exists
+-- Insert default admin user if not exists (password: admin123)
 INSERT INTO users (username, password, first_name, last_name, email, role, enabled)
-SELECT 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'Admin', 'User', 'admin@lapatho.com', 'ADMIN', true
+SELECT 'admin', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOz0PTGCDk.O1FnLwRLbQjVuCk6vRdJKG', 'Admin', 'User', 'admin@lapatho.com', 'ADMIN', true
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 
--- Insert default doctor user if not exists
+-- Insert default doctor user if not exists (password: admin123)
 INSERT INTO users (username, password, first_name, last_name, email, role, enabled)
-SELECT 'doctor', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'Default', 'Doctor', 'doctor@lapatho.com', 'DOCTOR', true
+SELECT 'doctor', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOz0PTGCDk.O1FnLwRLbQjVuCk6vRdJKG', 'Default', 'Doctor', 'doctor@lapatho.com', 'DOCTOR', true
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'doctor');
 
 -- Insert default Pathology project if not exists
