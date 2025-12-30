@@ -2,11 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AdminService, Project, CreateProjectRequest, Label, CreateLabelRequest } from '../../services/admin.service';
 import { AuthService, User, RegisterRequest } from '../../services/auth.service';
 import { ImageService, ImageMetadata } from '../../services/image.service';
 import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 @Component({
   selector: 'app-admin',
@@ -24,6 +26,9 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
           <a routerLink="/" class="btn-home">
             <i class="fas fa-home"></i> {{ 'admin.home' | translate }}
           </a>
+          <a routerLink="/" class="btn-viewer">
+            <i class="fas fa-images"></i> {{ 'admin.goToImageViewer' | translate }}
+          </a>
           <span class="user-info">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
           <button class="btn-logout" (click)="logout()">{{ 'auth.logout' | translate }}</button>
         </div>
@@ -32,18 +37,13 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       <nav class="admin-nav">
         <button
           [class.active]="activeTab === 'users'"
-          (click)="activeTab = 'users'">
+          (click)="activeTab = 'users'; selectedProject = null">
           👥 {{ 'admin.users' | translate }}
         </button>
         <button
           [class.active]="activeTab === 'projects'"
           (click)="activeTab = 'projects'">
           📁 {{ 'admin.projects' | translate }}
-        </button>
-        <button
-          [class.active]="activeTab === 'images'"
-          (click)="activeTab = 'images'">
-          🖼️ {{ 'admin.images' | translate }}
         </button>
       </nav>
 
@@ -92,104 +92,172 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 
         <!-- Projects Tab -->
         <div *ngIf="activeTab === 'projects'" class="tab-content">
-          <div class="tab-header">
-            <h2>{{ 'admin.projectManagement' | translate }}</h2>
-            <button class="btn-primary" (click)="showCreateProjectModal = true">{{ 'admin.addProject' | translate }}</button>
-          </div>
-
-          <div class="projects-grid">
-            <div class="project-card" *ngFor="let project of projects">
-              <!-- Project Thumbnail -->
-              <div class="project-thumbnail">
-                <img
-                  *ngIf="project.imageIds && project.imageIds.length > 0"
-                  [src]="getProjectThumbnail(project)"
-                  [alt]="project.name"
-                  (error)="onProjectThumbnailError($event)"
-                  class="thumbnail-img">
-                <div *ngIf="!project.imageIds || project.imageIds.length === 0" class="no-thumbnail">
-                  <i class="fas fa-folder-open"></i>
-                  <span>{{ 'admin.noImagesAvailable' | translate }}</span>
-                </div>
-              </div>
-
-              <div class="project-content">
-                <div class="project-header">
-                  <h3>{{ project.name }}</h3>
-                  <span class="project-status" [class.active]="project.active">
-                    {{ project.active ? ('common.active' | translate) : ('common.inactive' | translate) }}
-                  </span>
-                </div>
-                <p class="project-desc">{{ project.description || ('admin.noDescription' | translate) }}</p>
-                <div class="project-stats">
-                  <span>👨‍⚕️ {{ project.doctorCount }} {{ 'admin.doctorCount' | translate }}</span>
-                  <span>🖼️ {{ project.imageCount }} {{ 'admin.imageCount' | translate }}</span>
-                </div>
-                <div class="project-doctors" *ngIf="project.assignedDoctorNames?.length">
-                  <strong>{{ 'admin.assigned' | translate }}:</strong> {{ project.assignedDoctorNames.join(', ') }}
-                </div>
-                <div class="project-actions">
-                  <button class="btn-small" (click)="editProject(project)">{{ 'common.edit' | translate }}</button>
-                  <button class="btn-small btn-labels" (click)="openLabelsModal(project)">🏷️ {{ 'admin.labels' | translate }}</button>
-                  <button class="btn-small btn-danger" (click)="deleteProject(project)">{{ 'common.delete' | translate }}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Images Tab -->
-        <div *ngIf="activeTab === 'images'" class="tab-content">
-          <div class="tab-header">
-            <h2>{{ 'admin.imageManagement' | translate }}</h2>
-            <a routerLink="/" class="btn-primary">{{ 'admin.goToImageViewer' | translate }}</a>
-          </div>
-
-          <div class="image-assignment-section">
-            <div class="form-group">
-              <label>{{ 'admin.selectProjectToAssign' | translate }}</label>
-              <select [(ngModel)]="selectedProjectForImages" (change)="loadProjectImages()">
-                <option [ngValue]="null">{{ 'admin.selectAProject' | translate }}</option>
-                <option *ngFor="let project of projects" [ngValue]="project">{{ project.name }}</option>
-              </select>
+          <!-- Project List View -->
+          <div *ngIf="!selectedProject">
+            <div class="tab-header">
+              <h2>{{ 'admin.projectManagement' | translate }}</h2>
+              <button class="btn-primary" (click)="showCreateProjectModal = true">{{ 'admin.addProject' | translate }}</button>
             </div>
 
-            <div *ngIf="selectedProjectForImages" class="images-grid">
-              <div *ngIf="allImages.length === 0" class="no-images">
-                <p>{{ 'admin.noImagesAvailableLong' | translate }}</p>
-              </div>
-              <div class="image-card" *ngFor="let image of allImages"
-                   [class.assigned]="isImageAssignedToProject(image.id)">
-                <div class="image-preview">
+            <div class="projects-grid">
+              <div class="project-card clickable" *ngFor="let project of projects" (click)="selectProject(project)">
+                <!-- Project Thumbnail -->
+                <div class="project-thumbnail">
                   <img
-                    *ngIf="image.status === 'READY'"
-                    [src]="getImageThumbnail(image.id)"
-                    [alt]="image.name"
-                    (error)="onThumbnailError($event)"
+                    *ngIf="project.imageIds && project.imageIds.length > 0"
+                    [src]="getProjectThumbnail(project)"
+                    [alt]="project.name"
+                    (error)="onProjectThumbnailError($event)"
                     class="thumbnail-img">
-                  <span *ngIf="image.status !== 'READY'" class="placeholder-icon">
-                    {{ image.status === 'PROCESSING' ? '⏳' : image.status === 'ERROR' ? '❌' : '🖼️' }}
-                  </span>
+                  <div *ngIf="!project.imageIds || project.imageIds.length === 0" class="no-thumbnail">
+                    <i class="fas fa-folder-open"></i>
+                    <span>{{ 'admin.noImagesAvailable' | translate }}</span>
+                  </div>
                 </div>
-                <div class="image-info">
-                  <strong>{{ image.name || image.fileName || 'Unnamed' }}</strong>
-                  <span class="image-size">{{ image.width }}x{{ image.height }}</span>
-                  <span class="image-status" [class]="image.status?.toLowerCase()">{{ image.status }}</span>
+
+                <div class="project-content">
+                  <div class="project-header">
+                    <h3>{{ project.name }}</h3>
+                    <span class="project-status" [class.active]="project.active">
+                      {{ project.active ? ('common.active' | translate) : ('common.inactive' | translate) }}
+                    </span>
+                  </div>
+                  <p class="project-desc">{{ project.description || ('admin.noDescription' | translate) }}</p>
+                  <div class="project-stats">
+                    <span>👨‍⚕️ {{ project.doctorCount }} {{ 'admin.doctorCount' | translate }}</span>
+                    <span>🖼️ {{ project.imageCount }} {{ 'admin.imageCount' | translate }}</span>
+                  </div>
+                  <div class="project-doctors" *ngIf="project.assignedDoctorNames?.length">
+                    <strong>{{ 'admin.assigned' | translate }}:</strong> {{ project.assignedDoctorNames.join(', ') }}
+                  </div>
+                  <div class="project-actions">
+                    <button class="btn-small" (click)="editProject(project); $event.stopPropagation()">{{ 'common.edit' | translate }}</button>
+                    <button class="btn-small btn-labels" (click)="openLabelsModal(project); $event.stopPropagation()">🏷️ {{ 'admin.labels' | translate }}</button>
+                    <button class="btn-small btn-report" (click)="downloadReport(project); $event.stopPropagation()" [disabled]="reportDownloading === project.id">
+                      <span *ngIf="reportDownloading !== project.id">📊 {{ 'admin.downloadReport' | translate }}</span>
+                      <span *ngIf="reportDownloading === project.id" class="spinner">⏳</span>
+                    </button>
+                    <button class="btn-small btn-danger" (click)="deleteProject(project); $event.stopPropagation()">{{ 'common.delete' | translate }}</button>
+                  </div>
                 </div>
-                <div class="image-actions">
-                  <button
-                    class="btn-small"
-                    [class.btn-danger]="isImageAssignedToProject(image.id)"
-                    (click)="toggleImageAssignment(image)">
-                    {{ isImageAssignedToProject(image.id) ? ('common.remove' | translate) : ('common.assign' | translate) }}
-                  </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Detail View (Images) -->
+          <div *ngIf="selectedProject" class="project-detail-view">
+            <div class="tab-header">
+              <div class="back-header">
+                <button class="btn-back" (click)="backToProjects()">
+                  <i class="fas fa-arrow-left"></i> {{ 'common.back' | translate }}
+                </button>
+                <h2>{{ selectedProject.name }}</h2>
+              </div>
+              <div class="project-info-badge">
+                <span class="badge-item">🖼️ {{ selectedProject.imageCount }} {{ 'admin.imageCount' | translate }}</span>
+                <span class="badge-item">👨‍⚕️ {{ selectedProject.doctorCount }} {{ 'admin.doctorCount' | translate }}</span>
+              </div>
+            </div>
+
+            <!-- Sub Navigation Tabs -->
+            <div class="project-sub-nav">
+              <button
+                [class.active]="projectImageTab === 'assigned'"
+                (click)="projectImageTab = 'assigned'">
+                <i class="fas fa-folder-open"></i>
+                {{ 'admin.projectImages' | translate }}
+                <span class="count-badge">{{ getProjectImages().length }}</span>
+              </button>
+              <button
+                [class.active]="projectImageTab === 'available'"
+                (click)="projectImageTab = 'available'">
+                <i class="fas fa-plus-circle"></i>
+                {{ 'admin.availableImages' | translate }}
+                <span class="count-badge">{{ getAvailableImages().length }}</span>
+              </button>
+            </div>
+
+            <!-- Project Images Tab -->
+            <div class="project-images-section" *ngIf="projectImageTab === 'assigned'">
+              <div *ngIf="getProjectImages().length === 0" class="no-images-message">
+                <i class="fas fa-images"></i>
+                <p>{{ 'admin.noImagesInProject' | translate }}</p>
+                <button class="btn-primary" (click)="projectImageTab = 'available'">
+                  <i class="fas fa-plus"></i> {{ 'admin.addImages' | translate }}
+                </button>
+              </div>
+
+              <div class="images-grid" *ngIf="getProjectImages().length > 0">
+                <div class="image-card assigned" *ngFor="let image of getProjectImages()">
+                  <div class="image-preview" (click)="openImageInAnnotator(image)">
+                    <img
+                      *ngIf="image.status === 'READY'"
+                      [src]="getImageThumbnail(image.id)"
+                      [alt]="image.name"
+                      (error)="onThumbnailError($event)"
+                      class="thumbnail-img">
+                    <span *ngIf="image.status !== 'READY'" class="placeholder-icon">
+                      {{ image.status === 'PROCESSING' ? '⏳' : image.status === 'ERROR' ? '❌' : '🖼️' }}
+                    </span>
+                    <div class="image-overlay" *ngIf="image.status === 'READY'">
+                      <i class="fas fa-search-plus"></i>
+                      <span>{{ 'admin.openInAnnotator' | translate }}</span>
+                    </div>
+                  </div>
+                  <div class="image-info">
+                    <strong>{{ image.name || image.fileName || 'Unnamed' }}</strong>
+                    <span class="image-size">{{ image.width }}x{{ image.height }}</span>
+                    <span class="image-status" [class]="image.status?.toLowerCase()">{{ image.status }}</span>
+                  </div>
+                  <div class="image-actions">
+                    <button
+                      class="btn-small btn-danger"
+                      (click)="removeImageFromProject(image); $event.stopPropagation()">
+                      <i class="fas fa-times"></i> {{ 'common.remove' | translate }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <p *ngIf="!selectedProjectForImages" class="info-text">
-              {{ 'admin.noProjectSelected' | translate }}
-            </p>
+            <!-- Available Images Tab -->
+            <div class="project-images-section" *ngIf="projectImageTab === 'available'">
+              <div *ngIf="getAvailableImages().length === 0" class="no-images-message">
+                <i class="fas fa-check-circle"></i>
+                <p>{{ 'admin.allImagesAssigned' | translate }}</p>
+                <button class="btn-secondary" (click)="projectImageTab = 'assigned'">
+                  <i class="fas fa-arrow-left"></i> {{ 'admin.backToProjectImages' | translate }}
+                </button>
+              </div>
+
+              <div class="images-grid" *ngIf="getAvailableImages().length > 0">
+                <div class="image-card available" *ngFor="let image of getAvailableImages()">
+                  <div class="image-preview">
+                    <img
+                      *ngIf="image.status === 'READY'"
+                      [src]="getImageThumbnail(image.id)"
+                      [alt]="image.name"
+                      (error)="onThumbnailError($event)"
+                      class="thumbnail-img">
+                    <span *ngIf="image.status !== 'READY'" class="placeholder-icon">
+                      {{ image.status === 'PROCESSING' ? '⏳' : image.status === 'ERROR' ? '❌' : '🖼️' }}
+                    </span>
+                  </div>
+                  <div class="image-info">
+                    <strong>{{ image.name || image.fileName || 'Unnamed' }}</strong>
+                    <span class="image-size">{{ image.width }}x{{ image.height }}</span>
+                    <span class="image-status" [class]="image.status?.toLowerCase()">{{ image.status }}</span>
+                  </div>
+                  <div class="image-actions">
+                    <button
+                      class="btn-small btn-success"
+                      (click)="addImageToProject(image)">
+                      <i class="fas fa-plus"></i> {{ 'common.assign' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -390,6 +458,25 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       background: rgba(255,255,255,0.3);
     }
 
+    .btn-viewer {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-viewer:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
     .btn-logout {
       background: rgba(255,255,255,0.2);
       border: none;
@@ -544,6 +631,11 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       color: #d32f2f;
     }
 
+    .btn-small.btn-success {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
     .btn-small:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -551,8 +643,20 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 
     .projects-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .projects-grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      }
     }
 
     .project-card {
@@ -561,6 +665,12 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .project-card.clickable {
+      cursor: pointer;
     }
 
     .project-card:hover {
@@ -570,13 +680,20 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 
     .project-thumbnail {
       width: 100%;
-      height: 140px;
+      height: 160px;
       background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       position: relative;
+      flex-shrink: 0;
+    }
+
+    @media (min-width: 1200px) {
+      .project-thumbnail {
+        height: 180px;
+      }
     }
 
     .project-thumbnail .thumbnail-img {
@@ -605,6 +722,9 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 
     .project-content {
       padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
     }
 
     .project-header {
@@ -647,10 +767,15 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 
     .project-stats {
       display: flex;
-      gap: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
       margin-bottom: 12px;
       color: #6B7280;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
+    }
+
+    .project-stats span {
+      white-space: nowrap;
     }
 
     .project-doctors {
@@ -664,10 +789,40 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
     }
 
     .project-actions {
-      display: flex;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+      gap: 6px;
       padding-top: 12px;
       border-top: 1px solid #E5E7EB;
+      margin-top: auto;
+    }
+
+    .project-actions .btn-small {
+      text-align: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      padding: 6px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 500px) {
+      .project-actions {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 400px) {
+      .project-actions {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+
+      .project-actions .btn-small {
+        font-size: 0.68rem;
+        padding: 5px 3px;
+      }
     }
 
     .modal-overlay {
@@ -756,6 +911,29 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
     .btn-small.btn-labels {
       background: #fff3e0;
       color: #e65100;
+    }
+
+    .btn-small.btn-report {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .btn-small.btn-report:hover:not(:disabled) {
+      background: #bbdefb;
+    }
+
+    .btn-small.btn-report:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-small.btn-report .spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     /* Image Assignment Styles */
@@ -874,6 +1052,187 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       border-radius: 8px;
     }
 
+    /* Project Detail View Styles */
+    .project-detail-view {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .back-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-back {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      color: #374151;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: #e5e7eb;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .project-info-badge {
+      display: flex;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    .badge-item {
+      background: #f3f4f6;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: #4B5563;
+    }
+
+    .project-sub-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 4px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      width: fit-content;
+    }
+
+    .project-sub-nav button {
+      background: transparent;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .project-sub-nav button:hover {
+      color: #374151;
+    }
+
+    .project-sub-nav button.active {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .count-badge {
+      background: #E5E7EB;
+      color: #4B5563;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .project-sub-nav button.active .count-badge {
+      background: #667eea;
+      color: white;
+    }
+
+    .project-images-section {
+      margin-top: 20px;
+    }
+
+    .image-card.available {
+      border: 2px dashed #D1D5DB;
+    }
+
+    .image-card.available:hover {
+      border-color: #667eea;
+    }
+
+    .no-images-message {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .no-images-message i {
+      font-size: 48px;
+      color: #9CA3AF;
+      margin-bottom: 16px;
+    }
+
+    .no-images-message i.fa-check-circle {
+      color: #10B981;
+    }
+
+    .no-images-message p {
+      color: #6B7280;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+
+    .image-preview {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .image-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(102, 126, 234, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      color: white;
+      gap: 8px;
+    }
+
+    .image-overlay i {
+      font-size: 24px;
+    }
+
+    .image-overlay span {
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .image-preview:hover .image-overlay {
+      opacity: 1;
+    }
+
+    .available-images-section {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .available-images-section .images-grid {
+      padding: 8px;
+    }
+
     /* Labels Styles */
     .labels-section {
       display: grid;
@@ -974,7 +1333,11 @@ export class AdminComponent implements OnInit {
 
   // Image assignment properties
   allImages: ImageMetadata[] = [];
-  selectedProjectForImages: Project | null = null;
+
+  // Project detail view properties
+  selectedProject: Project | null = null;
+  showAddImagesModal = false;
+  projectImageTab: 'assigned' | 'available' = 'assigned';
 
   // Label management properties
   showLabelsModal = false;
@@ -986,6 +1349,9 @@ export class AdminComponent implements OnInit {
     color: '#ff0000',
     description: ''
   };
+
+  // Report download state
+  reportDownloading: number | null = null;
 
   newUser: RegisterRequest = {
     username: '',
@@ -1007,7 +1373,10 @@ export class AdminComponent implements OnInit {
     private adminService: AdminService,
     private authService: AuthService,
     private imageService: ImageService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService,
+    private confirmDialog: ConfirmDialogService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -1036,23 +1405,37 @@ export class AdminComponent implements OnInit {
         this.showCreateUserModal = false;
         this.resetNewUser();
         this.loadUsers();
+        this.toastService.success('Kullanıcı başarıyla oluşturuldu');
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to create user');
+        this.toastService.error(err.error?.message || 'Kullanıcı oluşturulamadı');
       }
     });
   }
 
   toggleUserStatus(user: User): void {
-    this.adminService.updateUserStatus(user.id, !user.enabled).subscribe(() => {
-      this.loadUsers();
+    this.adminService.updateUserStatus(user.id, !user.enabled).subscribe({
+      next: () => {
+        this.loadUsers();
+        this.toastService.success(user.enabled ? 'Kullanıcı devre dışı bırakıldı' : 'Kullanıcı aktifleştirildi');
+      },
+      error: () => {
+        this.toastService.error('İşlem başarısız oldu');
+      }
     });
   }
 
-  deleteUser(user: User): void {
-    if (confirm(`Are you sure you want to delete ${user.username}?`)) {
-      this.adminService.deleteUser(user.id).subscribe(() => {
-        this.loadUsers();
+  async deleteUser(user: User): Promise<void> {
+    const confirmed = await this.confirmDialog.delete(user.username);
+    if (confirmed) {
+      this.adminService.deleteUser(user.id).subscribe({
+        next: () => {
+          this.loadUsers();
+          this.toastService.success('Kullanıcı silindi');
+        },
+        error: () => {
+          this.toastService.error('Kullanıcı silinemedi');
+        }
       });
     }
   }
@@ -1063,9 +1446,10 @@ export class AdminComponent implements OnInit {
         next: () => {
           this.closeProjectModal();
           this.loadProjects();
+          this.toastService.success('Proje güncellendi');
         },
         error: (err) => {
-          alert(err.error?.message || 'Failed to update project');
+          this.toastService.error(err.error?.message || 'Proje güncellenemedi');
         }
       });
     } else {
@@ -1073,9 +1457,10 @@ export class AdminComponent implements OnInit {
         next: () => {
           this.closeProjectModal();
           this.loadProjects();
+          this.toastService.success('Proje oluşturuldu');
         },
         error: (err) => {
-          alert(err.error?.message || 'Failed to create project');
+          this.toastService.error(err.error?.message || 'Proje oluşturulamadı');
         }
       });
     }
@@ -1092,12 +1477,47 @@ export class AdminComponent implements OnInit {
     this.showCreateProjectModal = true;
   }
 
-  deleteProject(project: Project): void {
-    if (confirm(`Are you sure you want to delete project "${project.name}"?`)) {
-      this.adminService.deleteProject(project.id).subscribe(() => {
-        this.loadProjects();
+  async deleteProject(project: Project): Promise<void> {
+    const confirmed = await this.confirmDialog.delete(project.name);
+    if (confirmed) {
+      this.adminService.deleteProject(project.id).subscribe({
+        next: () => {
+          this.loadProjects();
+          this.toastService.success('Proje silindi');
+        },
+        error: () => {
+          this.toastService.error('Proje silinemedi');
+        }
       });
     }
+  }
+
+  downloadReport(project: Project): void {
+    this.reportDownloading = project.id;
+    this.toastService.info('Rapor hazırlanıyor...');
+
+    // Use setTimeout to show spinner for at least 500ms for better UX
+    const startTime = Date.now();
+
+    this.adminService.downloadAnnotationReportWithCallback(
+      project.id,
+      project.name,
+      () => {
+        const elapsed = Date.now() - startTime;
+        const minDelay = 500;
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+
+        setTimeout(() => {
+          this.reportDownloading = null;
+          this.toastService.success('Rapor indirildi');
+        }, remainingDelay);
+      },
+      (error) => {
+        console.error('Report download failed:', error);
+        this.reportDownloading = null;
+        this.toastService.error('Rapor indirilemedi');
+      }
+    );
   }
 
   toggleDoctor(doctorId: number, event: Event): void {
@@ -1197,46 +1617,6 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  loadProjectImages(): void {
-    if (this.selectedProjectForImages) {
-      const selectedId = this.selectedProjectForImages.id;
-      // Refresh projects and update selected project reference
-      this.adminService.getAllProjects().subscribe(projects => {
-        this.projects = projects;
-        // Update the selected project reference with fresh data
-        this.selectedProjectForImages = projects.find(p => p.id === selectedId) || null;
-      });
-    }
-  }
-
-  isImageAssignedToProject(imageId: number): boolean {
-    return this.selectedProjectForImages?.imageIds?.includes(imageId) ?? false;
-  }
-
-  toggleImageAssignment(image: ImageMetadata): void {
-    if (!this.selectedProjectForImages) return;
-
-    const projectId = this.selectedProjectForImages.id;
-    const imageId = image.id;
-
-    if (this.isImageAssignedToProject(imageId)) {
-      this.adminService.removeImageFromProject(projectId, imageId).subscribe({
-        next: (updatedProject) => {
-          this.selectedProjectForImages = updatedProject;
-          this.loadProjects();
-        },
-        error: (err) => alert(err.error?.message || 'Failed to remove image')
-      });
-    } else {
-      this.adminService.addImageToProject(projectId, imageId).subscribe({
-        next: (updatedProject) => {
-          this.selectedProjectForImages = updatedProject;
-          this.loadProjects();
-        },
-        error: (err) => alert(err.error?.message || 'Failed to assign image')
-      });
-    }
-  }
 
   // Label Management Methods
   openLabelsModal(project: Project): void {
@@ -1263,16 +1643,18 @@ export class AdminComponent implements OnInit {
         next: () => {
           this.loadProjectLabels();
           this.cancelEditLabel();
+          this.toastService.success('Etiket güncellendi');
         },
-        error: (err) => alert(err.error?.message || 'Failed to update label')
+        error: (err) => this.toastService.error(err.error?.message || 'Etiket güncellenemedi')
       });
     } else {
       this.adminService.createLabel(projectId, this.newLabel).subscribe({
         next: () => {
           this.loadProjectLabels();
           this.resetNewLabel();
+          this.toastService.success('Etiket oluşturuldu');
         },
-        error: (err) => alert(err.error?.message || 'Failed to create label')
+        error: (err) => this.toastService.error(err.error?.message || 'Etiket oluşturulamadı')
       });
     }
   }
@@ -1291,13 +1673,17 @@ export class AdminComponent implements OnInit {
     this.resetNewLabel();
   }
 
-  deleteLabel(label: Label): void {
+  async deleteLabel(label: Label): Promise<void> {
     if (!this.selectedProjectForLabels) return;
 
-    if (confirm(`Are you sure you want to delete label "${label.name}"?`)) {
+    const confirmed = await this.confirmDialog.delete(label.name);
+    if (confirmed) {
       this.adminService.deleteLabel(this.selectedProjectForLabels.id, label.id).subscribe({
-        next: () => this.loadProjectLabels(),
-        error: (err) => alert(err.error?.message || 'Failed to delete label')
+        next: () => {
+          this.loadProjectLabels();
+          this.toastService.success('Etiket silindi');
+        },
+        error: (err) => this.toastService.error(err.error?.message || 'Etiket silinemedi')
       });
     }
   }
@@ -1308,8 +1694,9 @@ export class AdminComponent implements OnInit {
     this.adminService.createDefaultLabels(this.selectedProjectForLabels.id).subscribe({
       next: (labels) => {
         this.projectLabels = labels;
+        this.toastService.success('Varsayılan etiketler oluşturuldu');
       },
-      error: (err) => alert(err.error?.message || 'Failed to create default labels')
+      error: (err) => this.toastService.error(err.error?.message || 'Varsayılan etiketler oluşturulamadı')
     });
   }
 
@@ -1319,6 +1706,71 @@ export class AdminComponent implements OnInit {
       color: '#ff0000',
       description: ''
     };
+  }
+
+  // Project Detail View Methods
+  selectProject(project: Project): void {
+    this.selectedProject = project;
+    this.projectImageTab = 'assigned'; // Reset to assigned tab
+    // Refresh the project to get latest data
+    this.adminService.getProject(project.id).subscribe({
+      next: (updatedProject) => {
+        this.selectedProject = updatedProject;
+      },
+      error: (err) => console.error('Failed to load project details:', err)
+    });
+  }
+
+  backToProjects(): void {
+    this.selectedProject = null;
+    this.projectImageTab = 'assigned'; // Reset tab
+    this.loadProjects(); // Refresh projects list
+  }
+
+  getProjectImages(): ImageMetadata[] {
+    if (!this.selectedProject || !this.selectedProject.imageIds) {
+      return [];
+    }
+    return this.allImages.filter(img => this.selectedProject!.imageIds.includes(img.id));
+  }
+
+  getAvailableImages(): ImageMetadata[] {
+    if (!this.selectedProject || !this.selectedProject.imageIds) {
+      return this.allImages;
+    }
+    return this.allImages.filter(img => !this.selectedProject!.imageIds.includes(img.id));
+  }
+
+  addImageToProject(image: ImageMetadata): void {
+    if (!this.selectedProject) return;
+
+    this.adminService.addImageToProject(this.selectedProject.id, image.id).subscribe({
+      next: (updatedProject) => {
+        this.selectedProject = updatedProject;
+        this.loadProjects();
+        this.toastService.success('Görüntü projeye eklendi');
+      },
+      error: (err) => this.toastService.error(err.error?.message || 'Görüntü eklenemedi')
+    });
+  }
+
+  removeImageFromProject(image: ImageMetadata): void {
+    if (!this.selectedProject) return;
+
+    this.adminService.removeImageFromProject(this.selectedProject.id, image.id).subscribe({
+      next: (updatedProject) => {
+        this.selectedProject = updatedProject;
+        this.loadProjects();
+        this.toastService.success('Görüntü projeden kaldırıldı');
+      },
+      error: (err) => this.toastService.error(err.error?.message || 'Görüntü kaldırılamadı')
+    });
+  }
+
+  openImageInAnnotator(image: ImageMetadata): void {
+    if (image.status === 'READY') {
+      this.router.navigate(['/annotate', image.id]);
+    }
   }
 }
 

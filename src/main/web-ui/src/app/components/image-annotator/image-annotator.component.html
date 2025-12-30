@@ -10,47 +10,47 @@
   <!-- Main Toolbar -->
   <div class="main-toolbar">
     <div class="toolbar-section">
-      <button class="toolbar-btn" (click)="navigateHome()" title="Ana Sayfa">
+      <button class="toolbar-btn" (click)="navigateHome()" [title]="'admin.home' | translate">
         <i class="fas fa-home"></i>
       </button>
-      <button class="toolbar-btn" (click)="toggleSidebar()" title="Yan Panel">
+      <button class="toolbar-btn" (click)="toggleSidebar()" [title]="'annotator.sidebar' | translate">
         <i class="fas fa-bars"></i>
       </button>
     </div>
 
     <!-- Tools -->
     <div class="toolbar-section tools-section">
-      <button class="toolbar-btn" (click)="setTool(null)" title="Seçim Modu"
+      <button class="toolbar-btn" (click)="setTool(null)" [title]="'annotator.select' | translate"
               [class.active]="currentTool===null">
         <i class="fas fa-mouse-pointer"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('rect')" title="Dikdörtgen"
+      <button class="toolbar-btn" (click)="setTool('rect')" [title]="'annotator.rectangle' | translate"
               [class.active]="currentTool==='rect' || currentTool==='rectangle'">
         <i class="fas fa-square"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('polygon')" title="Çokgen"
+      <button class="toolbar-btn" (click)="setTool('polygon')" [title]="'annotator.polygon' | translate"
               [class.active]="currentTool==='polygon'">
         <i class="fas fa-draw-polygon"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('circle')" title="Daire"
+      <button class="toolbar-btn" (click)="setTool('circle')" [title]="'annotator.circle' | translate"
               [class.active]="currentTool==='circle'">
         <i class="fas fa-circle"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('ellipse')" title="Elips"
+      <button class="toolbar-btn" (click)="setTool('ellipse')" [title]="'annotator.ellipse' | translate"
               [class.active]="currentTool==='ellipse'">
         <i class="fas fa-compact-disc"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('freehand')" title="Serbest Çizim"
+      <button class="toolbar-btn" (click)="setTool('freehand')" [title]="'annotator.freehand' | translate"
               [class.active]="currentTool==='freehand'">
         <i class="fas fa-signature"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="setTool('point')" title="Nokta"
+      <button class="toolbar-btn" (click)="setTool('point')" [title]="'annotator.point' | translate"
               [class.active]="currentTool==='point'">
         <i class="fas fa-dot-circle"></i>
       </button>
@@ -58,7 +58,7 @@
 
     <!-- Zoom Controls with Magnification -->
     <div class="toolbar-section zoom-section">
-      <button class="toolbar-btn" (click)="zoomOut()" title="Uzaklaştır (-)">
+      <button class="toolbar-btn" (click)="zoomOut()" [title]="'annotator.zoomOut' | translate">
         <i class="fas fa-search-minus"></i>
       </button>
 
@@ -67,7 +67,7 @@
         <!-- Current magnification display -->
         <span class="magnification-display"
               (click)="toggleMagnificationInput()"
-              title="Zoom seviyesini değiştirmek için tıklayın (örn: 40x)">
+              [title]="'annotator.magnification' | translate">
           {{ magnificationDisplay }}
         </span>
 
@@ -97,33 +97,27 @@
             class="mag-btn"
             [class.active]="isActiveMagnification(mag)"
             (click)="setMagnificationFromPredefined(mag)"
-            title="{{mag}}x büyütme">
+            [title]="mag + 'x'">
             {{mag}}x
           </button>
         </div>
       </div>
 
-      <button class="toolbar-btn" (click)="zoomIn()" title="Yakınlaştır (+)">
+      <button class="toolbar-btn" (click)="zoomIn()" [title]="'annotator.zoomIn' | translate">
         <i class="fas fa-search-plus"></i>
       </button>
 
-      <button class="toolbar-btn" (click)="resetView()" title="Sıfırla (0)">
+      <button class="toolbar-btn" (click)="resetView()" [title]="'annotator.resetView' | translate">
         <i class="fas fa-compress-arrows-alt"></i>
       </button>
     </div>
 
     <div class="toolbar-section">
-      <button class="toolbar-btn" (click)="rotateLeft()" title="Sola Döndür">
+      <button class="toolbar-btn" (click)="rotateLeft()" [title]="'annotator.rotateLeft' | translate">
         <i class="fas fa-undo-alt"></i>
       </button>
-      <button class="toolbar-btn" (click)="rotateRight()" title="Sağa Döndür">
+      <button class="toolbar-btn" (click)="rotateRight()" [title]="'annotator.rotateRight' | translate">
         <i class="fas fa-redo-alt"></i>
-      </button>
-    </div>
-
-    <div class="toolbar-section ml-auto">
-      <button class="toolbar-btn" (click)="toggleSettings()" title="Ayarlar">
-        <i class="fas fa-cog"></i>
       </button>
     </div>
   </div>
@@ -133,194 +127,74 @@
     <!-- Sidebar -->
     <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
       <div class="sidebar-header">
-        <h3>Proje Paneli</h3>
+        <h3>{{ 'annotator.projectPanel' | translate }}</h3>
         <button class="sidebar-toggle" (click)="toggleSidebar()">
           <i class="fas" [class.fa-chevron-left]="!isSidebarCollapsed" [class.fa-chevron-right]="isSidebarCollapsed"></i>
         </button>
       </div>
 
       <div class="sidebar-content" *ngIf="!isSidebarCollapsed">
+        <!-- Quick Actions Bar -->
+        <div class="quick-actions-bar">
+          <button class="action-btn" (click)="exportAnnotations()" [title]="'annotator.exportAnnotations' | translate">
+            <i class="fas fa-download"></i>
+          </button>
+          <button class="action-btn" (click)="refreshAnnotations()" [title]="'common.refresh' | translate">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+
+        <!-- Current Image Info (Compact) -->
+        <div class="image-info-compact">
+          <div class="image-name" [title]="imageMetadata?.fileName || ''">
+            <i class="fas fa-image"></i>
+            <span>{{ imageMetadata?.fileName || ('annotator.unknown' | translate) }}</span>
+          </div>
+          <div class="image-stats">
+            <span class="stat">{{ imageMetadata?.width || 0 }} × {{ imageMetadata?.height || 0 }}</span>
+            <span class="stat-divider">|</span>
+            <span class="stat">{{ magnificationDisplay }}</span>
+          </div>
+        </div>
+
+
+        <!-- No Labels Warning -->
+        <div class="no-labels-warning" *ngIf="annotationLayers.length === 0 && !labelsLoading">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>{{ 'annotator.noLabelsForProject' | translate }}</span>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="tab-navigation">
-          <button
-            class="tab-btn"
-            [class.active]="activeTab === 'image-properties'"
-            (click)="activeTab = 'image-properties'">
-            <i class="fas fa-image"></i>
-            Görüntü Özellikleri
-          </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'annotations'"
             (click)="activeTab = 'annotations'">
             <i class="fas fa-tags"></i>
-            Anotasyonlar
+            <span class="badge" *ngIf="annotations.length > 0">{{ annotations.length }}</span>
           </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'layers'"
             (click)="activeTab = 'layers'">
             <i class="fas fa-layer-group"></i>
-            Katmanlar
           </button>
-        </div>
-
-        <!-- Image Properties Tab -->
-        <div class="tab-content" *ngIf="activeTab === 'image-properties'">
-          <div class="properties-section">
-            <h4>Genel Bilgiler</h4>
-            <div class="property-list">
-              <div class="property-item">
-                <span class="property-label">Dosya Adı:</span>
-                <span class="property-value">{{ imageMetadata?.fileName || 'Bilinmiyor' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Boyut (Pixel):</span>
-                <span class="property-value">{{ imageMetadata?.width || 0 }} × {{ imageMetadata?.height || 0 }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Dosya Boyutu:</span>
-                <span class="property-value">{{ formatFileSize(imageMetadata?.fileSize) }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Format:</span>
-                <span class="property-value">{{ imageMetadata?.format || 'Bilinmiyor' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Durum:</span>
-                <span class="property-value" [class]="'status-' + (imageMetadata?.status?.toLowerCase() || 'unknown')">
-                  {{ imageMetadata?.status || 'Bilinmiyor' }}
-                </span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Oluşturulma:</span>
-                <span class="property-value">{{ imageMetadata?.created ? (imageMetadata?.created | date:'dd/MM/yyyy HH:mm') : 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Güncellenme:</span>
-                <span class="property-value">{{ imageMetadata?.updated ? (imageMetadata?.updated | date:'dd/MM/yyyy HH:mm') : 'N/A' }}</span>
-              </div>
-            </div>
-
-            <h4>Teknik Detaylar</h4>
-            <div class="property-list">
-              <div class="property-item">
-                <span class="property-label">Tile Boyutu:</span>
-                <span class="property-value">{{ imageMetadata?.tileSize || 512 }} px</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Zoom Seviyeleri:</span>
-                <span class="property-value">{{ imageMetadata?.maxLevel || 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Renk Derinliği:</span>
-                <span class="property-value">{{ imageMetadata?.bitDepth || 'N/A' }} bit</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Kanal Sayısı:</span>
-                <span class="property-value">{{ imageMetadata?.channels || 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Renk Uzayı:</span>
-                <span class="property-value">{{ imageMetadata?.colorSpace || 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Sıkıştırma:</span>
-                <span class="property-value">{{ imageMetadata?.compression || 'N/A' }}</span>
-              </div>
-            </div>
-
-            <h4>Mikroskopi Bilgileri</h4>
-            <div class="property-list">
-              <div class="property-item">
-                <span class="property-label">Pixel Boyutu (X):</span>
-                <span class="property-value">{{ imageMetadata?.pixelSizeX ? (imageMetadata?.pixelSizeX + ' μm/pixel') : 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Pixel Boyutu (Y):</span>
-                <span class="property-value">{{ imageMetadata?.pixelSizeY ? (imageMetadata?.pixelSizeY + ' μm/pixel') : 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Büyütme:</span>
-                <span class="property-value">{{ imageMetadata?.magnification ? (imageMetadata?.magnification + 'x') : magnificationDisplay }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Objektif:</span>
-                <span class="property-value">{{ imageMetadata?.objective || 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Tarayıcı:</span>
-                <span class="property-value">{{ imageMetadata?.scanner || 'N/A' }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Tarama Tarihi:</span>
-                <span class="property-value">{{ imageMetadata?.scanDate || 'N/A' }}</span>
-              </div>
-            </div>
-
-            <h4>Hesaplanmış Özellikler</h4>
-            <div class="property-list">
-              <div class="property-item">
-                <span class="property-label">Toplam Alan:</span>
-                <span class="property-value">{{ imageMetadata?.totalArea ? formatArea(imageMetadata?.totalArea) : 'N/A' }}</span>
-              </div>
-              <div class="property-item" *ngIf="imageMetadata?.physicalWidth">
-                <span class="property-label">Fiziksel Genişlik:</span>
-                <span class="property-value">{{ imageMetadata?.physicalWidth?.toFixed(2) }} μm</span>
-              </div>
-              <div class="property-item" *ngIf="imageMetadata?.physicalHeight">
-                <span class="property-label">Fiziksel Yükseklik:</span>
-                <span class="property-value">{{ imageMetadata?.physicalHeight?.toFixed(2) }} μm</span>
-              </div>
-              <div class="property-item" *ngIf="imageMetadata?.physicalWidth && imageMetadata?.physicalHeight">
-                <span class="property-label">Fiziksel Alan:</span>
-                <span class="property-value">{{ (imageMetadata?.physicalWidth! * imageMetadata?.physicalHeight! / 1000000).toFixed(4) }} mm²</span>
-              </div>
-            </div>
-
-            <!-- Current View Information -->
-            <h4>Mevcut Görünüm</h4>
-            <div class="property-list">
-              <div class="property-item">
-                <span class="property-label">Zoom Seviyesi:</span>
-                <span class="property-value">{{ magnificationDisplay }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Merkez Konumu:</span>
-                <span class="property-value">X: {{ viewerState.center.x.toFixed(4) }}, Y: {{ viewerState.center.y.toFixed(4) }}</span>
-              </div>
-              <div class="property-item">
-                <span class="property-label">Döndürme:</span>
-                <span class="property-value">{{ viewerState.rotation }}°</span>
-              </div>
-            </div>
-          </div>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'image-properties'"
+            (click)="activeTab = 'image-properties'">
+            <i class="fas fa-info-circle"></i>
+          </button>
         </div>
 
         <!-- Annotations Tab -->
         <div class="tab-content" *ngIf="activeTab === 'annotations'">
-          <div class="annotations-header">
-            <div class="annotation-controls">
-              <button class="btn btn-sm btn-primary" (click)="refreshAnnotations()">
-                <i class="fas fa-sync-alt"></i> Yenile
-              </button>
-              <button class="btn btn-sm btn-success" (click)="exportAnnotations()">
-                <i class="fas fa-download"></i> Dışa Aktar
-              </button>
-              <button class="btn btn-sm btn-danger" (click)="clearAnnotations()">
-                <i class="fas fa-trash"></i> Temizle
-              </button>
-            </div>
-            <div class="annotation-stats">
-              <span class="stat-item">Toplam: {{ annotations.length }}</span>
-            </div>
-          </div>
-
           <div class="annotation-search">
+            <i class="fas fa-search search-icon"></i>
             <input
               type="text"
               class="search-input"
-              placeholder="Anotasyon ara..."
+              [placeholder]="'annotator.searchAnnotations' | translate"
               [(ngModel)]="annotationSearchQuery">
           </div>
 
@@ -332,49 +206,55 @@
               (click)="selectAnnotation(annotation)">
 
               <div class="annotation-header-compact">
-      <span class="annotation-type-badge" [style.background-color]="annotation.color">
-        {{ annotation.type }}
-      </span>
+                <span class="annotation-type-badge" [style.background-color]="annotation.color">
+                  {{ annotation.type }}
+                </span>
                 <div class="annotation-actions">
-                  <button class="btn-icon-small" (click)="zoomToAnnotation(annotation); $event.stopPropagation()" title="Konuma Git">
-                    <i class="fas fa-search-location"></i>
+                  <button class="btn-icon-small" (click)="zoomToAnnotation(annotation); $event.stopPropagation()" [title]="'annotator.goToLocation' | translate">
+                    <i class="fas fa-crosshairs"></i>
                   </button>
-                  <button class="btn-icon-small" (click)="deleteAnnotation(annotation); $event.stopPropagation()" title="Sil">
+                  <button class="btn-icon-small delete" (click)="deleteAnnotation(annotation); $event.stopPropagation()" [title]="'common.delete' | translate">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
 
-              <div class="annotation-info-compact">
-                <span class="info-text">{{ annotation.creator }}</span>
-                <span class="info-text" *ngIf="annotation.notes">{{ annotation.notes | slice:0:30 }}...</span>
+              <div class="annotation-info-compact" *ngIf="annotation.creator || annotation.notes">
+                <span class="info-text" *ngIf="annotation.creator">
+                  <i class="fas fa-user"></i> {{ annotation.creator }}
+                </span>
+                <span class="info-text" *ngIf="annotation.notes">{{ annotation.notes | slice:0:40 }}...</span>
               </div>
             </div>
 
-            <div *ngIf="filteredAnnotations.length === 0" class="empty-state">
-              <i class="fas fa-tags"></i>
-              <p>Henüz anotasyon bulunmuyor</p>
+            <div *ngIf="filteredAnnotations.length === 0" class="empty-state-small">
+              <i class="fas fa-draw-polygon"></i>
+              <p>{{ 'annotator.noAnnotations' | translate }}</p>
+              <span class="hint">{{ 'annotator.startAnnotating' | translate }}</span>
             </div>
+          </div>
+
+          <!-- Bulk Actions -->
+          <div class="bulk-actions" *ngIf="annotations.length > 0">
+            <button class="btn btn-sm btn-outline-danger" (click)="clearAnnotations()">
+              <i class="fas fa-trash"></i> {{ 'annotator.clearAll' | translate }}
+            </button>
           </div>
         </div>
 
         <!-- Layers Tab -->
         <div class="tab-content" *ngIf="activeTab === 'layers'">
-          <div class="layers-header">
-            <h4>Katman Yönetimi</h4>
-            <!-- Yeni Katman butonu kaldırıldı -->
-          </div>
-
           <div class="layer-controls">
             <button class="btn btn-sm" (click)="toggleAllLayers()">
-              <i class="fas fa-eye"></i> Tümünü Aç/Kapat
+              <i class="fas fa-eye"></i> {{ 'annotator.toggleAll' | translate }}
             </button>
           </div>
 
           <div class="layer-list">
             <div
               *ngFor="let layer of annotationLayers"
-              class="layer-item">
+              class="layer-item"
+              [class.hidden-layer]="!layer.visible">
 
               <div class="layer-header">
                 <div class="layer-visibility">
@@ -395,6 +275,94 @@
                 </div>
               </div>
             </div>
+
+            <div *ngIf="annotationLayers.length === 0" class="empty-state-small">
+              <i class="fas fa-layer-group"></i>
+              <p>{{ 'annotator.noLabelsForProject' | translate }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Properties Tab (Simplified) -->
+        <div class="tab-content" *ngIf="activeTab === 'image-properties'">
+          <div class="properties-section">
+            <h4>{{ 'annotator.generalInfo' | translate }}</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">{{ 'annotator.filename' | translate }}</span>
+                <span class="property-value">{{ imageMetadata?.fileName || ('annotator.unknown' | translate) }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">{{ 'annotator.dimensions' | translate }}</span>
+                <span class="property-value">{{ imageMetadata?.width || 0 }} × {{ imageMetadata?.height || 0 }} px</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">{{ 'common.size' | translate }}</span>
+                <span class="property-value">{{ formatFileSize(imageMetadata?.fileSize) }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">{{ 'annotator.format' | translate }}</span>
+                <span class="property-value">{{ imageMetadata?.format || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <h4>{{ 'annotator.currentView' | translate }}</h4>
+            <div class="property-list">
+              <div class="property-item">
+                <span class="property-label">{{ 'annotator.magnification' | translate }}</span>
+                <span class="property-value">{{ magnificationDisplay }}</span>
+              </div>
+              <div class="property-item">
+                <span class="property-label">{{ 'annotator.rotation' | translate }}</span>
+                <span class="property-value">{{ viewerState.rotation }}°</span>
+              </div>
+            </div>
+
+            <!-- Expandable Technical Details -->
+            <details class="expandable-section">
+              <summary>{{ 'annotator.technicalDetails' | translate }}</summary>
+              <div class="property-list">
+                <div class="property-item">
+                  <span class="property-label">{{ 'annotator.tileSize' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.tileSize || 512 }} px</span>
+                </div>
+                <div class="property-item">
+                  <span class="property-label">{{ 'annotator.zoomLevels' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.maxLevel || 'N/A' }}</span>
+                </div>
+                <div class="property-item" *ngIf="imageMetadata?.bitDepth">
+                  <span class="property-label">{{ 'annotator.colorDepth' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.bitDepth }} bit</span>
+                </div>
+                <div class="property-item" *ngIf="imageMetadata?.colorSpace">
+                  <span class="property-label">{{ 'annotator.colorSpace' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.colorSpace }}</span>
+                </div>
+              </div>
+            </details>
+
+            <!-- Expandable Microscopy Info -->
+            <details class="expandable-section" *ngIf="imageMetadata?.pixelSizeX || imageMetadata?.scanner">
+              <summary>{{ 'annotator.microscopyInfo' | translate }}</summary>
+              <div class="property-list">
+                <div class="property-item" *ngIf="imageMetadata?.pixelSizeX">
+                  <span class="property-label">{{ 'annotator.pixelSizeX' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.pixelSizeX }} μm/px</span>
+                </div>
+                <div class="property-item" *ngIf="imageMetadata?.pixelSizeY">
+                  <span class="property-label">{{ 'annotator.pixelSizeY' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.pixelSizeY }} μm/px</span>
+                </div>
+                <div class="property-item" *ngIf="imageMetadata?.scanner">
+                  <span class="property-label">{{ 'annotator.scanner' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.scanner }}</span>
+                </div>
+                <div class="property-item" *ngIf="imageMetadata?.objective">
+                  <span class="property-label">{{ 'annotator.objective' | translate }}</span>
+                  <span class="property-value">{{ imageMetadata?.objective }}</span>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -410,7 +378,7 @@
   <div class="modal" *ngIf="showSettings" (click)="showSettings = false">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Ayarlar</h2>
+        <h2>{{ 'settings.title' | translate }}</h2>
         <button class="close-btn" (click)="showSettings = false">
           <i class="fas fa-times"></i>
         </button>
@@ -418,19 +386,19 @@
 
       <div class="modal-body">
         <div class="form-row">
-          <label for="tagVocab">Etiket sözlüğü (virgülle ayır):</label>
+          <label for="tagVocab">{{ 'annotator.labelVocabulary' | translate }}:</label>
           <input id="tagVocab" type="text" [(ngModel)]="tagVocabInput"
-                 placeholder="Örn: Nucleus,Tumor,Necrosis,Stroma,Muscle" />
+                 [placeholder]="'annotator.labelVocabularyPlaceholder' | translate" />
         </div>
 
         <div class="form-actions" style="margin-top:12px;">
-          <button class="btn btn-primary" (click)="applySettings()">Uygula</button>
+          <button class="btn btn-primary" (click)="applySettings()">{{ 'annotator.apply' | translate }}</button>
         </div>
 
-        <p class="hint">Not: Değişiklikten sonra mevcut anotasyonlar korunur.</p>
+        <p class="hint">{{ 'annotator.settingsNote' | translate }}</p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="showSettings = false">Kapat</button>
+        <button class="btn btn-secondary" (click)="showSettings = false">{{ 'common.close' | translate }}</button>
       </div>
     </div>
   </div>

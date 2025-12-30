@@ -107,7 +107,7 @@ import {
     predefinedMagnifications: number[] = [0.5, 1, 2, 5, 10, 20, 40, 60, 80, 100];
 
     // Sidebar State
-    activeTab: 'annotations' | 'properties' | 'layers' | 'stats' | 'insights' | 'image-properties' = 'image-properties';
+    activeTab: 'annotations' | 'properties' | 'layers' | 'stats' | 'insights' | 'image-properties' = 'annotations';
 
     insights: any = null;
 
@@ -115,6 +115,7 @@ import {
     annotations: AnnotationItem[] = [];
     selectedAnnotation: AnnotationItem | null = null;
     annotationLayers: LayerItem[] = [];
+    selectedLabelId: string | null = null;
 
     // Current project ID (if image belongs to a project)
     currentProjectId: number | null = null;
@@ -1434,5 +1435,19 @@ import {
 
     toggleSettings(): void {
       this.showSettings = !this.showSettings;
+    }
+
+    // Select a label for annotation
+    selectLabel(layer: LayerItem): void {
+      this.selectedLabelId = layer.id;
+      // Visual feedback - the label is selected for next annotation
+      console.log('Selected label:', layer.name, layer.color);
+    }
+
+    // Save all annotations
+    saveAllAnnotations(): void {
+      // Annotations are auto-saved, but this provides explicit feedback
+      console.log('Saving all annotations...');
+      // Could trigger a manual sync if needed
     }
   }

@@ -98,32 +98,32 @@
       </div>
 
       <!-- Filter -->
-      <div>
-        <select class="filter-select" (change)="onFilterChange($event)">
-          <option value="all">{{ 'home.allImages' | translate }}</option>
-          <option value="ready">{{ 'home.ready' | translate }}</option>
-          <option value="processing">{{ 'home.processing' | translate }}</option>
-          <option value="failed">{{ 'home.failed' | translate }}</option>
-        </select>
-      </div>
-
+      <select class="filter-select" (change)="onFilterChange($event)">
+        <option value="all">{{ 'home.allImages' | translate }}</option>
+        <option value="ready">{{ 'home.ready' | translate }}</option>
+        <option value="processing">{{ 'home.processing' | translate }}</option>
+        <option value="failed">{{ 'home.failed' | translate }}</option>
+      </select>
 
       <!-- Sort -->
-      <div>
-        <select class="sort-select" (change)="onSortChange($event)">
-          <option value="date-desc">{{ 'home.newest' | translate }}</option>
-          <option value="date-asc">{{ 'home.oldest' | translate }}</option>
-          <option value="name-asc">{{ 'home.nameAZ' | translate }}</option>
-          <option value="name-desc">{{ 'home.nameZA' | translate }}</option>
-        </select>
-      </div>
+      <select class="sort-select" (change)="onSortChange($event)">
+        <option value="date-desc">{{ 'home.newest' | translate }}</option>
+        <option value="date-asc">{{ 'home.oldest' | translate }}</option>
+        <option value="name-asc">{{ 'home.nameAZ' | translate }}</option>
+        <option value="name-desc">{{ 'home.nameZA' | translate }}</option>
+      </select>
     </div>
   </div>
 
   <!-- Gallery Grid -->
   <div class="gallery-container">
+    <!-- Loading Skeleton -->
+    <div class="image-grid" *ngIf="isLoading && !uploading">
+      <app-skeleton type="card" [count]="6"></app-skeleton>
+    </div>
+
     <!-- Empty State -->
-    <div class="empty-state" *ngIf="filteredImages.length === 0 && !uploading">
+    <div class="empty-state" *ngIf="!isLoading && filteredImages.length === 0 && !uploading">
       <div class="empty-content">
         <i class="fas fa-folder-open"></i>
         <h3>{{ searchTerm ? ('home.noSearchResult' | translate) : ('home.noImages' | translate) }}</h3>
@@ -140,7 +140,7 @@
     </div>
 
     <!-- Image Grid -->
-    <div class="image-grid" [class.list-view]="currentView === 'list'" *ngIf="filteredImages.length > 0">
+    <div class="image-grid" [class.list-view]="currentView === 'list'" *ngIf="!isLoading && filteredImages.length > 0">
       <div
         class="image-card"
         *ngFor="let img of filteredImages"

@@ -134,5 +134,55 @@ export class AdminService {
   getProjectsByImage(imageId: number): Observable<Project[]> {
     return this.http.get<Project[]>(`${this.PROJECT_URL}/by-image/${imageId}`);
   }
+
+  // Report Generation
+  downloadAnnotationReport(projectId: number, projectName: string): void {
+    this.downloadAnnotationReportWithCallback(projectId, projectName, () => {}, (error) => {
+      console.error('Failed to download report:', error);
+      alert('Rapor indirilemedi. Lütfen tekrar deneyin.');
+    });
+  }
+
+  downloadAnnotationReportWithCallback(
+    projectId: number,
+    projectName: string,
+    onSuccess: () => void,
+    onError: (error: any) => void
+  ): void {
+    this.http.get(`${this.PROJECT_URL}/${projectId}/annotations/report`, {
+      responseType: 'blob',
+      observe: 'response'
+    }).subscribe({
+      next: (response) => {
+        const blob = response.body;
+        if (blob) {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+
+          // Get filename from Content-Disposition header or generate one
+          const contentDisposition = response.headers.get('Content-Disposition');
+          let fileName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_dataset.csv`;
+
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
+            if (filenameMatch && filenameMatch[1]) {
+              fileName = filenameMatch[1];
+            }
+          }
+
+          link.download = fileName;
+          link.click();
+          window.URL.revokeObjectURL(url);
+        }
+        onSuccess();
+      },
+      error: (error) => {
+        console.error('Failed to download report:', error);
+        alert('Rapor indirilemedi. Lütfen tekrar deneyin.');
+        onError(error);
+      }
+    });
+  }
 }
 

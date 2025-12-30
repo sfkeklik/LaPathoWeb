@@ -8,11 +8,14 @@ import { ImageUploadService, UploadProgress } from '../../services/image-upload.
 import { ImageEditModalComponent } from '../image-edit-modal/image-edit-modal.component';
 import { AuthService } from '../../services/auth.service';
 import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { SkeletonComponent } from '../skeleton/skeleton.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ImageEditModalComponent, TranslateModule, LanguageSwitcherComponent],
+  imports: [CommonModule, RouterModule, ImageEditModalComponent, TranslateModule, LanguageSwitcherComponent, SkeletonComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
@@ -21,6 +24,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   images: ImageOverview[] = [];
   uploading = false;
+  isLoading = true; // Loading state for skeleton
 
   // Upload progress tracking - Multi file support
   uploadProgress = 0;
@@ -84,7 +88,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     private imageService: ImageService,
     private uploadService: ImageUploadService,
     private router: Router,
-    public authService: AuthService
+    public authService: AuthService,
+    private toastService: ToastService,
+    private confirmDialog: ConfirmDialogService
   ) {}
 
   ngOnInit() {
@@ -106,13 +112,18 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Manuel yenileme
   refreshImages(): void {
+    this.isLoading = true;
     this.imageService.getImages().subscribe({
       next: list => {
         console.log('Images refreshed:', list.length, 'images');
         this.allImages = list;
         this.images = list;
+        this.isLoading = false;
       },
-      error: err => console.error('Liste yüklenirken hata:', err)
+      error: err => {
+        console.error('Liste yüklenirken hata:', err);
+        this.isLoading = false;
+      }
     });
   }
 
@@ -268,18 +279,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   /** Image silme işlemi */
-  deleteImage(image: ImageOverview, event: Event) {
+  async deleteImage(image: ImageOverview, event: Event) {
     event.stopPropagation();
 
-    if (confirm(`"${image.name}" isimli görüntüyü silmek istediğinizden emin misiniz?`)) {
+    const confirmed = await this.confirmDialog.delete(image.name);
+    if (confirmed) {
       this.imageService.deleteImage(image.id).subscribe({
         next: () => {
-          console.log('Image başarıyla silindi');
+          this.toastService.success('Görüntü başarıyla silindi');
           this.loadListOnce();
         },
         error: (err) => {
           console.error('Image silinirken hata:', err);
-          alert('Image silinirken bir hata oluştu!');
+          this.toastService.error('Görüntü silinirken bir hata oluştu');
         }
       });
     }

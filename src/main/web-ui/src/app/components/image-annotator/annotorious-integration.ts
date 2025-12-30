@@ -1168,42 +1168,81 @@ export class AnnotoriousIntegration {
     return allAnnotations.find((a: any) => a.id === id);
   }
 
-  // Navigation methods
-  public zoomToAnnotation(annotationId: string) {
-    // Önce annotationsMap'ten al
-    const metadata = this.annotationsMap.get(annotationId);
-    if (!metadata || !metadata.geometry || !this.viewer) return;
+    // Navigation methods
+    public zoomToAnnotation(annotationId: string) {
+    if (!this.viewer) {
+      console.warn('Viewer not available for zoom');
+      return;
+    }
 
-    const annotation = metadata.geometry;
+    // Try to get annotation from annotorious first (more reliable)
+    let annotation: any = null;
+    if (this.annotorious) {
+      const allAnnotations = this.annotorious.getAnnotations();
+      annotation = allAnnotations.find((a: any) => a.id === annotationId);
+    }
+
+    // Fallback to annotationsMap
+    if (!annotation) {
+      const metadata = this.annotationsMap.get(annotationId);
+      if (metadata?.geometry) {
+        annotation = metadata.geometry;
+      }
+    }
+
+    if (!annotation) {
+      console.warn('Annotation not found:', annotationId);
+      return;
+    }
 
     // Extract bounds from annotation
     const bounds = this.getAnnotationBounds(annotation);
-    if (!bounds) return;
+    if (!bounds) {
+      console.warn('Could not calculate bounds for annotation:', annotationId);
+      return;
+    }
+
+    // Ensure minimum size for point annotations (add padding)
+    const minSize = Math.max(bounds.width, bounds.height, 100);
+    const padding = minSize * 0.5;
+
+    const paddedBounds = {
+      x: bounds.x - padding,
+      y: bounds.y - padding,
+      width: bounds.width + (padding * 2),
+      height: bounds.height + (padding * 2)
+    };
 
     // Convert to viewport coordinates and zoom
     const viewportBounds = this.viewer.viewport.imageToViewportRectangle(
-      bounds.x,
-      bounds.y,
-      bounds.width,
-      bounds.height
+      paddedBounds.x,
+      paddedBounds.y,
+      paddedBounds.width,
+      paddedBounds.height
     );
 
     this.viewer.viewport.fitBounds(viewportBounds, true);
 
-    // Anotasyonu da seç
-    if (this.annotorious) {
-      const allAnnotations = this.annotorious.getAnnotations();
-      const targetAnnotation = allAnnotations.find((a: any) => a.id === annotationId);
-      if (targetAnnotation) {
-        this.annotorious.selectAnnotation(targetAnnotation);
-      }
+    // Select the annotation
+    if (this.annotorious && annotation) {
+      this.annotorious.selectAnnotation(annotation);
     }
-  }
+    }
 
-  private getAnnotationBounds(annotation: any): any {
-    if (!annotation?.target?.selector?.value) return null;
+    private getAnnotationBounds(annotation: any): any {
+    // Handle both direct SVG value and nested structure
+    let svgValue: string = '';
 
-    const svgValue: string = annotation.target.selector.value;
+    if (annotation?.target?.selector?.value) {
+      svgValue = annotation.target.selector.value;
+    } else if (typeof annotation === 'string') {
+      svgValue = annotation;
+    }
+
+    if (!svgValue) {
+      console.warn('No SVG value found in annotation');
+      return null;
+    }
 
     const toNum = (v: any): number => {
       const n = parseFloat(String(v ?? ''));
@@ -1219,12 +1258,12 @@ export class AnnotoriousIntegration {
       if (w > 0 && h > 0) return { x, y, width: w, height: h };
     }
 
-    // circle
+    // circle (including point annotations which are small circles)
     if (svgValue.includes('<circle')) {
       const cx = toNum(svgValue.match(/cx="([^"]*)"/)?.[1]);
       const cy = toNum(svgValue.match(/cy="([^"]*)"/)?.[1]);
-      const r = toNum(svgValue.match(/r="([^"]*)"/)?.[1]);
-      if (r > 0) return { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r };
+      const r = toNum(svgValue.match(/r="([^"]*)"/)?.[1]) || 5; // Default radius for points
+      return { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r };
     }
 
     // ellipse
@@ -1240,31 +1279,17 @@ export class AnnotoriousIntegration {
     if (svgValue.includes('<polygon')) {
       const points = svgValue.match(/points="([^"]*)"/)?.[1];
       if (points) {
-        const nums = points.trim().split(/\s+|,/).map(n => parseFloat(n)).filter(n => isFinite(n));
-        if (nums.length >= 4) {
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          for (let i = 0; i < nums.length; i += 2) {
-            const x = nums[i];
-            const y = nums[i + 1];
-            if (!isFinite(x) || !isFinite(y)) continue;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-          }
-          if (isFinite(minX) && isFinite(maxX) && isFinite(minY) && isFinite(maxY)) {
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-          }
-        }
+        const bounds = this.getPointsBounds(points);
+        if (bounds) return bounds;
       }
     }
 
-    // path (approximate)
+    // path (for freehand)
     if (svgValue.includes('<path')) {
       const d = svgValue.match(/d="([^"]*)"/i)?.[1];
       if (d) {
         const nums = (d.match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/gi) || []).map(n => parseFloat(n)).filter(n => isFinite(n));
-        if (nums.length >= 4) {
+        if (nums.length >= 2) {
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           for (let i = 0; i < nums.length - 1; i += 2) {
             const x = nums[i];
@@ -1276,23 +1301,75 @@ export class AnnotoriousIntegration {
             if (y > maxY) maxY = y;
           }
           if (isFinite(minX) && isFinite(maxX) && isFinite(minY) && isFinite(maxY)) {
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+            return { x: minX, y: minY, width: maxX - minX || 1, height: maxY - minY || 1 };
           }
         }
       }
     }
 
-    return null;
-  }
-
-  public highlightAnnotation(annotationId: string) {
-    if (!this.annotorious) return;
-
-    const annotation = this.getAnnotationById(annotationId);
-    if (annotation) {
-      this.annotorious.selectAnnotation(annotation);
+    // xywh format (used by some annotation tools) - supports decimal numbers
+    const xywhMatch = svgValue.match(/xywh=pixel:([\d.]+),([\d.]+),([\d.]+),([\d.]+)/);
+    if (xywhMatch) {
+      const x = toNum(xywhMatch[1]);
+      const y = toNum(xywhMatch[2]);
+      const w = toNum(xywhMatch[3]);
+      const h = toNum(xywhMatch[4]);
+      // For point annotations (width/height = 0), use a minimum size
+      return {
+        x: x,
+        y: y,
+        width: w > 0 ? w : 1,
+        height: h > 0 ? h : 1
+      };
     }
-  }
+
+    // Also try the simpler xywh format without "pixel:" prefix
+    const xywhSimpleMatch = svgValue.match(/xywh=([\d.]+),([\d.]+),([\d.]+),([\d.]+)/);
+    if (xywhSimpleMatch) {
+      const x = toNum(xywhSimpleMatch[1]);
+      const y = toNum(xywhSimpleMatch[2]);
+      const w = toNum(xywhSimpleMatch[3]);
+      const h = toNum(xywhSimpleMatch[4]);
+      return {
+        x: x,
+        y: y,
+        width: w > 0 ? w : 1,
+        height: h > 0 ? h : 1
+      };
+    }
+
+    console.warn('Unknown annotation format:', svgValue.substring(0, 100));
+    return null;
+    }
+
+    private getPointsBounds(points: string): any {
+    const nums = points.trim().split(/\s+|,/).map(n => parseFloat(n)).filter(n => isFinite(n));
+    if (nums.length >= 4) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < nums.length; i += 2) {
+        const x = nums[i];
+        const y = nums[i + 1];
+        if (!isFinite(x) || !isFinite(y)) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+      if (isFinite(minX) && isFinite(maxX) && isFinite(minY) && isFinite(maxY)) {
+        return { x: minX, y: minY, width: maxX - minX || 1, height: maxY - minY || 1 };
+      }
+    }
+    return null;
+    }
+
+    public highlightAnnotation(annotationId: string) {
+      if (!this.annotorious) return;
+
+      const annotation = this.getAnnotationById(annotationId);
+      if (annotation) {
+        this.annotorious.selectAnnotation(annotation);
+      }
+    }
 
   // Backend sync methods
   private saveAnnotationToBackend(annotation: any, metadata: AnnotationData) {
@@ -1300,6 +1377,17 @@ export class AnnotoriousIntegration {
       console.error('❌ Cannot save annotation - missing dependencies');
       return;
     }
+
+    // Log detailed geometry structure for debugging
+    console.log('📝 Annotation structure:', {
+      id: annotation.id,
+      hasTarget: !!annotation.target,
+      targetType: annotation.target?.type,
+      hasSelector: !!annotation.target?.selector,
+      selectorType: annotation.target?.selector?.type,
+      selectorValue: annotation.target?.selector?.value?.substring?.(0, 100) || annotation.target?.selector?.value,
+      body: annotation.body
+    });
 
     const annotationEntity = {
       creator: metadata.creator,
