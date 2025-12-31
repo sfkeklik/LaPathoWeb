@@ -100,6 +100,13 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/change-password`, {
+      currentPassword,
+      newPassword
+    });
+  }
+
   private storeAuth(response: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response));

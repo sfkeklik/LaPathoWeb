@@ -39,6 +39,9 @@
           <a *ngIf="authService.isAdmin()" routerLink="/admin" class="btn-admin">
             <i class="fas fa-cog"></i> {{ 'admin.title' | translate }}
           </a>
+          <button class="btn-change-password" (click)="openChangePasswordModal()">
+            <i class="fas fa-key"></i> {{ 'auth.changePassword' | translate }}
+          </button>
           <button class="btn-logout" (click)="authService.logout()">
             <i class="fas fa-sign-out-alt"></i> {{ 'auth.logout' | translate }}
           </button>
@@ -313,3 +316,7 @@
   (imageUpdated)="onImageUpdated($event)"
   (modalClosed)="onModalClosed()">
 </app-image-edit-modal>
+
+<!-- Change Password Modal -->
+<app-change-password-modal #changePasswordModal></app-change-password-modal>
+

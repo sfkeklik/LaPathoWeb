@@ -160,6 +160,24 @@ $font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
         }
       }
 
+      .btn-change-password {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: $transition;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      }
+
       .btn-logout {
         display: flex;
         align-items: center;

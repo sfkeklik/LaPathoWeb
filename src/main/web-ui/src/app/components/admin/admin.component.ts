@@ -78,6 +78,9 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
                   </span>
                 </td>
                 <td>
+                  <button class="btn-small btn-password" (click)="openChangeUserPasswordModal(user)" [title]="'auth.changePassword' | translate">
+                    <i class="fas fa-key"></i>
+                  </button>
                   <button class="btn-small" (click)="toggleUserStatus(user)" [disabled]="user.role === 'ADMIN'">
                     {{ user.enabled ? ('admin.disable' | translate) : ('admin.enable' | translate) }}
                   </button>
@@ -299,6 +302,41 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
             <div class="modal-actions">
               <button type="button" class="btn-secondary" (click)="showCreateUserModal = false">{{ 'common.cancel' | translate }}</button>
               <button type="submit" class="btn-primary">{{ 'admin.createUser' | translate }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Change User Password Modal -->
+      <div class="modal-overlay" *ngIf="showChangePasswordModal" (click)="closeChangePasswordModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h2>{{ 'auth.changePassword' | translate }}</h2>
+          <p class="modal-subtitle" *ngIf="selectedUserForPassword">
+            {{ selectedUserForPassword.firstName }} {{ selectedUserForPassword.lastName }} ({{ selectedUserForPassword.username }})
+          </p>
+          <form (ngSubmit)="changeUserPassword()">
+            <div class="form-group">
+              <label>{{ 'auth.newPassword' | translate }}</label>
+              <input type="password" [(ngModel)]="newPasswordForUser" name="newPassword" required minlength="6"
+                     [placeholder]="'auth.enterNewPassword' | translate" />
+            </div>
+            <div class="form-group">
+              <label>{{ 'auth.confirmNewPassword' | translate }}</label>
+              <input type="password" [(ngModel)]="confirmNewPasswordForUser" name="confirmPassword" required minlength="6"
+                     [placeholder]="'auth.enterConfirmPassword' | translate" />
+              <div class="password-mismatch" *ngIf="confirmNewPasswordForUser && newPasswordForUser !== confirmNewPasswordForUser">
+                {{ 'auth.passwordsDoNotMatch' | translate }}
+              </div>
+            </div>
+            <div class="error-message" *ngIf="passwordChangeError">
+              {{ passwordChangeError }}
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" (click)="closeChangePasswordModal()">{{ 'common.cancel' | translate }}</button>
+              <button type="submit" class="btn-primary" [disabled]="passwordChangeLoading || newPasswordForUser !== confirmNewPasswordForUser || !newPasswordForUser">
+                <span *ngIf="!passwordChangeLoading">{{ 'auth.changePassword' | translate }}</span>
+                <span *ngIf="passwordChangeLoading">{{ 'common.loading' | translate }}</span>
+              </button>
             </div>
           </form>
         </div>
@@ -636,9 +674,40 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       color: #388e3c;
     }
 
+    .btn-small.btn-password {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .btn-small.btn-password:hover {
+      background: #ffe0b2;
+    }
+
     .btn-small:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    .modal-subtitle {
+      color: #64748B;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+    }
+
+    .password-mismatch {
+      color: #DC2626;
+      font-size: 0.75rem;
+      margin-top: 6px;
+    }
+
+    .error-message {
+      background: #FEE2E2;
+      color: #DC2626;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+      font-size: 0.875rem;
     }
 
     .projects-grid {
@@ -1331,6 +1400,14 @@ export class AdminComponent implements OnInit {
   showCreateProjectModal = false;
   editingProject: Project | null = null;
 
+  // Password change modal
+  showChangePasswordModal = false;
+  selectedUserForPassword: User | null = null;
+  newPasswordForUser = '';
+  confirmNewPasswordForUser = '';
+  passwordChangeLoading = false;
+  passwordChangeError = '';
+
   // Image assignment properties
   allImages: ImageMetadata[] = [];
 
@@ -1421,6 +1498,42 @@ export class AdminComponent implements OnInit {
       },
       error: () => {
         this.toastService.error('İşlem başarısız oldu');
+      }
+    });
+  }
+
+  openChangeUserPasswordModal(user: User): void {
+    this.selectedUserForPassword = user;
+    this.newPasswordForUser = '';
+    this.confirmNewPasswordForUser = '';
+    this.passwordChangeError = '';
+    this.showChangePasswordModal = true;
+  }
+
+  closeChangePasswordModal(): void {
+    this.showChangePasswordModal = false;
+    this.selectedUserForPassword = null;
+    this.newPasswordForUser = '';
+    this.confirmNewPasswordForUser = '';
+    this.passwordChangeError = '';
+    this.passwordChangeLoading = false;
+  }
+
+  changeUserPassword(): void {
+    if (!this.selectedUserForPassword || this.newPasswordForUser !== this.confirmNewPasswordForUser) return;
+
+    this.passwordChangeLoading = true;
+    this.passwordChangeError = '';
+
+    this.adminService.changeUserPassword(this.selectedUserForPassword.id, this.newPasswordForUser).subscribe({
+      next: () => {
+        this.passwordChangeLoading = false;
+        this.toastService.success('Şifre başarıyla değiştirildi');
+        this.closeChangePasswordModal();
+      },
+      error: (err) => {
+        this.passwordChangeLoading = false;
+        this.passwordChangeError = err.error?.message || 'Şifre değiştirme başarısız';
       }
     });
   }

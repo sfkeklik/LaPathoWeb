@@ -31,7 +31,7 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
                 name="firstName"
                 [(ngModel)]="registerData.firstName"
                 required
-                placeholder="John"
+                [placeholder]="'auth.firstNamePlaceholder' | translate"
               />
             </div>
 
@@ -43,7 +43,7 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
                 name="lastName"
                 [(ngModel)]="registerData.lastName"
                 required
-                placeholder="Doe"
+                [placeholder]="'auth.lastNamePlaceholder' | translate"
               />
             </div>
           </div>
@@ -56,7 +56,7 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
               name="email"
               [(ngModel)]="registerData.email"
               required
-              placeholder="john.doe@example.com"
+              [placeholder]="'auth.emailPlaceholder' | translate"
             />
           </div>
 
@@ -69,7 +69,7 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
               [(ngModel)]="registerData.username"
               required
               minlength="3"
-              placeholder="johndoe"
+              [placeholder]="'auth.usernamePlaceholder' | translate"
             />
           </div>
 
@@ -86,11 +86,27 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
             />
           </div>
 
+          <div class="form-group">
+            <label for="confirmPassword">{{ 'auth.confirmPassword' | translate }}</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              [(ngModel)]="confirmPassword"
+              required
+              minlength="6"
+              [placeholder]="'auth.enterConfirmPassword' | translate"
+            />
+            <div class="password-mismatch" *ngIf="confirmPassword && registerData.password !== confirmPassword">
+              {{ 'auth.passwordsDoNotMatch' | translate }}
+            </div>
+          </div>
+
           <div class="error-message" *ngIf="errorMessage">
             {{ errorMessage }}
           </div>
 
-          <button type="submit" [disabled]="loading || !registerForm.valid" class="btn-register">
+          <button type="submit" [disabled]="loading || !registerForm.valid || registerData.password !== confirmPassword" class="btn-register">
             <span *ngIf="!loading">{{ 'auth.register' | translate }}</span>
             <span *ngIf="loading">{{ 'common.loading' | translate }}</span>
           </button>
@@ -188,6 +204,12 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       color: #9CA3AF;
     }
 
+    .password-mismatch {
+      color: #DC2626;
+      font-size: 0.75rem;
+      margin-top: 6px;
+    }
+
     .error-message {
       background: #FEE2E2;
       color: #DC2626;
@@ -249,6 +271,7 @@ export class RegisterComponent {
     email: ''
   };
 
+  confirmPassword = '';
   loading = false;
   errorMessage = '';
 

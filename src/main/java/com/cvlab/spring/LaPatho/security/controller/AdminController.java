@@ -1,5 +1,6 @@
 package com.cvlab.spring.LaPatho.security.controller;
 
+import com.cvlab.spring.LaPatho.security.dto.AdminChangePasswordRequest;
 import com.cvlab.spring.LaPatho.security.dto.RegisterRequest;
 import com.cvlab.spring.LaPatho.security.dto.UserDTO;
 import com.cvlab.spring.LaPatho.security.service.AuthService;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -51,6 +53,15 @@ public class AdminController {
             @RequestParam boolean enabled
     ) {
         return ResponseEntity.ok(authService.updateUserStatus(id, enabled));
+    }
+
+    @PatchMapping("/users/{id}/password")
+    public ResponseEntity<?> changeUserPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminChangePasswordRequest request
+    ) {
+        authService.adminChangePassword(id, request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }
 

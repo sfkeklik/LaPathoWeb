@@ -72,6 +72,10 @@ export class AdminService {
     return this.http.patch<User>(`${this.API_URL}/users/${id}/status?enabled=${enabled}`, {});
   }
 
+  changeUserPassword(id: number, newPassword: string): Observable<any> {
+    return this.http.patch(`${this.API_URL}/users/${id}/password`, { newPassword });
+  }
+
   // Project Management
   getAllProjects(): Observable<Project[]> {
     return this.http.get<Project[]>(this.PROJECT_URL);

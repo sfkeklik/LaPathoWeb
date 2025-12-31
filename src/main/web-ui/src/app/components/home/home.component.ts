@@ -11,16 +11,18 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
+import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ImageEditModalComponent, TranslateModule, LanguageSwitcherComponent, SkeletonComponent],
+  imports: [CommonModule, RouterModule, ImageEditModalComponent, TranslateModule, LanguageSwitcherComponent, SkeletonComponent, ChangePasswordModalComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput', { static: true }) fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('changePasswordModal') changePasswordModal!: ChangePasswordModalComponent;
 
   images: ImageOverview[] = [];
   uploading = false;
@@ -318,6 +320,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   onModalClosed() {
     this.showEditModal = false;
     this.selectedImage = null;
+  }
+
+  /** Şifre değiştirme modalını aç */
+  openChangePasswordModal(): void {
+    this.changePasswordModal.open();
   }
 
   /** Liste yenileme */

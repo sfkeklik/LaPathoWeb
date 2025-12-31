@@ -67,7 +67,22 @@
     "invalidCredentials": "Invalid username or password",
     "enterUsername": "Enter your username",
     "enterPassword": "Enter your password",
-    "loggingIn": "Logging in..."
+    "enterConfirmPassword": "Confirm your password",
+    "loggingIn": "Logging in...",
+    "firstNamePlaceholder": "Your first name",
+    "lastNamePlaceholder": "Your last name",
+    "emailPlaceholder": "example@email.com",
+    "usernamePlaceholder": "username",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordChangeSuccess": "Password changed successfully",
+    "passwordChangeFailed": "Password change failed",
+    "currentPasswordIncorrect": "Current password is incorrect",
+    "enterCurrentPassword": "Enter your current password",
+    "enterNewPassword": "Enter your new password"
   },
   "home": {
     "title": "LaPatho - Dental Annotation",

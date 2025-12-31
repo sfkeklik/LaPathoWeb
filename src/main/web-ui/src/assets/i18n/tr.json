@@ -67,7 +67,22 @@
     "invalidCredentials": "Geçersiz kullanıcı adı veya şifre",
     "enterUsername": "Kullanıcı adınızı girin",
     "enterPassword": "Şifrenizi girin",
-    "loggingIn": "Giriş yapılıyor..."
+    "enterConfirmPassword": "Şifrenizi tekrar girin",
+    "loggingIn": "Giriş yapılıyor...",
+    "firstNamePlaceholder": "Adınız",
+    "lastNamePlaceholder": "Soyadınız",
+    "emailPlaceholder": "ornek@email.com",
+    "usernamePlaceholder": "kullaniciadi",
+    "passwordsDoNotMatch": "Şifreler eşleşmiyor",
+    "changePassword": "Şifre Değiştir",
+    "currentPassword": "Mevcut Şifre",
+    "newPassword": "Yeni Şifre",
+    "confirmNewPassword": "Yeni Şifre Tekrar",
+    "passwordChangeSuccess": "Şifre başarıyla değiştirildi",
+    "passwordChangeFailed": "Şifre değiştirme başarısız",
+    "currentPasswordIncorrect": "Mevcut şifre yanlış",
+    "enterCurrentPassword": "Mevcut şifrenizi girin",
+    "enterNewPassword": "Yeni şifrenizi girin"
   },
   "home": {
     "title": "LaPatho - Dental Anotasyon",
