@@ -19,5 +19,7 @@ public class CreateProjectRequest {
     private List<Long> doctorIds;
 
     private List<Long> imageIds;
+
+    private Integer gradeLevel;
 }
 

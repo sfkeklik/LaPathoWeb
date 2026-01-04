@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS projects (
     description VARCHAR(1000),
     created_by BIGINT REFERENCES users(id),
     active BOOLEAN NOT NULL DEFAULT true,
+    grade_level INTEGER NOT NULL DEFAULT 3,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -101,6 +102,14 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(active);
 CREATE INDEX IF NOT EXISTS idx_labels_project_id ON labels(project_id);
+
+-- Add grade_level column to existing projects table if not exists
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'grade_level') THEN
+        ALTER TABLE projects ADD COLUMN grade_level INTEGER NOT NULL DEFAULT 3;
+    END IF;
+END $$;
 
 -- Insert default admin user if not exists (password: admin123)
 INSERT INTO users (username, password, first_name, last_name, email, role, enabled)

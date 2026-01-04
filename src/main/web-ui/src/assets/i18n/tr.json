@@ -153,6 +153,8 @@
     "projectName": "Proje Adı",
     "projectDescription": "Proje Açıklaması",
     "assignDoctors": "Doktor Ata",
+    "gradeLevel": "Grade Seviyesi",
+    "gradeLevelHint": "Anotasyonlarda kullanılacak grade seçeneklerinin sayısı (0'dan seçilen değere kadar)",
     "assignedDoctors": "Atanan Doktorlar",
     "assigned": "Atandı",
     "noDescription": "Açıklama yok",
@@ -180,7 +182,12 @@
     "allImagesAssigned": "Tüm görüntüler zaten bu projeye atanmış.",
     "projectImages": "Proje Görüntüleri",
     "availableImages": "Tüm Görüntüler",
-    "backToProjectImages": "Proje Görüntülerine Dön"
+    "backToProjectImages": "Proje Görüntülerine Dön",
+    "multiSelect": "Çoklu Seç",
+    "cancelSelection": "Seçimi İptal",
+    "addSelected": "Seçilenleri Ekle",
+    "addAllImages": "Tümünü Ekle",
+    "removeAllImages": "Tümünü Çıkar"
   },
   "annotator": {
     "tools": "Araçlar",

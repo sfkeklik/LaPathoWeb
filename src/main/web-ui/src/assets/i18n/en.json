@@ -153,6 +153,8 @@
     "projectName": "Project Name",
     "projectDescription": "Project Description",
     "assignDoctors": "Assign Doctors",
+    "gradeLevel": "Grade Level",
+    "gradeLevelHint": "Number of grade options for annotations (from 0 to selected value)",
     "assignedDoctors": "Assigned Doctors",
     "assigned": "Assigned",
     "noDescription": "No description",
@@ -180,7 +182,12 @@
     "allImagesAssigned": "All available images are already assigned to this project.",
     "projectImages": "Project Images",
     "availableImages": "Available Images",
-    "backToProjectImages": "Back to Project Images"
+    "backToProjectImages": "Back to Project Images",
+    "multiSelect": "Multi Select",
+    "cancelSelection": "Cancel Selection",
+    "addSelected": "Add Selected",
+    "addAllImages": "Add All",
+    "removeAllImages": "Remove All"
   },
   "annotator": {
     "tools": "Tools",

@@ -54,6 +54,7 @@ export class AnnotoriousIntegration {
   // UI state - will be populated from database
   private tagVocabulary: string[] = [];
   private defaultColors: Record<string, string> = {};
+  private gradeLevel: number = 3;
 
   // Custom widget for grade and tag selection
   // Custom formatter for displaying annotation metadata
@@ -136,6 +137,27 @@ export class AnnotoriousIntegration {
 
     console.log('Annotorious layers updated:', this.tagVocabulary);
   }
+
+  /**
+   * Set grade level for the dropdown (0 to gradeLevel)
+   */
+  setGradeLevel(level: number): void {
+    this.gradeLevel = level > 0 ? level : 3;
+    console.log('Grade level set to:', this.gradeLevel);
+  }
+
+  /**
+   * Generate grade options HTML for dropdown
+   */
+  private generateGradeOptions(selectedGrade?: string): string {
+    const options: string[] = [];
+    for (let i = 0; i <= this.gradeLevel; i++) {
+      const isSelected = selectedGrade === String(i) ? 'selected' : '';
+      options.push(`<option value="${i}" ${isSelected}>${i}</option>`);
+    }
+    return options.join('');
+  }
+
   // Setup custom popup for annotations
     private setupCustomPopup() {
       if (!this.annotorious) return;
@@ -182,7 +204,8 @@ export class AnnotoriousIntegration {
             notes: '',
             color: this.defaultColors[this.tagVocabulary[0]] || '#ff0000',
             created: new Date(),
-            geometry: annotation
+            geometry: annotation,
+            grade: '0'
           }
         : (this.annotationsMap.get(annotation.id) || this.createMetadataFromAnnotation(annotation));
 
@@ -201,13 +224,11 @@ export class AnnotoriousIntegration {
             </select>
           </div>
 
-          <div class="popup-section">
+          <div class="popup-section inline">
             <label>Grade</label>
-            <div class="grade-buttons">
-              <button class="grade-btn" data-grade="G1">G1</button>
-              <button class="grade-btn" data-grade="G2">G2</button>
-              <button class="grade-btn" data-grade="G3">G3</button>
-            </div>
+            <select class="popup-select" id="grade-select">
+              ${this.generateGradeOptions((metadata as any).grade || '0')}
+            </select>
           </div>
 
           <div class="popup-section">
@@ -257,23 +278,17 @@ export class AnnotoriousIntegration {
         });
       }
 
-      const gradeButtons = popup.querySelectorAll('.grade-btn');
-      gradeButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          const grade = target.dataset['grade'];
-
-          gradeButtons.forEach(b => b.classList.remove('active'));
-          target.classList.add('active');
-
+      const gradeSelect = popup.querySelector('#grade-select') as HTMLSelectElement;
+      if (gradeSelect) {
+        gradeSelect.addEventListener('change', () => {
+          const grade = gradeSelect.value;
           if (!isNew) {
-            this.updateAnnotationGrade(annotation, grade || '');
+            this.updateAnnotationGrade(annotation, grade);
           } else {
-            // Yeni anotasyon için metadata'ya kaydet
             metadata.grade = grade;
           }
         });
-      });
+      }
 
       const notesTextarea = popup.querySelector('#notes-textarea') as HTMLTextAreaElement;
       if (notesTextarea) {

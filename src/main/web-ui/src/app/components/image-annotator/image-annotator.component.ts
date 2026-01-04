@@ -9,6 +9,7 @@ import {
     ChangeDetectorRef
   } from '@angular/core';
   import { ActivatedRoute, Router } from '@angular/router';
+  import { Location } from '@angular/common';
   import { CommonModule } from '@angular/common';
   import { FormsModule } from '@angular/forms';
   import { TranslateModule } from '@ngx-translate/core';
@@ -18,6 +19,7 @@ import {
   import { ImageService, ImageMetadata as ImageMetadataType } from '../../services/image.service';
   import { AnnotationService } from '../../services/annotation.service';
   import { AdminService, Label } from '../../services/admin.service';
+  import { AuthService } from '../../services/auth.service';
   import { TilesApi } from '../../app-const/api-gateway';
   import { AnnotoriousIntegration } from './annotorious-integration'; // yolu konumuna göre düzelt
   // Basic Interfaces
@@ -159,9 +161,11 @@ import {
     constructor(
       private route: ActivatedRoute,
       private router: Router,
+      private location: Location,
       private imageService: ImageService,
       private annotationService: AnnotationService,
       private adminService: AdminService,
+      private authService: AuthService,
       private cdr: ChangeDetectorRef
     ) {}
 
@@ -195,6 +199,10 @@ import {
           if (projects && projects.length > 0) {
             // Use the first project's labels
             this.currentProjectId = projects[0].id;
+            // Set grade level from project
+            if (this.anno && projects[0].gradeLevel) {
+              this.anno.setGradeLevel(projects[0].gradeLevel);
+            }
             this.loadProjectLabels(projects[0].id);
           } else {
             // No project assigned - show warning
@@ -1425,8 +1433,16 @@ import {
     }
 
     // Navigation and UI Control Methods
+    goBack(): void {
+      this.location.back();
+    }
+
     navigateHome(): void {
       this.router.navigate(['/']);
+    }
+
+    logout(): void {
+      this.authService.logout();
     }
 
     toggleSidebar(): void {

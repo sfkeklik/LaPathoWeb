@@ -15,6 +15,7 @@ export interface Project {
   active: boolean;
   createdAt: string;
   createdByName: string;
+  gradeLevel: number;
 }
 
 export interface Label {
@@ -36,6 +37,7 @@ export interface CreateProjectRequest {
   description?: string;
   doctorIds?: number[];
   imageIds?: number[];
+  gradeLevel?: number;
 }
 
 @Injectable({

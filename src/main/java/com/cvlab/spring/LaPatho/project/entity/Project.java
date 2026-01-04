@@ -66,6 +66,10 @@ public class Project {
     @Builder.Default
     private boolean active = true;
 
+    @Column(name = "grade_level")
+    @Builder.Default
+    private Integer gradeLevel = 3;
+
     @PrePersist
     public void prePersist() {
         createdAt = Instant.now();

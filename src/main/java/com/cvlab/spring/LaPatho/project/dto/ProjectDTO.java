@@ -24,5 +24,6 @@ public class ProjectDTO {
     private boolean active;
     private Instant createdAt;
     private String createdByName;
+    private Integer gradeLevel;
 }
 

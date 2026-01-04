@@ -1,0 +1,899 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaPatho - Kullanıcı Kılavuzu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333; background: #f5f7fa;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 20px 0;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: #16213e; }
+        .sidebar::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+
+        .sidebar-header {
+            padding: 10px 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+        .sidebar-header h1 {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .sidebar-header p {
+            color: #8892b0;
+            font-size: 12px;
+        }
+
+        .sidebar-nav { padding: 0 10px; }
+        .sidebar-nav ul { list-style: none; }
+        .sidebar-nav > ul > li { margin-bottom: 5px; }
+
+        .nav-section {
+            color: #ccd6f6;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-section:hover {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+        .nav-section.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .nav-subsection {
+            display: none;
+            padding-left: 15px;
+        }
+        .nav-subsection.show { display: block; }
+        .nav-subsection li { margin: 2px 0; }
+        .nav-subsection a {
+            color: #8892b0;
+            font-size: 13px;
+            padding: 6px 15px;
+            display: block;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-subsection a:hover {
+            color: #ccd6f6;
+            background: rgba(255,255,255,0.05);
+            border-left-color: #667eea;
+        }
+        .nav-subsection a.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px 50px;
+            max-width: calc(100% - 280px);
+            background: white;
+            min-height: 100vh;
+        }
+
+        /* Mobile Toggle */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; max-width: 100%; padding: 80px 20px 30px; }
+            .mobile-toggle { display: block; }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show { display: block; }
+        }
+
+        @media print {
+            .sidebar, .mobile-toggle, .overlay, .print-btn, .scroll-top { display: none !important; }
+            .main-content { margin-left: 0; max-width: 100%; padding: 15mm; }
+            .page-break { page-break-before: always; }
+            .screenshot img { max-width: 100%; }
+        }
+
+        /* Typography */
+        h1 { color: #667eea; font-size: 28px; border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }
+        h2 {
+            color: #764ba2; font-size: 24px; margin-top: 50px; margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;
+            scroll-margin-top: 20px;
+        }
+        h3 { color: #4a5568; font-size: 18px; margin-top: 30px; margin-bottom: 12px; scroll-margin-top: 20px; }
+        h4 { color: #667eea; font-size: 16px; margin-top: 20px; margin-bottom: 8px; }
+        p { margin-bottom: 12px; text-align: justify; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+        th, td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        tr:hover { background-color: #f3f4f6; }
+
+        /* Boxes */
+        .feature-box { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left: 4px solid #667eea; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .info-box { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+
+        /* Screenshots */
+        .screenshot { text-align: center; margin: 25px 0; }
+        .screenshot img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .screenshot img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        .screenshot-caption { font-size: 13px; color: #718096; margin-top: 10px; font-style: italic; }
+        .screenshot-hint { font-size: 11px; color: #a0aec0; margin-top: 4px; }
+
+        /* Lightbox Popup Styles */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        .lightbox-overlay.active {
+            display: flex;
+        }
+        .lightbox-content {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .lightbox-close {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            transition: color 0.2s;
+        }
+        .lightbox-close:hover {
+            color: #667eea;
+        }
+        .lightbox-caption {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        /* Lists */
+        ul, ol { margin: 10px 0 15px 25px; }
+        li { margin-bottom: 6px; }
+
+        /* Header */
+        .header-logo { text-align: center; margin-bottom: 40px; padding: 30px 0; background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%); border-radius: 12px; }
+        .header-logo h1 { font-size: 36px; border: none; margin-bottom: 5px; }
+        .header-logo p { color: #718096; font-size: 16px; }
+
+        /* Version Info */
+        .version-info { text-align: center; color: #718096; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+
+        /* Step List */
+        .step-list { counter-reset: step-counter; list-style: none; padding-left: 0; }
+        .step-list li { counter-increment: step-counter; padding-left: 40px; position: relative; margin-bottom: 12px; }
+        .step-list li::before { content: counter(step-counter); position: absolute; left: 0; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px; font-weight: bold; }
+
+        /* Buttons */
+        .print-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 12px 24px; border-radius: 8px;
+            cursor: pointer; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5); }
+
+        .scroll-top {
+            position: fixed; bottom: 70px; right: 20px;
+            background: #4a5568; color: white; border: none;
+            width: 45px; height: 45px; border-radius: 50%;
+            cursor: pointer; font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .scroll-top.visible { opacity: 1; visibility: visible; }
+        .scroll-top:hover { background: #667eea; transform: translateY(-2px); }
+
+        /* Progress Indicator */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 280px;
+            width: calc(100% - 280px);
+            height: 3px;
+            background: #e5e7eb;
+            z-index: 999;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        @media (max-width: 1024px) {
+            .progress-bar { left: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- Overlay for mobile -->
+    <div class="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>🔬 LaPatho</h1>
+            <p>Kullanıcı Kılavuzu</p>
+        </div>
+        <div class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#section-1" class="nav-section" onclick="toggleSubsection(this)">1. Giriş</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-1-1">1.1 Temel Özellikler</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-2" class="nav-section" onclick="toggleSubsection(this)">2. Sistem Gereksinimleri</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-2-1">2.1 Tarayıcı Desteği</a></li>
+                        <li><a href="#section-2-2">2.2 Ekran Çözünürlüğü</a></li>
+                        <li><a href="#section-2-3">2.3 İnternet Bağlantısı</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-3" class="nav-section" onclick="toggleSubsection(this)">3. Giriş ve Kimlik Doğrulama</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-3-1">3.1 Giriş Yapma</a></li>
+                        <li><a href="#section-3-2">3.2 Kayıt Olma</a></li>
+                        <li><a href="#section-3-3">3.3 Şifre Değiştirme</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-4" class="nav-section" onclick="toggleSubsection(this)">4. Kullanıcı Rolleri</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-4-1">4.1 Doktor (DOCTOR)</a></li>
+                        <li><a href="#section-4-2">4.2 Admin (ADMIN)</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-5" class="nav-section" onclick="toggleSubsection(this)">5. Ana Sayfa</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-5-1">5.1 Üst Menü Çubuğu</a></li>
+                        <li><a href="#section-5-2">5.2 Görüntü Kartları</a></li>
+                        <li><a href="#section-5-3">5.3 Görüntü Yükleme</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-6" class="nav-section" onclick="toggleSubsection(this)">6. Admin Paneli</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-6-1">6.1 Admin Paneline Erişim</a></li>
+                        <li><a href="#section-6-2">6.2 Kullanıcı Yönetimi</a></li>
+                        <li><a href="#section-6-3">6.3 Proje Yönetimi</a></li>
+                        <li><a href="#section-6-4">6.4 Proje Detay Görünümü</a></li>
+                        <li><a href="#section-6-5">6.5 Etiket ve Grade Yönetimi</a></li>
+                        <li><a href="#section-6-6">6.6 Veri Seti İndirme</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-7" class="nav-section" onclick="toggleSubsection(this)">7. Anotasyon Sistemi</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-7-1">7.1 Araç Çubuğu</a></li>
+                        <li><a href="#section-7-2">7.2 Araçlar Kullanımı</a></li>
+                        <li><a href="#section-7-3">7.3 Anotasyon Oluşturma</a></li>
+                        <li><a href="#section-7-4">7.4 Düzenleme ve Silme</a></li>
+                        <li><a href="#section-7-5">7.5 Görüntü Navigasyonu</a></li>
+                        <li><a href="#section-7-6">7.6 Yan Panel (Sidebar)</a></li>
+                        <li><a href="#section-7-7">7.7 Klavye Kısayolları</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-8" class="nav-section" onclick="toggleSubsection(this)">8. Sık Sorulan Sorular</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-8-1">8.1 Genel Sorular</a></li>
+                        <li><a href="#section-8-2">8.2 Anotasyon Soruları</a></li>
+                        <li><a href="#section-8-3">8.3 Proje ve Yetki Soruları</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <button class="print-btn" onclick="window.print()">📄 PDF Olarak Kaydet</button>
+        <button class="scroll-top" onclick="scrollToTop()">↑</button>
+
+        <div class="header-logo">
+            <h1>🔬 LaPatho</h1>
+            <p>Patoloji Görüntü Anotasyon Sistemi - Kullanıcı Kılavuzu</p>
+        </div>
+
+    <h2 id="section-1">1. Giriş</h2>
+    <p>LaPatho, patoloji görüntülerinin yüklenmesi, görüntülenmesi ve anotasyonlanması için geliştirilmiş web tabanlı bir uygulamadır. Sistem, yüksek çözünürlüklü patoloji görüntülerini (WSI - Whole Slide Images) destekler ve profesyonel anotasyon araçları sunar.</p>
+    <h3 id="section-1-1">✨ Temel Özellikler</h3>
+    <table>
+        <tr><th>Özellik</th><th>Açıklama</th></tr>
+        <tr><td>🖼️ Yüksek Çözünürlük</td><td>TIFF, SVS, BIF gibi patoloji formatlarını destekler</td></tr>
+        <tr><td>🔍 Gelişmiş Görüntüleyici</td><td>OpenSeadragon tabanlı, 100x büyütmeye kadar yakınlaştırma</td></tr>
+        <tr><td>✏️ Çoklu Anotasyon Araçları</td><td>Dikdörtgen, poligon, daire, elips, serbest çizim ve nokta</td></tr>
+        <tr><td>👥 Çok Kullanıcılı Sistem</td><td>Admin ve doktor rolleri ile proje tabanlı yetkilendirme</td></tr>
+        <tr><td>📊 Veri Seti Dışa Aktarma</td><td>Anotasyonları CSV formatında dışa aktarma</td></tr>
+        <tr><td>🏷️ Özelleştirilebilir Etiketler</td><td>Proje bazlı etiket ve grade tanımlama</td></tr>
+        <tr><td>🌐 Çoklu Dil Desteği</td><td>Türkçe ve İngilizce arayüz</td></tr>
+    </table>
+    <h2 id="section-2">2. Sistem Gereksinimleri</h2>
+    <h3 id="section-2-1">Tarayıcı Desteği</h3>
+    <ul>
+        <li>Google Chrome (önerilen) - Versiyon 90+</li>
+        <li>Mozilla Firefox - Versiyon 88+</li>
+        <li>Microsoft Edge - Versiyon 90+</li>
+        <li>Safari - Versiyon 14+</li>
+    </ul>
+    <h3 id="section-2-2">Minimum Ekran Çözünürlüğü</h3>
+    <p>1366 x 768 piksel (önerilen: 1920 x 1080)</p>
+    <h3 id="section-2-3">İnternet Bağlantısı</h3>
+    <p>Minimum 10 Mbps (yüksek çözünürlüklü görüntüler için 50+ Mbps önerilir)</p>
+    <div class="page-break"></div>
+    <h2 id="section-3">3. Giriş ve Kimlik Doğrulama</h2>
+    <h3 id="section-3-1">3.1 Giriş Yapma</h3>
+    <ol class="step-list">
+        <li>Tarayıcınızda uygulama adresine gidin</li>
+        <li>Giriş ekranında kullanıcı adı ve şifrenizi girin</li>
+        <li>"Giriş Yap" butonuna tıklayın</li>
+    </ol>
+    <div class="screenshot">
+        <img src="screenshots/login.png" alt="Giriş Ekranı" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Giriş Ekranı</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-3-2">3.2 Kayıt Olma (Yeni Kullanıcı)</h3>
+    <ol class="step-list">
+        <li>Giriş ekranında "Hesap Oluştur" bağlantısına tıklayın</li>
+        <li>Gerekli bilgileri doldurun: Ad, Soyad, E-posta, Kullanıcı adı, Şifre</li>
+        <li>"Kayıt Ol" butonuna tıklayın</li>
+    </ol>
+    <div class="screenshot">
+        <img src="screenshots/register.png" alt="Kayıt Formu" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Kayıt Formu</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-3-3">3.3 Şifre Değiştirme</h3>
+    <ol class="step-list">
+        <li>Ana sayfada sağ üstteki kullanıcı menüsüne tıklayın</li>
+        <li>"Şifre Değiştir" seçeneğini seçin</li>
+        <li>Mevcut şifrenizi ve yeni şifrenizi girin</li>
+        <li>"Kaydet" butonuna tıklayın</li>
+    </ol>
+    <h2 id="section-4">4. Kullanıcı Rolleri</h2>
+    <h3 id="section-4-1">4.1 Doktor (DOCTOR)</h3>
+    <table>
+        <tr><th>Yetki</th><th>Açıklama</th></tr>
+        <tr><td>✅ Görüntü görüntüleme</td><td>Atandığı projelerdeki görüntüleri görebilir</td></tr>
+        <tr><td>✅ Anotasyon yapma</td><td>Görüntüler üzerinde anotasyon oluşturabilir</td></tr>
+        <tr><td>✅ Anotasyon düzenleme</td><td>Kendi anotasyonlarını düzenleyebilir/silebilir</td></tr>
+        <tr><td>✅ Şifre değiştirme</td><td>Kendi şifresini değiştirebilir</td></tr>
+    </table>
+    <h3 id="section-4-2">4.2 Admin (ADMIN)</h3>
+    <p>Doktor yetkilerine ek olarak:</p>
+    <table>
+        <tr><th>Yetki</th><th>Açıklama</th></tr>
+        <tr><td>✅ Tüm görüntüler</td><td>Sistemdeki tüm görüntülere erişim</td></tr>
+        <tr><td>✅ Kullanıcı yönetimi</td><td>Kullanıcı oluşturma, düzenleme, silme</td></tr>
+        <tr><td>✅ Proje yönetimi</td><td>Proje oluşturma, düzenleme, silme</td></tr>
+        <tr><td>✅ Etiket yönetimi</td><td>Proje etiketlerini tanımlama</td></tr>
+        <tr><td>✅ Grade yönetimi</td><td>Grade seviyelerini ayarlama</td></tr>
+        <tr><td>✅ Veri seti dışa aktarma</td><td>CSV raporu indirme</td></tr>
+        <tr><td>✅ Şifre sıfırlama</td><td>Kullanıcı şifrelerini sıfırlama</td></tr>
+    </table>
+    <div class="page-break"></div>
+    <h2 id="section-5">5. Ana Sayfa (Doktor Görünümü)</h2>
+    <p>Ana sayfa, doktorların atandıkları projelerdeki görüntülere erişebildiği ana ekrandır.</p>
+    <div class="screenshot">
+        <img src="screenshots/home.png" alt="Ana Sayfa" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Ana Sayfa</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-5-1">5.1 Üst Menü Çubuğu</h3>
+    <table>
+        <tr><th>Öğe</th><th>Açıklama</th></tr>
+        <tr><td>🦷 LaPatho</td><td>Ana sayfaya dönüş</td></tr>
+        <tr><td>🔍 Görüntü Ara</td><td>Görüntüleri isme göre arar</td></tr>
+        <tr><td>📋 Filtre</td><td>Duruma göre filtreler (Tümü, Hazır, İşleniyor, Hatalı)</td></tr>
+        <tr><td>📊 Sıralama</td><td>Tarihe veya isme göre sıralar</td></tr>
+        <tr><td>🌐 Dil Seçimi</td><td>Türkçe/İngilizce arasında geçiş</td></tr>
+        <tr><td>🔐 Şifre Değiştir</td><td>Şifre değiştirme modalını açar</td></tr>
+        <tr><td>🚪 Çıkış</td><td>Oturumu kapatır</td></tr>
+    </table>
+    <h3 id="section-5-2">5.2 Görüntü Kartları</h3>
+    <ul>
+        <li>Önizleme küçük resmi</li>
+        <li>Görüntü adı</li>
+        <li>Boyut bilgisi (piksel)</li>
+        <li>Durum göstergesi: 🟢 READY (Hazır), 🟡 PROCESSING (İşleniyor), 🔴 ERROR (Hata)</li>
+    </ul>
+    <h3 id="section-5-3">5.3 Görüntü Yükleme</h3>
+    <ol class="step-list">
+        <li>"📁 Dosya Seç" butonuna tıklayın</li>
+        <li>Bilgisayarınızdan görüntü dosyası/dosyaları seçin</li>
+        <li>Yükleme ilerlemesini takip edin</li>
+        <li>İşlem tamamlandığında görüntü listede görünür</li>
+    </ol>
+    <div class="feature-box"><strong>Desteklenen Formatlar:</strong> TIFF, SVS, BIF, PNG, JPG</div>
+    <div class="page-break"></div>
+    <h2 id="section-6">6. Admin Paneli</h2>
+    <p>Admin paneli, sistem yöneticilerinin kullanıcıları, projeleri ve görüntüleri yönettiği merkezi yönetim alanıdır.</p>
+    <h3 id="section-6-1">6.1 Admin Paneline Erişim</h3>
+    <ol class="step-list">
+        <li>Ana sayfada "⚙️ Admin Paneli" butonuna tıklayın</li>
+        <li>Veya doğrudan /admin adresine gidin</li>
+    </ol>
+    <div class="screenshot">
+        <img src="screenshots/admin-panel.png" alt="Admin Paneli" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Admin Paneli</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-6-2">6.2 Kullanıcı Yönetimi</h3>
+    <table>
+        <tr><th>Sütun</th><th>Açıklama</th></tr>
+        <tr><td>Kullanıcı Adı</td><td>Giriş için kullanılan isim</td></tr>
+        <tr><td>Ad Soyad</td><td>Kullanıcının tam adı</td></tr>
+        <tr><td>E-posta</td><td>İletişim adresi</td></tr>
+        <tr><td>Rol</td><td>ADMIN veya DOCTOR</td></tr>
+        <tr><td>Durum</td><td>Aktif veya Devre Dışı</td></tr>
+        <tr><td>İşlemler</td><td>🔑 Şifre, ✓/✗ Durum, 🗑️ Sil</td></tr>
+    </table>
+    <h3 id="section-6-3">6.3 Proje Yönetimi</h3>
+    <p>Her proje kartı şunları gösterir:</p>
+    <ul>
+        <li>📁 Proje adı ve açıklama</li>
+        <li>👨‍⚕️ Atanan doktor sayısı</li>
+        <li>🖼️ Görüntü sayısı</li>
+        <li>✓/✗ Durum (Aktif/Pasif)</li>
+    </ul>
+    <div class="screenshot">
+        <img src="screenshots/admin-projects.png" alt="Proje Listesi" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Proje Listesi</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h4>Proje İşlemleri</h4>
+    <table>
+        <tr><th>Buton</th><th>İşlev</th></tr>
+        <tr><td>✏️ Düzenle</td><td>Proje bilgilerini düzenleme</td></tr>
+        <tr><td>🏷️ Etiketler</td><td>Etiket ve grade yönetimi</td></tr>
+        <tr><td>📊 Veri Seti</td><td>CSV raporu indirme</td></tr>
+        <tr><td>🗑️ Sil</td><td>Projeyi silme</td></tr>
+        <tr><td>Kart tıklama</td><td>Proje detayına gider</td></tr>
+    </table>
+    <h3 id="section-6-4">6.4 Proje Detay Görünümü</h3>
+    <h4>Proje Görüntüleri Sekmesi</h4>
+    <table>
+        <tr><th>İşlem</th><th>Açıklama</th></tr>
+        <tr><td>Görüntüye tıklama</td><td>Anotasyon ekranına gider</td></tr>
+        <tr><td>✗ Kaldır</td><td>Görüntüyü projeden çıkarır</td></tr>
+        <tr><td>🗑️ Tümünü Çıkar</td><td>Tüm görüntüleri projeden çıkarır</td></tr>
+    </table>
+    <h4>Tüm Görüntüler Sekmesi</h4>
+    <table>
+        <tr><th>İşlem</th><th>Açıklama</th></tr>
+        <tr><td>☑️ Çoklu Seç</td><td>Birden fazla görüntü seçme modunu açar</td></tr>
+        <tr><td>➕ Seçilenleri Ekle</td><td>Seçili görüntüleri projeye ekler</td></tr>
+        <tr><td>➕➕ Tümünü Ekle</td><td>Tüm mevcut görüntüleri projeye ekler</td></tr>
+        <tr><td>➕ Ata</td><td>Tek bir görüntüyü projeye ekler</td></tr>
+    </table>
+    <h3 id="section-6-5">6.5 Etiket ve Grade Yönetimi</h3>
+    <p>Etiketler, anotasyonların sınıflandırılması için kullanılır.</p>
+    <h4>Grade Seviyesi Ayarlama</h4>
+    <ol class="step-list">
+        <li>Etiketler modalında "📊 Grade Seviyesi" bölümünü bulun</li>
+        <li>Dropdown'dan seviye seçin (1-10 arası)</li>
+        <li>Seçim otomatik kaydedilir</li>
+    </ol>
+    <div class="info-box"><strong>Örnek:</strong> Grade seviyesi 5 seçildiğinde, anotasyon popup'ında 0, 1, 2, 3, 4, 5 seçenekleri sunulur.</div>
+    <h3 id="section-6-6">6.6 Veri Seti İndirme</h3>
+    <p>Proje anotasyonlarını CSV formatında dışa aktarabilirsiniz.</p>
+    <h4>CSV Dosyası İçeriği</h4>
+    <table>
+        <tr><th>Sütun</th><th>Açıklama</th></tr>
+        <tr><td>image_id</td><td>Görüntü kimliği</td></tr>
+        <tr><td>image_name</td><td>Görüntü dosya adı</td></tr>
+        <tr><td>image_width/height</td><td>Görüntü boyutları (piksel)</td></tr>
+        <tr><td>label_id</td><td>Etiket kimliği</td></tr>
+        <tr><td>label_name</td><td>Etiket adı</td></tr>
+        <tr><td>shape_type</td><td>Şekil türü (RECTANGLE, POLYGON, vb.)</td></tr>
+        <tr><td>coordinates</td><td>Koordinat verileri</td></tr>
+        <tr><td>grade</td><td>Grade değeri (0-N)</td></tr>
+        <tr><td>notes</td><td>Anotasyon notları</td></tr>
+        <tr><td>annotator</td><td>Anotasyonu yapan kullanıcı</td></tr>
+    </table>
+    <div class="page-break"></div>
+    <h2 id="section-7">7. Görüntü Anotasyon Sistemi</h2>
+    <p>Anotasyon ekranı, görüntüler üzerinde işaretleme yapmanızı sağlayan ana çalışma alanıdır.</p>
+    <div class="screenshot">
+        <img src="screenshots/annotator-overview.png" alt="Anotasyon Ekranı" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Anotasyon Ekranı</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-7-1">7.1 Araç Çubuğu</h3>
+    <h4>Sol Bölüm</h4>
+    <table>
+        <tr><th>Buton</th><th>İşlev</th></tr>
+        <tr><td>← Geri</td><td>Önceki sayfaya dön</td></tr>
+        <tr><td>☰ Menü</td><td>Yan paneli aç/kapat</td></tr>
+    </table>
+    <h4>Araçlar Bölümü</h4>
+    <table>
+        <tr><th>Araç</th><th>Kısayol</th><th>Açıklama</th></tr>
+        <tr><td>🖱️ Seçim</td><td>V</td><td>Mevcut anotasyonları seçmek için</td></tr>
+        <tr><td>⬜ Dikdörtgen</td><td>R</td><td>Dikdörtgen çizmek için</td></tr>
+        <tr><td>🔷 Poligon</td><td>P</td><td>Çokgen çizmek için</td></tr>
+        <tr><td>⭕ Daire</td><td>C</td><td>Daire çizmek için</td></tr>
+        <tr><td>⬭ Elips</td><td>E</td><td>Elips çizmek için</td></tr>
+        <tr><td>✏️ Serbest Çizim</td><td>F</td><td>Serbest şekil çizmek için</td></tr>
+        <tr><td>• Nokta</td><td>-</td><td>Nokta işaretlemek için</td></tr>
+    </table>
+    <h4>Zoom ve Döndürme</h4>
+    <table>
+        <tr><th>Buton</th><th>İşlev</th></tr>
+        <tr><td>🔍- / 🔍+</td><td>Uzaklaştır / Yakınlaştır</td></tr>
+        <tr><td>40x</td><td>Büyütme göstergesi (tıklanabilir)</td></tr>
+        <tr><td>⊡ Sıfırla</td><td>Görünümü sıfırla</td></tr>
+        <tr><td>↺ / ↻</td><td>Sola / Sağa döndür</td></tr>
+    </table>
+    <h4>Sağ Bölüm</h4>
+    <table>
+        <tr><th>Buton</th><th>İşlev</th></tr>
+        <tr><td>🏠 Ana Sayfa</td><td>Ana sayfaya git</td></tr>
+        <tr><td>🚪 Çıkış</td><td>Oturumu kapat</td></tr>
+    </table>
+    <h3 id="section-7-2">7.2 Anotasyon Araçları Kullanımı</h3>
+    <h4>Dikdörtgen Aracı (⬜)</h4>
+    <ol class="step-list">
+        <li>Aracı seçin veya <code>R</code> tuşuna basın</li>
+        <li>Sol tıklayarak başlangıç noktasını belirleyin</li>
+        <li>Sürükleyerek dikdörtgeni çizin</li>
+        <li>Bırakarak tamamlayın</li>
+    </ol>
+    <h4>Poligon Aracı (🔷)</h4>
+    <ol class="step-list">
+        <li>Aracı seçin veya <code>P</code> tuşuna basın</li>
+        <li>Köşe noktalarını tıklayarak işaretleyin</li>
+        <li>İlk noktaya tıklayarak veya çift tıklayarak kapatın</li>
+    </ol>
+    <h4>Daire Aracı (⭕)</h4>
+    <ol class="step-list">
+        <li>Aracı seçin veya <code>C</code> tuşuna basın</li>
+        <li>Merkez noktasına tıklayın</li>
+        <li>Sürükleyerek yarıçapı belirleyin</li>
+        <li>Bırakarak tamamlayın</li>
+    </ol>
+    <h3 id="section-7-3">7.3 Anotasyon Oluşturma</h3>
+    <ol class="step-list">
+        <li>Uygun aracı seçin</li>
+        <li>Görüntü üzerinde şekil çizin</li>
+        <li>Popup otomatik açılır</li>
+        <li>Bilgileri girin: Tip (etiket), Grade (derecelendirme), Notlar</li>
+        <li>"✓ Oluştur" butonuna tıklayın</li>
+    </ol>
+    <div class="screenshot">
+        <img src="screenshots/annotation-popup.png" alt="Anotasyon Popup" title="Büyütmek için tıklayın">
+        <p class="screenshot-caption">Ekran Görüntüsü: Anotasyon Popup</p>
+        <p class="screenshot-hint">🔍 Büyütmek için tıklayın</p>
+    </div>
+    <h3 id="section-7-4">7.4 Anotasyon Düzenleme ve Silme</h3>
+    <h4>Düzenleme</h4>
+    <ol class="step-list">
+        <li>Seçim aracıyla anotasyona tıklayın</li>
+        <li>Popup açılır</li>
+        <li>Değişiklikleri yapın</li>
+        <li>"💾 Kaydet" butonuna tıklayın</li>
+    </ol>
+    <h4>Silme</h4>
+    <ol class="step-list">
+        <li>Anotasyonu seçin</li>
+        <li>Popup'ta "🗑️ Sil" butonuna tıklayın</li>
+        <li>Onaylayın</li>
+    </ol>
+    <div class="warning-box"><strong>⚠️ Uyarı:</strong> Silme işlemi geri alınamaz!</div>
+    <h3 id="section-7-5">7.5 Görüntü Navigasyonu</h3>
+    <table>
+        <tr><th>Yöntem</th><th>Nasıl</th></tr>
+        <tr><td>Araç çubuğu</td><td>+/- butonları</td></tr>
+        <tr><td>Fare tekerleği</td><td>Yukarı/aşağı kaydırma</td></tr>
+        <tr><td>Büyütme göstergesi</td><td>Tıklayıp değer girme</td></tr>
+        <tr><td>Hazır değerler</td><td>Dropdown'dan seçim (0.5x - 100x)</td></tr>
+        <tr><td>Klavye</td><td><code>+</code> yakınlaştır, <code>-</code> uzaklaştır</td></tr>
+    </table>
+    <h3 id="section-7-6">7.6 Yan Panel (Sidebar)</h3>
+    <table>
+        <tr><th>Sekme</th><th>İçerik</th></tr>
+        <tr><td>📝 Anotasyonlar</td><td>Tüm anotasyonların listesi</td></tr>
+        <tr><td>🔧 Özellikler</td><td>Seçili anotasyonun detayları</td></tr>
+        <tr><td>📚 Katmanlar</td><td>Etiket katmanlarının görünürlüğü</td></tr>
+        <tr><td>📊 İstatistikler</td><td>Anotasyon sayıları ve dağılımları</td></tr>
+        <tr><td>🖼️ Görüntü</td><td>Görüntü meta verileri</td></tr>
+    </table>
+    <h3 id="section-7-7">7.7 Klavye Kısayolları</h3>
+    <table>
+        <tr><th>Kısayol</th><th>İşlev</th></tr>
+        <tr><td><code>R</code></td><td>Dikdörtgen aracı</td></tr>
+        <tr><td><code>P</code></td><td>Poligon aracı</td></tr>
+        <tr><td><code>C</code></td><td>Daire aracı</td></tr>
+        <tr><td><code>E</code></td><td>Elips aracı</td></tr>
+        <tr><td><code>F</code></td><td>Serbest çizim aracı</td></tr>
+        <tr><td><code>V</code></td><td>Seçim aracı</td></tr>
+        <tr><td><code>+</code> / <code>=</code></td><td>Yakınlaştır</td></tr>
+        <tr><td><code>-</code></td><td>Uzaklaştır</td></tr>
+        <tr><td><code>0</code></td><td>Görünümü sıfırla</td></tr>
+        <tr><td><code>Delete</code></td><td>Seçili anotasyonu sil</td></tr>
+        <tr><td><code>Escape</code></td><td>Seçimi iptal et</td></tr>
+    </table>
+    <div class="page-break"></div>
+    <h2 id="section-8">8. Sık Sorulan Sorular</h2>
+    <h3 id="section-8-1">Genel Sorular</h3>
+    <h4>S: Şifremi unuttum, ne yapmalıyım?</h4>
+    <p>Sistem yöneticinizle (admin) iletişime geçin. Admin kullanıcılar şifrenizi sıfırlayabilir.</p>
+    <h4>S: Hangi görüntü formatları destekleniyor?</h4>
+    <p>TIFF, SVS, BIF, PNG, JPEG formatları desteklenmektedir. Özellikle patoloji için TIFF ve SVS formatları önerilir.</p>
+    <h4>S: Maksimum dosya boyutu nedir?</h4>
+    <p>Varsayılan limit 2GB'dir. Daha büyük dosyalar için sistem yöneticinizle iletişime geçin.</p>
+    <h4>S: Arayüz dilini nasıl değiştiririm?</h4>
+    <p>Sağ üst köşedeki dil seçici dropdown'ından Türkçe veya English seçebilirsiniz.</p>
+    <h3 id="section-8-2">Anotasyon Soruları</h3>
+    <h4>S: Anotasyonlarım otomatik kaydediliyor mu?</h4>
+    <p>Evet, tüm anotasyonlar anlık olarak sunucuya kaydedilir. Manuel kaydetme gerekmez.</p>
+    <h4>S: Başka bir kullanıcının anotasyonunu düzenleyebilir miyim?</h4>
+    <p>Hayır, yalnızca kendi oluşturduğunuz anotasyonları düzenleyebilirsiniz.</p>
+    <h4>S: Yanlışlıkla sildiğim anotasyonu geri getirebilir miyim?</h4>
+    <p>Hayır, silme işlemi geri alınamaz. Silmeden önce dikkatli olunuz.</p>
+    <h4>S: Poligonu nasıl kapatırım?</h4>
+    <p>İlk noktaya tıklayarak veya çift tıklayarak poligonu kapatabilirsiniz.</p>
+    <h3 id="section-8-3">Proje ve Yetki Soruları</h3>
+    <h4>S: Neden bazı görüntüleri göremiyorum?</h4>
+    <p>Yalnızca atandığınız projelerdeki görüntüleri görebilirsiniz. Admin'den ilgili projeye eklenmesini talep edin.</p>
+    <h4>S: Admin olmak istiyorum, ne yapmalıyım?</h4>
+    <p>Mevcut bir admin kullanıcı, hesabınızı admin rolüne yükseltebilir.</p>
+    <h4>S: Bir projedeki tüm anotasyonları nasıl dışa aktarırım?</h4>
+    <p>Admin panelinde proje kartındaki "📊 Veri Seti" butonuna tıklayarak CSV dosyası indirebilirsiniz.</p>
+    <div class="version-info">
+        <p><strong>LaPatho - Patoloji Görüntü Anotasyon Sistemi</strong></p>
+        <p>Kullanıcı Kılavuzu v1.0</p>
+        <p>Son güncelleme: 5 Ocak 2026</p>
+        <p style="margin-top: 10px; font-size: 11px; color: #999;">
+            Bu dokümantasyon KTÜ CVLAB tarafından hazırlanmıştır.
+        </p>
+    </div>
+
+    </main>
+
+    <!-- Lightbox Popup HTML -->
+    <div class="lightbox-overlay" id="lightbox">
+        <span class="lightbox-close" id="lightbox-close">&times;</span>
+        <img class="lightbox-content" src="" alt="Büyük Görüntü" id="lightbox-img">
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+
+    <script>
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+
+        // Toggle subsection visibility
+        function toggleSubsection(element) {
+            event.preventDefault();
+            const subsection = element.nextElementSibling;
+            if (subsection && subsection.classList.contains('nav-subsection')) {
+                subsection.classList.toggle('show');
+            }
+            // Navigate to section
+            const href = element.getAttribute('href');
+            if (href) {
+                document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+            }
+            // Close sidebar on mobile
+            if (window.innerWidth <= 1024) {
+                toggleSidebar();
+            }
+        }
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Update progress bar and active nav items on scroll
+        window.addEventListener('scroll', function() {
+            // Progress bar
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            document.querySelector('.progress-bar-fill').style.width = progress + '%';
+
+            // Scroll to top button
+            const scrollTopBtn = document.querySelector('.scroll-top');
+            if (scrollTop > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+
+            // Highlight active section in sidebar
+            const sections = document.querySelectorAll('h2[id], h3[id]');
+            let currentSection = '';
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (scrollTop >= sectionTop) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            // Update active nav items
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + currentSection) {
+                    link.classList.add('active');
+                    // Expand parent subsection
+                    const parentLi = link.closest('.nav-subsection');
+                    if (parentLi) {
+                        parentLi.classList.add('show');
+                    }
+                }
+            });
+        });
+
+        // Handle subsection link clicks
+        document.querySelectorAll('.nav-subsection a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                // Close sidebar on mobile
+                if (window.innerWidth <= 1024) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // Initialize - open first section subsection
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstSubsection = document.querySelector('.nav-subsection');
+            if (firstSubsection) {
+                firstSubsection.classList.add('show');
+            }
+        });
+
+        // Lightbox popup script
+        document.querySelectorAll('.screenshot img').forEach(function(image) {
+            image.addEventListener('click', function() {
+                var src = image.getAttribute('src');
+                var captionEl = image.parentElement.querySelector('.screenshot-caption');
+                var caption = captionEl ? captionEl.textContent : '';
+                document.getElementById('lightbox-img').src = src;
+                document.getElementById('lightbox-caption').textContent = caption;
+                document.getElementById('lightbox').classList.add('active');
+            });
+        });
+
+        document.getElementById('lightbox-close').addEventListener('click', function() {
+            document.getElementById('lightbox').classList.remove('active');
+        });
+
+        document.getElementById('lightbox').addEventListener('click', function(e) {
+            if (e.target === document.getElementById('lightbox')) {
+                document.getElementById('lightbox').classList.remove('active');
+            }
+        });
+
+        // ESC tuşu ile kapatma
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('lightbox').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

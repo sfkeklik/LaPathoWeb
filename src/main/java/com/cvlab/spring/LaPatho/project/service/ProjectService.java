@@ -32,6 +32,7 @@ public class ProjectService {
                 .description(request.getDescription())
                 .createdBy(createdBy)
                 .active(true)
+                .gradeLevel(request.getGradeLevel() != null ? request.getGradeLevel() : 3)
                 .build();
 
         if (request.getDoctorIds() != null && !request.getDoctorIds().isEmpty()) {
@@ -78,6 +79,10 @@ public class ProjectService {
 
         project.setName(request.getName());
         project.setDescription(request.getDescription());
+
+        if (request.getGradeLevel() != null) {
+            project.setGradeLevel(request.getGradeLevel());
+        }
 
         if (request.getDoctorIds() != null) {
             List<User> doctors = userRepository.findAllById(request.getDoctorIds());
@@ -184,6 +189,7 @@ public class ProjectService {
                 .createdByName(project.getCreatedBy() != null
                         ? project.getCreatedBy().getFirstName() + " " + project.getCreatedBy().getLastName()
                         : null)
+                .gradeLevel(project.getGradeLevel() != null ? project.getGradeLevel() : 3)
                 .build();
     }
 }

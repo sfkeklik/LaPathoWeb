@@ -190,6 +190,13 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
                 </button>
               </div>
 
+              <!-- Bulk Remove Action -->
+              <div class="bulk-actions" *ngIf="getProjectImages().length > 0">
+                <button class="btn-small btn-danger" (click)="removeAllImagesFromProject()">
+                  <i class="fas fa-trash"></i> {{ 'admin.removeAllImages' | translate }}
+                </button>
+              </div>
+
               <div class="images-grid" *ngIf="getProjectImages().length > 0">
                 <div class="image-card assigned" *ngFor="let image of getProjectImages()">
                   <div class="image-preview" (click)="openImageInAnnotator(image)">
@@ -233,8 +240,31 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
                 </button>
               </div>
 
+              <!-- Bulk Actions -->
+              <div class="bulk-actions" *ngIf="getAvailableImages().length > 0">
+                <button class="btn-small" [class.active]="isSelectingImages" (click)="toggleSelectMode()">
+                  <i class="fas" [class.fa-check-square]="isSelectingImages" [class.fa-square]="!isSelectingImages"></i>
+                  {{ isSelectingImages ? ('admin.cancelSelection' | translate) : ('admin.multiSelect' | translate) }}
+                </button>
+                <button class="btn-small btn-primary" *ngIf="selectedAvailableImages.size > 0" (click)="addSelectedImagesToProject()">
+                  <i class="fas fa-plus"></i> {{ 'admin.addSelected' | translate }} ({{ selectedAvailableImages.size }})
+                </button>
+                <button class="btn-small btn-success" (click)="addAllImagesToProject()">
+                  <i class="fas fa-plus-circle"></i> {{ 'admin.addAllImages' | translate }}
+                </button>
+              </div>
+
               <div class="images-grid" *ngIf="getAvailableImages().length > 0">
-                <div class="image-card available" *ngFor="let image of getAvailableImages()">
+                <div class="image-card available"
+                     *ngFor="let image of getAvailableImages()"
+                     [class.selected]="selectedAvailableImages.has(image.id)"
+                     (click)="isSelectingImages ? toggleImageSelection(image.id) : null">
+                  <div class="selection-checkbox" *ngIf="isSelectingImages">
+                    <input type="checkbox"
+                      [checked]="selectedAvailableImages.has(image.id)"
+                      (change)="toggleImageSelection(image.id)"
+                      (click)="$event.stopPropagation()">
+                  </div>
                   <div class="image-preview">
                     <img
                       *ngIf="image.status === 'READY'"
@@ -251,7 +281,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
                     <span class="image-size">{{ image.width }}x{{ image.height }}</span>
                     <span class="image-status" [class]="image.status?.toLowerCase()">{{ image.status }}</span>
                   </div>
-                  <div class="image-actions">
+                  <div class="image-actions" *ngIf="!isSelectingImages">
                     <button
                       class="btn-small btn-success"
                       (click)="addImageToProject(image)">
@@ -380,6 +410,17 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       <div class="modal-overlay" *ngIf="showLabelsModal" (click)="showLabelsModal = false">
         <div class="modal modal-large" (click)="$event.stopPropagation()">
           <h2>🏷️ {{ 'admin.manageLabels' | translate }} - {{ selectedProjectForLabels?.name }}</h2>
+
+          <!-- Grade Level Section -->
+          <div class="grade-level-section">
+            <h4>📊 {{ 'admin.gradeLevel' | translate }}</h4>
+            <div class="grade-level-control">
+              <select [(ngModel)]="selectedProjectGradeLevel" (change)="updateProjectGradeLevel()">
+                <option *ngFor="let level of gradeLevelOptions" [value]="level">{{ level }}</option>
+              </select>
+              <small class="form-hint">{{ 'admin.gradeLevelHint' | translate }}</small>
+            </div>
+          </div>
 
           <div class="labels-section">
             <div class="labels-list">
@@ -950,6 +991,13 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       box-sizing: border-box;
     }
 
+    .form-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
     .checkbox-list {
       max-height: 150px;
       overflow-y: auto;
@@ -975,6 +1023,72 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
     .modal-large {
       max-width: 700px;
+    }
+
+    .grade-level-section {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #e9ecef;
+    }
+
+    .grade-level-section h4 {
+      margin: 0 0 12px 0;
+      font-size: 1rem;
+      color: #495057;
+    }
+
+    .grade-level-control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .grade-level-control select {
+      width: 120px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .bulk-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .bulk-actions .btn-small.active {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .image-card.selected {
+      border: 2px solid #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .selection-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 10;
+    }
+
+    .selection-checkbox input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .image-card {
+      position: relative;
     }
 
     .btn-small.btn-labels {
@@ -1426,6 +1540,11 @@ export class AdminComponent implements OnInit {
     color: '#ff0000',
     description: ''
   };
+  selectedProjectGradeLevel: number = 3;
+
+  // Bulk image selection properties
+  selectedAvailableImages: Set<number> = new Set();
+  isSelectingImages = false;
 
   // Report download state
   reportDownloading: number | null = null;
@@ -1443,8 +1562,12 @@ export class AdminComponent implements OnInit {
     name: '',
     description: '',
     doctorIds: [],
-    imageIds: []
+    imageIds: [],
+    gradeLevel: 3
   };
+
+  // Grade level options for dropdown (1-10)
+  gradeLevelOptions: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   constructor(
     private adminService: AdminService,
@@ -1585,7 +1708,8 @@ export class AdminComponent implements OnInit {
       name: project.name,
       description: project.description,
       doctorIds: [...project.assignedDoctorIds],
-      imageIds: [...project.imageIds]
+      imageIds: [...project.imageIds],
+      gradeLevel: project.gradeLevel || 3
     };
     this.showCreateProjectModal = true;
   }
@@ -1667,7 +1791,8 @@ export class AdminComponent implements OnInit {
       name: '',
       description: '',
       doctorIds: [],
-      imageIds: []
+      imageIds: [],
+      gradeLevel: 3
     };
   }
 
@@ -1734,6 +1859,7 @@ export class AdminComponent implements OnInit {
   // Label Management Methods
   openLabelsModal(project: Project): void {
     this.selectedProjectForLabels = project;
+    this.selectedProjectGradeLevel = project.gradeLevel || 3;
     this.loadProjectLabels();
     this.showLabelsModal = true;
   }
@@ -1742,6 +1868,132 @@ export class AdminComponent implements OnInit {
     if (this.selectedProjectForLabels) {
       this.adminService.getLabelsForProject(this.selectedProjectForLabels.id).subscribe(labels => {
         this.projectLabels = labels;
+      });
+    }
+  }
+
+  updateProjectGradeLevel(): void {
+    if (this.selectedProjectForLabels) {
+      this.adminService.updateProject(this.selectedProjectForLabels.id, {
+        name: this.selectedProjectForLabels.name,
+        description: this.selectedProjectForLabels.description,
+        gradeLevel: this.selectedProjectGradeLevel
+      }).subscribe({
+        next: (updatedProject) => {
+          this.selectedProjectForLabels = updatedProject;
+          this.loadProjects();
+          this.toastService.success('Grade seviyesi güncellendi');
+        },
+        error: () => this.toastService.error('Grade seviyesi güncellenemedi')
+      });
+    }
+  }
+
+  // Bulk Image Selection Methods
+  toggleSelectMode(): void {
+    this.isSelectingImages = !this.isSelectingImages;
+    if (!this.isSelectingImages) {
+      this.selectedAvailableImages.clear();
+    }
+  }
+
+  toggleImageSelection(imageId: number): void {
+    if (this.selectedAvailableImages.has(imageId)) {
+      this.selectedAvailableImages.delete(imageId);
+    } else {
+      this.selectedAvailableImages.add(imageId);
+    }
+  }
+
+  addSelectedImagesToProject(): void {
+    if (!this.selectedProject) return;
+
+    const imageIds = Array.from(this.selectedAvailableImages);
+    let completed = 0;
+
+    imageIds.forEach(imageId => {
+      this.adminService.addImageToProject(this.selectedProject!.id, imageId).subscribe({
+        next: () => {
+          completed++;
+          if (completed === imageIds.length) {
+            this.selectedAvailableImages.clear();
+            this.isSelectingImages = false;
+            this.loadProjects();
+            this.refreshSelectedProject();
+            this.toastService.success(`${imageIds.length} görüntü projeye eklendi`);
+          }
+        },
+        error: () => {
+          this.toastService.error('Bazı görüntüler eklenemedi');
+        }
+      });
+    });
+  }
+
+  addAllImagesToProject(): void {
+    if (!this.selectedProject) return;
+
+    const images = this.getAvailableImages();
+    if (images.length === 0) return;
+
+    let completed = 0;
+
+    images.forEach(image => {
+      this.adminService.addImageToProject(this.selectedProject!.id, image.id).subscribe({
+        next: () => {
+          completed++;
+          if (completed === images.length) {
+            this.loadProjects();
+            this.refreshSelectedProject();
+            this.toastService.success(`${images.length} görüntü projeye eklendi`);
+          }
+        },
+        error: () => {
+          this.toastService.error('Bazı görüntüler eklenemedi');
+        }
+      });
+    });
+  }
+
+  async removeAllImagesFromProject(): Promise<void> {
+    if (!this.selectedProject) return;
+
+    const images = this.getProjectImages();
+    if (images.length === 0) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Tüm Görüntüleri Çıkar',
+      message: `Bu projeden ${images.length} görüntüyü çıkarmak istediğinize emin misiniz?`,
+      confirmText: 'Evet, Çıkar',
+      cancelText: 'İptal',
+      type: 'warning'
+    });
+
+    if (!confirmed) return;
+
+    let completed = 0;
+
+    images.forEach(image => {
+      this.adminService.removeImageFromProject(this.selectedProject!.id, image.id).subscribe({
+        next: () => {
+          completed++;
+          if (completed === images.length) {
+            this.loadProjects();
+            this.refreshSelectedProject();
+            this.toastService.success(`${images.length} görüntü projeden çıkarıldı`);
+          }
+        },
+        error: () => {
+          this.toastService.error('Bazı görüntüler çıkarılamadı');
+        }
+      });
+    });
+  }
+
+  private refreshSelectedProject(): void {
+    if (this.selectedProject) {
+      this.adminService.getProject(this.selectedProject.id).subscribe(project => {
+        this.selectedProject = project;
       });
     }
   }
@@ -1837,6 +2089,8 @@ export class AdminComponent implements OnInit {
   backToProjects(): void {
     this.selectedProject = null;
     this.projectImageTab = 'assigned'; // Reset tab
+    this.selectedAvailableImages.clear(); // Clear selections
+    this.isSelectingImages = false; // Reset selection mode
     this.loadProjects(); // Refresh projects list
   }
 

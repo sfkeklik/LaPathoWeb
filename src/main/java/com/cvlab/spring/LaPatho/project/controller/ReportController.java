@@ -65,11 +65,12 @@ public class ReportController {
         report.append("image_name").append(SEP);
         report.append("image_width").append(SEP);
         report.append("image_height").append(SEP);
-        report.append("annotation_id").append(SEP);
-        report.append("class_id").append(SEP);
-        report.append("class_name").append(SEP);
+        report.append("label_id").append(SEP);
+        report.append("label_name").append(SEP);
         report.append("shape_type").append(SEP);
         report.append("coordinates").append(SEP);
+        report.append("grade").append(SEP);
+        report.append("notes").append(SEP);
         report.append("annotator").append("\n");
 
         // Data rows
@@ -89,28 +90,34 @@ public class ReportController {
                         annotation.getUser().getUsername() :
                         (annotation.getCreator() != null ? annotation.getCreator() : "unknown");
 
-                String className = annotation.getType() != null ? annotation.getType() : "unknown";
-                int classId = labelList.indexOf(className);
-                if (classId < 0) classId = -1;
+                String labelName = annotation.getType() != null ? annotation.getType() : "unknown";
+                int labelId = labelList.indexOf(labelName);
+                if (labelId < 0) labelId = -1;
 
                 // Parse geometry
                 GeometryData geom = parseGeometry(annotation.getGeometry());
 
+                // Parse grade and notes from geometry JSON
+                String grade = parseGradeFromGeometry(annotation.getGeometry());
+                String notes = parseNotesFromGeometry(annotation.getGeometry());
+
                 // Log for debugging
                 System.out.println("📊 Annotation ID: " + annotation.getId() +
-                    ", Type: " + className +
+                    ", Type: " + labelName +
                     ", ShapeType: " + geom.shapeType +
+                    ", Grade: " + grade +
                     ", Coords: " + geom.coordinates);
 
                 report.append(image.getId()).append(SEP);
                 report.append(sanitize(imageName)).append(SEP);
                 report.append(imageWidth).append(SEP);
                 report.append(imageHeight).append(SEP);
-                report.append(annotation.getId()).append(SEP);
-                report.append(classId).append(SEP);
-                report.append(sanitize(className)).append(SEP);
+                report.append(labelId).append(SEP);
+                report.append(sanitize(labelName)).append(SEP);
                 report.append(geom.shapeType).append(SEP);
                 report.append(geom.coordinates).append(SEP);
+                report.append(sanitize(grade)).append(SEP);
+                report.append(sanitize(notes)).append(SEP);
                 report.append(sanitize(annotator)).append("\n");
             }
         }
@@ -121,11 +128,16 @@ public class ReportController {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) +
                 ".csv";
 
-        byte[] reportBytes = report.toString().getBytes(StandardCharsets.UTF_8);
+        // Add UTF-8 BOM for Excel compatibility with Turkish characters
+        byte[] bom = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+        byte[] contentBytes = report.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] reportBytes = new byte[bom.length + contentBytes.length];
+        System.arraycopy(bom, 0, reportBytes, 0, bom.length);
+        System.arraycopy(contentBytes, 0, reportBytes, bom.length, contentBytes.length);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .contentLength(reportBytes.length)
                 .body(reportBytes);
     }
@@ -154,6 +166,54 @@ public class ReportController {
             cleaned = "\"" + cleaned.replace("\"", "\"\"") + "\"";
         }
         return cleaned;
+    }
+
+    /**
+     * Parse grade value from geometry JSON body array
+     */
+    private String parseGradeFromGeometry(String geometryJson) {
+        if (geometryJson == null || geometryJson.isEmpty()) {
+            return "";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(geometryJson);
+            JsonNode body = root.path("body");
+            if (body.isArray()) {
+                for (JsonNode item : body) {
+                    String purpose = item.path("purpose").asText("");
+                    if ("grading".equals(purpose)) {
+                        return item.path("value").asText("");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignore parsing errors
+        }
+        return "";
+    }
+
+    /**
+     * Parse notes/comments from geometry JSON body array
+     */
+    private String parseNotesFromGeometry(String geometryJson) {
+        if (geometryJson == null || geometryJson.isEmpty()) {
+            return "";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(geometryJson);
+            JsonNode body = root.path("body");
+            if (body.isArray()) {
+                for (JsonNode item : body) {
+                    String purpose = item.path("purpose").asText("");
+                    if ("commenting".equals(purpose)) {
+                        return item.path("value").asText("");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignore parsing errors
+        }
+        return "";
     }
 
     private GeometryData parseGeometry(String geometryJson) {

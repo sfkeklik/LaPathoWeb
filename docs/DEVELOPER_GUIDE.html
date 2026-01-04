@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaPatho - Geliştirici Kılavuzu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333; background: #f5f7fa;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 20px 0;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: #16213e; }
+        .sidebar::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+
+        .sidebar-header {
+            padding: 10px 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+        .sidebar-header h1 {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .sidebar-header p {
+            color: #8892b0;
+            font-size: 12px;
+        }
+
+        .sidebar-nav { padding: 0 10px; }
+        .sidebar-nav ul { list-style: none; }
+        .sidebar-nav > ul > li { margin-bottom: 5px; }
+
+        .nav-section {
+            color: #ccd6f6;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-section:hover {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+        .nav-section.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .nav-subsection {
+            display: none;
+            padding-left: 15px;
+        }
+        .nav-subsection.show { display: block; }
+        .nav-subsection li { margin: 2px 0; }
+        .nav-subsection a {
+            color: #8892b0;
+            font-size: 13px;
+            padding: 6px 15px;
+            display: block;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-subsection a:hover {
+            color: #ccd6f6;
+            background: rgba(255,255,255,0.05);
+            border-left-color: #667eea;
+        }
+        .nav-subsection a.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px 50px;
+            max-width: calc(100% - 280px);
+            background: white;
+            min-height: 100vh;
+        }
+
+        /* Mobile Toggle */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; max-width: 100%; padding: 80px 20px 30px; }
+            .mobile-toggle { display: block; }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show { display: block; }
+        }
+
+        @media print {
+            .sidebar, .mobile-toggle, .overlay, .print-btn, .scroll-top { display: none !important; }
+            .main-content { margin-left: 0; max-width: 100%; padding: 15mm; }
+            .page-break { page-break-before: always; }
+        }
+
+        /* Typography */
+        h1 { color: #667eea; font-size: 28px; border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }
+        h2 {
+            color: #764ba2; font-size: 24px; margin-top: 50px; margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;
+            scroll-margin-top: 20px;
+        }
+        h3 { color: #4a5568; font-size: 18px; margin-top: 30px; margin-bottom: 12px; scroll-margin-top: 20px; }
+        h4 { color: #667eea; font-size: 16px; margin-top: 20px; margin-bottom: 8px; }
+        p { margin-bottom: 12px; text-align: justify; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+        th, td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        tr:hover { background-color: #f3f4f6; }
+
+        /* Boxes */
+        .feature-box { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left: 4px solid #667eea; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .info-box { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+
+        /* Code */
+        .code-block {
+            background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+            overflow-x: auto; margin: 15px 0; white-space: pre-wrap; word-wrap: break-word;
+        }
+        .code-inline {
+            background: #f4f4f4; color: #d63384; padding: 2px 6px; border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+
+        /* File Tree */
+        .file-tree {
+            background: #f8f9fa; padding: 15px; border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+            border: 1px solid #e5e7eb; margin: 15px 0;
+            white-space: pre; line-height: 1.5; overflow-x: auto;
+        }
+        .file-tree .folder { color: #667eea; font-weight: bold; }
+        .file-tree .file { color: #333; }
+        .file-tree .comment { color: #6c757d; font-style: italic; }
+
+        /* Lists */
+        ul, ol { margin: 10px 0 15px 25px; }
+        li { margin-bottom: 6px; }
+
+        /* Header */
+        .header-logo { text-align: center; margin-bottom: 40px; padding: 30px 0; background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%); border-radius: 12px; }
+        .header-logo h1 { font-size: 36px; border: none; margin-bottom: 5px; }
+        .header-logo p { color: #718096; font-size: 16px; }
+
+        /* Version Info */
+        .version-info { text-align: center; color: #718096; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+
+        /* Buttons */
+        .print-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 12px 24px; border-radius: 8px;
+            cursor: pointer; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5); }
+
+        .scroll-top {
+            position: fixed; bottom: 70px; right: 20px;
+            background: #4a5568; color: white; border: none;
+            width: 45px; height: 45px; border-radius: 50%;
+            cursor: pointer; font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .scroll-top.visible { opacity: 1; visibility: visible; }
+        .scroll-top:hover { background: #667eea; transform: translateY(-2px); }
+
+        /* Badges */
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 5px; }
+        .badge-java { background: #f89820; color: white; }
+        .badge-spring { background: #6db33f; color: white; }
+        .badge-angular { background: #dd0031; color: white; }
+        .badge-typescript { background: #3178c6; color: white; }
+        .badge-postgres { background: #336791; color: white; }
+        .badge-docker { background: #2496ed; color: white; }
+
+        /* Architecture Diagram */
+        .architecture-diagram {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .architecture-box {
+            display: inline-block;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 15px 25px;
+            margin: 10px;
+            font-weight: 600;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Progress Indicator */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 280px;
+            width: calc(100% - 280px);
+            height: 3px;
+            background: #e5e7eb;
+            z-index: 999;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        @media (max-width: 1024px) {
+            .progress-bar { left: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- Overlay for mobile -->
+    <div class="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>🔬 LaPatho</h1>
+            <p>Geliştirici Kılavuzu</p>
+        </div>
+        <div class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#section-1" class="nav-section" onclick="toggleSubsection(this)">1. Proje Genel Bakış</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-1-1">1.1 Teknoloji Stack</a></li>
+                        <li><a href="#section-1-2">1.2 Mimari Genel Bakış</a></li>
+                        <li><a href="#section-1-3">1.3 Klasör Yapısı</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-2" class="nav-section" onclick="toggleSubsection(this)">2. Geliştirme Ortamı</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-2-1">2.1 Gereksinimler</a></li>
+                        <li><a href="#section-2-2">2.2 Backend Kurulum</a></li>
+                        <li><a href="#section-2-3">2.3 Frontend Kurulum</a></li>
+                        <li><a href="#section-2-4">2.4 Docker ile Çalıştırma</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-3" class="nav-section" onclick="toggleSubsection(this)">3. Backend Mimarisi</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-3-1">3.1 Katman Yapısı</a></li>
+                        <li><a href="#section-3-2">3.2 Entity Sınıfları</a></li>
+                        <li><a href="#section-3-3">3.3 Repository Layer</a></li>
+                        <li><a href="#section-3-4">3.4 Service Layer</a></li>
+                        <li><a href="#section-3-5">3.5 Controller Layer</a></li>
+                        <li><a href="#section-3-6">3.6 Security Yapılandırması</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-4" class="nav-section" onclick="toggleSubsection(this)">4. Veritabanı Şeması</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-4-1">4.1 ER Diyagramı</a></li>
+                        <li><a href="#section-4-2">4.2 Tablo Açıklamaları</a></li>
+                        <li><a href="#section-4-3">4.3 İndeksler</a></li>
+                        <li><a href="#section-4-4">4.4 Varsayılan Veriler</a></li>
+                        <li><a href="#section-4-5">4.5 Annotation Geometry</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-5" class="nav-section" onclick="toggleSubsection(this)">5. REST API</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-5-1">5.1 Authentication API</a></li>
+                        <li><a href="#section-5-2">5.2 Admin API</a></li>
+                        <li><a href="#section-5-3">5.3 Image API</a></li>
+                        <li><a href="#section-5-4">5.4 Tile API</a></li>
+                        <li><a href="#section-5-5">5.5 Annotation API</a></li>
+                        <li><a href="#section-5-6">5.6 Project API</a></li>
+                        <li><a href="#section-5-7">5.7 Label API</a></li>
+                        <li><a href="#section-5-8">5.8 HTTP Durum Kodları</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-6" class="nav-section" onclick="toggleSubsection(this)">6. Frontend Mimarisi</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-6-1">6.1 Angular Yapısı</a></li>
+                        <li><a href="#section-6-2">6.2 Component Yapısı</a></li>
+                        <li><a href="#section-6-3">6.3 Services</a></li>
+                        <li><a href="#section-6-4">6.4 Guards</a></li>
+                        <li><a href="#section-6-5">6.5 Interceptors</a></li>
+                        <li><a href="#section-6-6">6.6 Routing</a></li>
+                        <li><a href="#section-6-7">6.7 Uygulama Konfigürasyonu</a></li>
+                        <li><a href="#section-6-8">6.8 Çoklu Dil Desteği (i18n)</a></li>
+                        <li><a href="#section-6-9">6.9 State Management</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-7" class="nav-section" onclick="toggleSubsection(this)">7. OpenSeadragon</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-7-1">7.1 Tile Sistemi</a></li>
+                        <li><a href="#section-7-2">7.2 OpenSeadragon Config</a></li>
+                        <li><a href="#section-7-3">7.3 Annotorious Entegrasyonu</a></li>
+                        <li><a href="#section-7-4">7.4 Anotasyon Araçları</a></li>
+                        <li><a href="#section-7-5">7.5 Veri Yapısı</a></li>
+                        <li><a href="#section-7-6">7.6 Event Handler'lar</a></li>
+                        <li><a href="#section-7-7">7.7 Katman Yönetimi</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-8" class="nav-section" onclick="toggleSubsection(this)">8. Deployment</a>
+                    <ul class="nav-subsection">
+                        <li><a href="#section-8-1">8.1 Production Build</a></li>
+                        <li><a href="#section-8-2">8.2 Docker Deployment</a></li>
+                        <li><a href="#section-8-3">8.3 Nginx Konfigürasyonu</a></li>
+                        <li><a href="#section-8-4">8.4 Environment Variables</a></li>
+                        <li><a href="#section-8-5">8.5 Volume Mount'lar</a></li>
+                        <li><a href="#section-8-6">8.6 Sunucu Gereksinimleri</a></li>
+                        <li><a href="#section-8-7">8.7 Health Check</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <button class="print-btn" onclick="window.print()">📄 PDF Olarak Kaydet</button>
+        <button class="scroll-top" onclick="scrollToTop()">↑</button>
+
+        <div class="header-logo">
+            <h1>🔬 LaPatho</h1>
+            <p>Patoloji Görüntü Anotasyon Sistemi - Geliştirici Kılavuzu</p>
+        </div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 1: PROJE GENEL BAKIŞ -->
+    <!-- ============================================== -->
+    <h2 id="section-1">1. Proje Genel Bakış</h2>
+
+    <p>LaPatho, patoloji görüntülerinin yüklenmesi, işlenmesi, görüntülenmesi ve anotasyonlanması için geliştirilmiş modern bir web uygulamasıdır. Yüksek çözünürlüklü WSI (Whole Slide Images) formatlarını destekler ve profesyonel anotasyon araçları sunar.</p>
+
+    <h3 id="section-1-1">1.1 Teknoloji Stack</h3>
+
+    <h4>🖥️ Backend</h4>
+    <table>
+        <tr><th>Teknoloji</th><th>Versiyon</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge badge-java">Java</span></td>
+            <td>17 (LTS)</td>
+            <td>Ana programlama dili</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-spring">Spring Boot</span></td>
+            <td>3.4.5</td>
+            <td>Backend framework</td>
+        </tr>
+        <tr>
+            <td>Spring Security</td>
+            <td>6.x</td>
+            <td>Kimlik doğrulama ve yetkilendirme</td>
+        </tr>
+        <tr>
+            <td>Spring Data JPA</td>
+            <td>3.x</td>
+            <td>Veritabanı erişim katmanı</td>
+        </tr>
+        <tr>
+            <td>JWT (jjwt)</td>
+            <td>0.12.6</td>
+            <td>Token tabanlı kimlik doğrulama</td>
+        </tr>
+        <tr>
+            <td>Bio-Formats</td>
+            <td>6.14.0</td>
+            <td>Tıbbi görüntü formatları işleme</td>
+        </tr>
+        <tr>
+            <td>Lombok</td>
+            <td>Latest</td>
+            <td>Boilerplate kod azaltma</td>
+        </tr>
+        <tr>
+            <td>Maven</td>
+            <td>3.9.x</td>
+            <td>Bağımlılık yönetimi ve build</td>
+        </tr>
+    </table>
+
+    <h4>🌐 Frontend</h4>
+    <table>
+        <tr><th>Teknoloji</th><th>Versiyon</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge badge-angular">Angular</span></td>
+            <td>19.2.0</td>
+            <td>Frontend framework</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-typescript">TypeScript</span></td>
+            <td>5.7.2</td>
+            <td>Tip güvenli JavaScript</td>
+        </tr>
+        <tr>
+            <td>OpenSeadragon</td>
+            <td>4.1.1</td>
+            <td>Yüksek çözünürlüklü görüntü görüntüleyici</td>
+        </tr>
+        <tr>
+            <td>Annotorious</td>
+            <td>3.3.6</td>
+            <td>OpenSeadragon için anotasyon eklentisi</td>
+        </tr>
+        <tr>
+            <td>RxJS</td>
+            <td>7.8.0</td>
+            <td>Reaktif programlama</td>
+        </tr>
+        <tr>
+            <td>ngx-translate</td>
+            <td>17.0.0</td>
+            <td>Çoklu dil desteği (i18n)</td>
+        </tr>
+        <tr>
+            <td>FontAwesome</td>
+            <td>7.0.0</td>
+            <td>İkon kütüphanesi</td>
+        </tr>
+    </table>
+
+    <h4>🗄️ Veritabanı & Altyapı</h4>
+    <table>
+        <tr><th>Teknoloji</th><th>Versiyon</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge badge-postgres">PostgreSQL</span></td>
+            <td>15</td>
+            <td>Ana veritabanı</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-docker">Docker</span></td>
+            <td>Latest</td>
+            <td>Konteynerizasyon</td>
+        </tr>
+        <tr>
+            <td>Docker Compose</td>
+            <td>Latest</td>
+            <td>Multi-container orchestration</td>
+        </tr>
+        <tr>
+            <td>Nginx</td>
+            <td>Alpine</td>
+            <td>Frontend web sunucusu (production)</td>
+        </tr>
+        <tr>
+            <td>pgAdmin 4</td>
+            <td>Latest</td>
+            <td>Veritabanı yönetim arayüzü</td>
+        </tr>
+    </table>
+
+    <h3 id="section-1-2">1.2 Mimari Genel Bakış</h3>
+
+    <p>LaPatho, klasik 3-tier (üç katmanlı) mimari kullanmaktadır:</p>
+
+    <div class="architecture-diagram">
+        <div style="margin-bottom: 20px;">
+            <div class="architecture-box" style="background: linear-gradient(135deg, #dd0031 0%, #c3002f 100%); color: white; border-color: #dd0031;">
+                🌐 Frontend (Angular)<br>
+                <small>Port: 80 (Nginx) / 4200 (Dev)</small>
+            </div>
+        </div>
+        <div style="font-size: 24px; color: #764ba2;">⬇️ HTTP/REST ⬇️</div>
+        <div style="margin: 20px 0;">
+            <div class="architecture-box" style="background: linear-gradient(135deg, #6db33f 0%, #5a9e2f 100%); color: white; border-color: #6db33f;">
+                ⚙️ Backend (Spring Boot)<br>
+                <small>Port: 8080</small>
+            </div>
+        </div>
+        <div style="font-size: 24px; color: #764ba2;">⬇️ JDBC ⬇️</div>
+        <div style="margin-top: 20px;">
+            <div class="architecture-box" style="background: linear-gradient(135deg, #336791 0%, #2a5579 100%); color: white; border-color: #336791;">
+                🗄️ PostgreSQL Database<br>
+                <small>Port: 5432</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="feature-box">
+        <strong>📌 Mimari Özellikler:</strong>
+        <ul>
+            <li><strong>RESTful API:</strong> Backend tüm işlemleri REST API üzerinden sunar</li>
+            <li><strong>JWT Authentication:</strong> Stateless token tabanlı kimlik doğrulama</li>
+            <li><strong>Tile-Based Rendering:</strong> Büyük görüntüler tile'lara bölünerek sunulur</li>
+            <li><strong>Lazy Loading:</strong> Angular component'ler lazy load edilir</li>
+        </ul>
+    </div>
+
+    <h3 id="section-1-3">1.3 Klasör Yapısı</h3>
+
+    <h4>📁 Proje Kök Dizini</h4>
+    <div class="file-tree">
+<span class="folder">LaPatho/</span>
+├── <span class="file">pom.xml</span>                    <span class="comment"># Maven bağımlılıkları ve build konfigürasyonu</span>
+├── <span class="file">docker-compose.yml</span>         <span class="comment"># Docker servisleri tanımı</span>
+├── <span class="file">Dockerfile.backend</span>         <span class="comment"># Backend Docker imajı</span>
+├── <span class="file">docker-rebuild.ps1</span>         <span class="comment"># Windows için hızlı rebuild script</span>
+├── <span class="file">mvnw / mvnw.cmd</span>            <span class="comment"># Maven wrapper (Linux/Windows)</span>
+├── <span class="file">README.md</span>                  <span class="comment"># Proje genel açıklaması</span>
+├── <span class="file">POSTGRESQL-SETUP.md</span>        <span class="comment"># PostgreSQL kurulum rehberi</span>
+├── <span class="file">pgadmin-servers.json</span>       <span class="comment"># pgAdmin otomatik sunucu konfigürasyonu</span>
+├── <span class="file">.env.example</span>               <span class="comment"># Örnek environment değişkenleri</span>
+├── <span class="file">.gitignore</span>                 <span class="comment"># Git ignore kuralları</span>
+├── <span class="folder">docs/</span>                      <span class="comment"># Dokümantasyon dosyaları</span>
+│   ├── <span class="file">USER_GUIDE.html</span>        <span class="comment"># Kullanıcı kılavuzu</span>
+│   ├── <span class="file">DEVELOPER_GUIDE.html</span>   <span class="comment"># Geliştirici kılavuzu (bu dosya)</span>
+│   └── <span class="folder">screenshots/</span>           <span class="comment"># Ekran görüntüleri</span>
+├── <span class="folder">src/</span>                       <span class="comment"># Kaynak kodları</span>
+│   ├── <span class="folder">main/</span>
+│   │   ├── <span class="folder">java/</span>              <span class="comment"># Backend Java kodları</span>
+│   │   ├── <span class="folder">resources/</span>         <span class="comment"># Konfigürasyon dosyaları</span>
+│   │   └── <span class="folder">web-ui/</span>            <span class="comment"># Frontend Angular projesi</span>
+│   └── <span class="folder">test/</span>                  <span class="comment"># Test dosyaları</span>
+├── <span class="folder">uploads/</span>                   <span class="comment"># Yüklenen orijinal dosyalar</span>
+├── <span class="folder">tiles/</span>                     <span class="comment"># İşlenmiş görüntü tile'ları</span>
+└── <span class="folder">target/</span>                    <span class="comment"># Maven build çıktıları</span>
+    </div>
+
+    <h4>📁 Backend Klasör Yapısı</h4>
+    <div class="file-tree">
+<span class="folder">src/main/java/com/cvlab/spring/LaPatho/</span>
+├── <span class="file">LaPathoApplication.java</span>    <span class="comment"># Spring Boot ana sınıfı</span>
+├── <span class="file">Status.java</span>                <span class="comment"># Image status enum (PENDING, PROCESSING, READY, ERROR)</span>
+│
+├── <span class="comment">── Core Image Module ──</span>
+├── <span class="file">ImageEntity.java</span>           <span class="comment"># Görüntü entity'si</span>
+├── <span class="file">ImageDTO.java</span>              <span class="comment"># Görüntü veri transfer nesnesi</span>
+├── <span class="file">CreateImageDTO.java</span>        <span class="comment"># Görüntü oluşturma DTO</span>
+├── <span class="file">ImageMetadataDTO.java</span>      <span class="comment"># Detaylı metadata DTO</span>
+├── <span class="file">ImageOverviewDTO.java</span>      <span class="comment"># Liste görünümü için DTO</span>
+├── <span class="file">ImageRepository.java</span>       <span class="comment"># Görüntü veritabanı erişimi</span>
+├── <span class="file">ImageService.java</span>          <span class="comment"># Görüntü iş mantığı</span>
+├── <span class="file">ImageController.java</span>       <span class="comment"># Görüntü REST endpoint'leri</span>
+├── <span class="file">FileUploadController.java</span>  <span class="comment"># Dosya yükleme endpoint'leri</span>
+├── <span class="file">ImageReadyEvent.java</span>       <span class="comment"># Görüntü hazır olduğunda tetiklenen event</span>
+│
+├── <span class="comment">── Annotation Module ──</span>
+├── <span class="file">AnnotationEntity.java</span>      <span class="comment"># Anotasyon entity'si</span>
+├── <span class="file">AnnotationDTO.java</span>         <span class="comment"># Anotasyon veri transfer nesnesi</span>
+├── <span class="file">AnnotationRepository.java</span>  <span class="comment"># Anotasyon veritabanı erişimi</span>
+├── <span class="file">AnnotationService.java</span>     <span class="comment"># Anotasyon iş mantığı</span>
+├── <span class="file">AnnotationController.java</span>  <span class="comment"># Anotasyon REST endpoint'leri (image-scoped)</span>
+├── <span class="file">AnnotationStandaloneController.java</span> <span class="comment"># Bağımsız anotasyon endpoint'leri</span>
+│
+├── <span class="comment">── Tile Module ──</span>
+├── <span class="file">TileService.java</span>           <span class="comment"># Tile işleme servisi (Bio-Formats)</span>
+├── <span class="file">TileController.java</span>        <span class="comment"># Tile REST endpoint'leri</span>
+│
+├── <span class="comment">── Config ──</span>
+├── <span class="file">AsyncConfig.java</span>           <span class="comment"># Asenkron işlem konfigürasyonu</span>
+├── <span class="file">CorsConfig.java</span>            <span class="comment"># CORS ayarları</span>
+├── <span class="file">HomeController.java</span>        <span class="comment"># Ana sayfa controller</span>
+│
+├── <span class="folder">project/</span>                   <span class="comment"># Proje modülü</span>
+│   ├── <span class="folder">controller/</span>            <span class="comment"># ProjectController, LabelController, ReportController</span>
+│   ├── <span class="folder">dto/</span>                   <span class="comment"># ProjectDTO, LabelDTO, CreateProjectRequest</span>
+│   ├── <span class="folder">entity/</span>                <span class="comment"># Project, Label entity'leri</span>
+│   ├── <span class="folder">repository/</span>            <span class="comment"># ProjectRepository, LabelRepository</span>
+│   └── <span class="folder">service/</span>               <span class="comment"># ProjectService, LabelService</span>
+│
+└── <span class="folder">security/</span>                  <span class="comment"># Güvenlik modülü</span>
+    ├── <span class="folder">config/</span>                <span class="comment"># SecurityConfig, JwtAuthenticationFilter</span>
+    ├── <span class="folder">controller/</span>            <span class="comment"># AuthController, AdminController</span>
+    ├── <span class="folder">dto/</span>                   <span class="comment"># LoginRequest, RegisterRequest, AuthResponse</span>
+    ├── <span class="folder">entity/</span>                <span class="comment"># User, Role entity'leri</span>
+    ├── <span class="folder">repository/</span>            <span class="comment"># UserRepository</span>
+    └── <span class="folder">service/</span>               <span class="comment"># AuthService, JwtService</span>
+    </div>
+
+    <h4>📁 Frontend Klasör Yapısı</h4>
+    <div class="file-tree">
+<span class="folder">src/main/web-ui/</span>
+├── <span class="file">angular.json</span>               <span class="comment"># Angular CLI konfigürasyonu</span>
+├── <span class="file">package.json</span>               <span class="comment"># NPM bağımlılıkları</span>
+├── <span class="file">tsconfig.json</span>              <span class="comment"># TypeScript konfigürasyonu</span>
+├── <span class="file">Dockerfile</span>                 <span class="comment"># Frontend Docker imajı</span>
+├── <span class="file">nginx.conf</span>                 <span class="comment"># Nginx konfigürasyonu</span>
+│
+└── <span class="folder">src/</span>
+    ├── <span class="file">index.html</span>             <span class="comment"># Ana HTML dosyası</span>
+    ├── <span class="file">main.ts</span>                <span class="comment"># Angular bootstrap</span>
+    ├── <span class="file">styles.scss</span>            <span class="comment"># Global stiller</span>
+    │
+    ├── <span class="folder">app/</span>
+    │   ├── <span class="file">app.component.ts</span>   <span class="comment"># Root component</span>
+    │   ├── <span class="file">app.config.ts</span>      <span class="comment"># Uygulama konfigürasyonu</span>
+    │   ├── <span class="file">app.routes.ts</span>      <span class="comment"># Routing tanımları</span>
+    │   │
+    │   ├── <span class="folder">app-const/</span>         <span class="comment"># Sabitler ve API gateway tanımları</span>
+    │   │
+    │   ├── <span class="folder">components/</span>        <span class="comment"># UI bileşenleri</span>
+    │   │   ├── <span class="folder">admin/</span>         <span class="comment"># Admin paneli</span>
+    │   │   ├── <span class="folder">home/</span>          <span class="comment"># Ana sayfa</span>
+    │   │   ├── <span class="folder">login/</span>         <span class="comment"># Giriş sayfası</span>
+    │   │   ├── <span class="folder">register/</span>      <span class="comment"># Kayıt sayfası</span>
+    │   │   ├── <span class="folder">image-annotator/</span> <span class="comment"># Anotasyon ekranı (OpenSeadragon)</span>
+    │   │   ├── <span class="folder">image-edit-modal/</span> <span class="comment"># Görüntü düzenleme modalı</span>
+    │   │   ├── <span class="folder">change-password-modal/</span> <span class="comment"># Şifre değiştirme</span>
+    │   │   ├── <span class="folder">confirm-dialog/</span> <span class="comment"># Onay dialogu</span>
+    │   │   ├── <span class="folder">toast/</span>         <span class="comment"># Bildirim toast'ları</span>
+    │   │   ├── <span class="folder">skeleton/</span>      <span class="comment"># Loading skeleton</span>
+    │   │   └── <span class="folder">language-switcher/</span> <span class="comment"># Dil değiştirici (TR/EN)</span>
+    │   │
+    │   ├── <span class="folder">services/</span>          <span class="comment"># Angular servisler</span>
+    │   │   ├── <span class="file">auth.service.ts</span>
+    │   │   ├── <span class="file">image.service.ts</span>
+    │   │   ├── <span class="file">annotation.service.ts</span>
+    │   │   ├── <span class="file">admin.service.ts</span>
+    │   │   ├── <span class="file">toast.service.ts</span>
+    │   │   └── <span class="file">language.service.ts</span>
+    │   │
+    │   ├── <span class="folder">guards/</span>            <span class="comment"># Route guard'ları (auth.guard.ts)</span>
+    │   └── <span class="folder">interceptors/</span>      <span class="comment"># HTTP interceptor'lar (auth.interceptor.ts)</span>
+    │
+    └── <span class="folder">assets/</span>                <span class="comment"># Statik dosyalar</span>
+        └── <span class="folder">i18n/</span>              <span class="comment"># Çeviri dosyaları (tr.json, en.json)</span>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 2: GELİŞTİRME ORTAMI KURULUMU -->
+    <!-- ============================================== -->
+    <h2 id="section-2">2. Geliştirme Ortamı Kurulumu</h2>
+
+    <h3 id="section-2-1">2.1 Gereksinimler</h3>
+
+    <h4>🔧 Zorunlu Yazılımlar</h4>
+    <table>
+        <tr><th>Yazılım</th><th>Minimum Versiyon</th><th>İndirme Linki</th></tr>
+        <tr>
+            <td><strong>Java JDK</strong></td>
+            <td>17 (LTS)</td>
+            <td><span class="code-inline">https://adoptium.net/</span></td>
+        </tr>
+        <tr>
+            <td><strong>Node.js</strong></td>
+            <td>18.x LTS</td>
+            <td><span class="code-inline">https://nodejs.org/</span></td>
+        </tr>
+        <tr>
+            <td><strong>PostgreSQL</strong></td>
+            <td>15</td>
+            <td><span class="code-inline">https://www.postgresql.org/download/</span></td>
+        </tr>
+        <tr>
+            <td><strong>Git</strong></td>
+            <td>2.x</td>
+            <td><span class="code-inline">https://git-scm.com/</span></td>
+        </tr>
+    </table>
+
+    <h4>📦 Opsiyonel Yazılımlar</h4>
+    <table>
+        <tr><th>Yazılım</th><th>Açıklama</th></tr>
+        <tr>
+            <td><strong>Docker Desktop</strong></td>
+            <td>Container tabanlı geliştirme için</td>
+        </tr>
+        <tr>
+            <td><strong>IntelliJ IDEA</strong></td>
+            <td>Önerilen Java IDE</td>
+        </tr>
+        <tr>
+            <td><strong>VS Code</strong></td>
+            <td>Önerilen frontend IDE</td>
+        </tr>
+        <tr>
+            <td><strong>pgAdmin 4</strong></td>
+            <td>PostgreSQL yönetim arayüzü</td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <strong>💡 İpucu:</strong> Docker kullanırsanız, PostgreSQL kurulumu gerekmez. Docker Compose tüm servisleri otomatik ayağa kaldırır.
+    </div>
+
+    <h3 id="section-2-2">2.2 Backend Kurulum</h3>
+
+    <h4>Adım 1: Projeyi Klonlama</h4>
+    <div class="code-block">git clone https://github.com/your-repo/LaPatho.git
+cd LaPatho</div>
+
+    <h4>Adım 2: PostgreSQL Veritabanı Oluşturma</h4>
+    <p>PostgreSQL kurulu ve çalışıyor olmalıdır. Aşağıdaki komutları çalıştırın:</p>
+    <div class="code-block"><span style="color: #6a9955;"># PostgreSQL'e bağlan</span>
+psql -U postgres
+
+<span style="color: #6a9955;"># Veritabanı ve kullanıcı oluştur</span>
+CREATE DATABASE lapatho;
+CREATE USER lapatho WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE lapatho TO lapatho;
+\q</div>
+
+    <h4>Adım 3: Konfigürasyon Kontrolü</h4>
+    <p><span class="code-inline">src/main/resources/application.properties</span> dosyasını kontrol edin:</p>
+    <div class="code-block"><span style="color: #6a9955;"># Veritabanı bağlantı ayarları</span>
+spring.datasource.url=jdbc:postgresql://localhost:5432/lapatho
+spring.datasource.username=lapatho
+spring.datasource.password=password
+
+<span style="color: #6a9955;"># Tile ve upload dizinleri (kendi sisteminize göre ayarlayın)</span>
+tile.output-base-path=C:/Users/user/Desktop/LaPatho/tiles
+upload.base-path=uploads</div>
+
+    <h4>Adım 4: Maven ile Build ve Çalıştırma</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Windows</span>
+.\mvnw.cmd spring-boot:run
+
+<span style="color: #6a9955;"># Linux/Mac</span>
+./mvnw spring-boot:run</div>
+
+    <div class="success-box">
+        <strong>✅ Başarılı!</strong> Backend <span class="code-inline">http://localhost:8080</span> adresinde çalışmaya başlayacaktır.
+    </div>
+
+    <h4>İlk Çalıştırma - Veritabanı Şeması</h4>
+    <p>İlk çalıştırmada veritabanı tablolarının oluşturulması için:</p>
+    <div class="code-block"><span style="color: #6a9955;"># application.properties'de şema modunu değiştirin (sadece ilk kez)</span>
+spring.sql.init.mode=always
+
+<span style="color: #6a9955;"># Sonra tekrar 'never' yapın</span>
+spring.sql.init.mode=never</div>
+
+    <h3 id="section-2-3">2.3 Frontend Kurulum</h3>
+
+    <h4>Adım 1: Angular CLI Kurulumu</h4>
+    <div class="code-block">npm install -g @angular/cli</div>
+
+    <h4>Adım 2: Bağımlılıkları Yükleme</h4>
+    <div class="code-block">cd src/main/web-ui
+npm install</div>
+
+    <h4>Adım 3: Geliştirme Sunucusunu Başlatma</h4>
+    <div class="code-block">npm start
+<span style="color: #6a9955;"># veya</span>
+ng serve</div>
+
+    <div class="success-box">
+        <strong>✅ Başarılı!</strong> Frontend <span class="code-inline">http://localhost:4200</span> adresinde çalışmaya başlayacaktır.
+    </div>
+
+    <h4>Proxy Konfigürasyonu</h4>
+    <p>Geliştirme sırasında frontend, backend API'ye proxy üzerinden bağlanır. <span class="code-inline">src/main/web-ui/src/proxy.conf.json</span> dosyası:</p>
+    <div class="code-block">{
+  "/api": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  }
+}</div>
+
+    <div class="warning-box">
+        <strong>⚠️ Önemli:</strong> Frontend ve backend'in aynı anda çalışıyor olması gerekmektedir. İki ayrı terminal penceresi kullanın.
+    </div>
+
+    <h3 id="section-2-4">2.4 Docker ile Çalıştırma</h3>
+
+    <p>Docker kullanarak tüm servisleri tek komutla ayağa kaldırabilirsiniz. Bu yöntem özellikle clean environment ve deployment testleri için önerilir.</p>
+
+    <h4>Adım 1: Docker Compose ile Başlatma</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Proje kök dizininde</span>
+docker-compose up -d</div>
+
+    <h4>Docker Servisleri</h4>
+    <table>
+        <tr><th>Servis</th><th>Port</th><th>Açıklama</th></tr>
+        <tr>
+            <td><strong>database</strong></td>
+            <td>5432</td>
+            <td>PostgreSQL veritabanı</td>
+        </tr>
+        <tr>
+            <td><strong>pgadmin</strong></td>
+            <td>5050</td>
+            <td>Veritabanı yönetim arayüzü</td>
+        </tr>
+        <tr>
+            <td><strong>backend</strong></td>
+            <td>8080</td>
+            <td>Spring Boot API</td>
+        </tr>
+        <tr>
+            <td><strong>web-ui</strong></td>
+            <td>80</td>
+            <td>Angular frontend (Nginx)</td>
+        </tr>
+    </table>
+
+    <h4>Docker Compose Komutları</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Tüm servisleri başlat (arka planda)</span>
+docker-compose up -d
+
+<span style="color: #6a9955;"># Logları izle</span>
+docker-compose logs -f
+
+<span style="color: #6a9955;"># Belirli bir servisin logunu izle</span>
+docker-compose logs -f backend
+
+<span style="color: #6a9955;"># Servisleri durdur</span>
+docker-compose down
+
+<span style="color: #6a9955;"># Servisleri durdur ve volume'ları sil (temiz başlangıç)</span>
+docker-compose down -v
+
+<span style="color: #6a9955;"># İmajları yeniden build et</span>
+docker-compose build --no-cache
+
+<span style="color: #6a9955;"># Tek bir servisi yeniden başlat</span>
+docker-compose restart backend</div>
+
+    <h4>pgAdmin Erişimi</h4>
+    <table>
+        <tr><th>Parametre</th><th>Değer</th></tr>
+        <tr><td>URL</td><td><span class="code-inline">http://localhost:5050</span></td></tr>
+        <tr><td>Email</td><td><span class="code-inline">admin@lapatho.com</span></td></tr>
+        <tr><td>Şifre</td><td><span class="code-inline">admin</span></td></tr>
+    </table>
+
+    <h4>Docker Volume'ları</h4>
+    <div class="file-tree">
+<span class="folder">volumes/</span>
+├── <span class="file">postgres_data</span>    <span class="comment"># PostgreSQL verileri (persist)</span>
+├── <span class="file">pgadmin_data</span>     <span class="comment"># pgAdmin konfigürasyonu</span>
+├── <span class="file">./uploads</span>        <span class="comment"># Yüklenen dosyalar (host mount)</span>
+└── <span class="file">./tiles</span>          <span class="comment"># İşlenmiş tile'lar (host mount)</span>
+    </div>
+
+    <div class="info-box">
+        <strong>💡 İpucu:</strong> <span class="code-inline">uploads/</span> ve <span class="code-inline">tiles/</span> dizinleri host makinede mount edilir, böylece container yeniden oluşturulsa bile veriler korunur.
+    </div>
+
+    <h4>Hızlı Rebuild Script (Windows)</h4>
+    <p>Backend değişikliklerini hızlıca deploy etmek için <span class="code-inline">docker-rebuild.ps1</span> script'i kullanılabilir:</p>
+    <div class="code-block"><span style="color: #6a9955;"># PowerShell'de</span>
+.\docker-rebuild.ps1</div>
+
+    <h4>Varsayılan Kullanıcılar</h4>
+    <p>Docker ile ilk başlatmada aşağıdaki kullanıcılar otomatik oluşturulur:</p>
+    <table>
+        <tr><th>Kullanıcı Adı</th><th>Şifre</th><th>Rol</th></tr>
+        <tr>
+            <td><span class="code-inline">admin</span></td>
+            <td><span class="code-inline">admin123</span></td>
+            <td>ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">doctor</span></td>
+            <td><span class="code-inline">doctor123</span></td>
+            <td>DOCTOR</td>
+        </tr>
+    </table>
+
+    <div class="warning-box">
+        <strong>⚠️ Güvenlik Uyarısı:</strong> Production ortamında varsayılan şifreleri mutlaka değiştirin!
+    </div>
+
+    <h4>Sorun Giderme</h4>
+
+    <table>
+        <tr><th>Sorun</th><th>Çözüm</th></tr>
+        <tr>
+            <td>Backend başlamıyor</td>
+            <td>Database servisinin healthy olmasını bekleyin: <span class="code-inline">docker-compose logs database</span></td>
+        </tr>
+        <tr>
+            <td>Port çakışması</td>
+            <td>İlgili portların boş olduğundan emin olun veya <span class="code-inline">docker-compose.yml</span>'de port değiştirin</td>
+        </tr>
+        <tr>
+            <td>Permission denied (uploads/tiles)</td>
+            <td>Dizin izinlerini kontrol edin: <span class="code-inline">chmod 777 uploads tiles</span></td>
+        </tr>
+        <tr>
+            <td>Out of memory</td>
+            <td>Docker Desktop ayarlarından memory limitini artırın (min. 4GB önerilir)</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 3: BACKEND MİMARİSİ -->
+    <!-- ============================================== -->
+    <h2 id="section-3">3. Backend Mimarisi</h2>
+
+    <p>LaPatho backend'i Spring Boot framework üzerine inşa edilmiştir ve klasik katmanlı mimari (Layered Architecture) kullanır. Her katman belirli bir sorumluluğa sahiptir ve katmanlar arası iletişim dependency injection ile sağlanır.</p>
+
+    <h3 id="section-3-1">3.1 Katman Yapısı</h3>
+
+    <div class="architecture-diagram">
+        <div style="margin-bottom: 15px;">
+            <div class="architecture-box" style="background: #fff3cd; border-color: #ffc107; color: #856404;">
+                🌐 <strong>Controller Layer</strong><br>
+                <small>REST API Endpoints</small>
+            </div>
+        </div>
+        <div style="font-size: 20px; color: #764ba2;">⬇️ DTO ⬇️</div>
+        <div style="margin: 15px 0;">
+            <div class="architecture-box" style="background: #d4edda; border-color: #28a745; color: #155724;">
+                ⚙️ <strong>Service Layer</strong><br>
+                <small>İş Mantığı (Business Logic)</small>
+            </div>
+        </div>
+        <div style="font-size: 20px; color: #764ba2;">⬇️ Entity ⬇️</div>
+        <div style="margin-top: 15px;">
+            <div class="architecture-box" style="background: #d1ecf1; border-color: #17a2b8; color: #0c5460;">
+                🗄️ <strong>Repository Layer</strong><br>
+                <small>Veritabanı Erişimi (JPA)</small>
+            </div>
+        </div>
+    </div>
+
+    <h3 id="section-3-2">3.2 Entity Sınıfları</h3>
+
+    <p>Entity sınıfları JPA (Java Persistence API) anotasyonları ile veritabanı tablolarına map edilir. Lombok kütüphanesi boilerplate kodu azaltmak için kullanılır.</p>
+
+    <h4>📌 ImageEntity</h4>
+    <p>Görüntü dosyalarının metadata bilgilerini tutar.</p>
+    <div class="code-block"><span style="color: #569cd6;">@Entity</span>
+<span style="color: #569cd6;">@Table</span>(name = <span style="color: #ce9178;">"images"</span>)
+<span style="color: #569cd6;">@Data</span> <span style="color: #6a9955;">// Lombok: getter, setter, toString, equals, hashCode</span>
+<span style="color: #569cd6;">@NoArgsConstructor</span>
+<span style="color: #569cd6;">@AllArgsConstructor</span>
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">ImageEntity</span> {
+    <span style="color: #569cd6;">@Id</span>
+    <span style="color: #569cd6;">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span style="color: #569cd6;">private</span> Long id;
+
+    <span style="color: #569cd6;">private</span> String name;           <span style="color: #6a9955;">// Dosya adı</span>
+    <span style="color: #569cd6;">private int</span> width, height;    <span style="color: #6a9955;">// Piksel boyutları</span>
+    <span style="color: #569cd6;">private int</span> tileSize;         <span style="color: #6a9955;">// Tile boyutu (varsayılan: 512)</span>
+    <span style="color: #569cd6;">private int</span> maxLevel;         <span style="color: #6a9955;">// Maksimum zoom seviyesi</span>
+    <span style="color: #569cd6;">private</span> String path;          <span style="color: #6a9955;">// Dosya yolu</span>
+
+    <span style="color: #569cd6;">@Enumerated</span>(EnumType.STRING)
+    <span style="color: #569cd6;">private</span> Status status;        <span style="color: #6a9955;">// PENDING, PROCESSING, READY, ERROR</span>
+
+    <span style="color: #6a9955;">// Metadata alanları</span>
+    <span style="color: #569cd6;">private</span> Long fileSize;        <span style="color: #6a9955;">// Dosya boyutu (byte)</span>
+    <span style="color: #569cd6;">private</span> String format;        <span style="color: #6a9955;">// TIFF, BIF, SVS, etc.</span>
+    <span style="color: #569cd6;">private</span> Double pixelSizeX, pixelSizeY;  <span style="color: #6a9955;">// Piksel boyutları (µm)</span>
+    <span style="color: #569cd6;">private</span> Integer bitDepth;     <span style="color: #6a9955;">// Bit derinliği</span>
+    <span style="color: #569cd6;">private</span> Integer channels;     <span style="color: #6a9955;">// Kanal sayısı (RGB=3)</span>
+    <span style="color: #569cd6;">private</span> String colorSpace;    <span style="color: #6a9955;">// RGB, Grayscale</span>
+    <span style="color: #569cd6;">private</span> Double magnification; <span style="color: #6a9955;">// Büyütme oranı (40x, etc.)</span>
+    <span style="color: #569cd6;">private</span> String scanner;       <span style="color: #6a9955;">// Tarayıcı modeli</span>
+}</div>
+
+    <h4>📌 AnnotationEntity</h4>
+    <p>Görüntü üzerindeki anotasyonları tutar. Geometry alanı W3C Web Annotation formatında JSON saklar.</p>
+    <div class="code-block"><span style="color: #569cd6;">@Entity</span>
+<span style="color: #569cd6;">@Table</span>(name = <span style="color: #ce9178;">"annotations"</span>)
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">AnnotationEntity</span> {
+    <span style="color: #569cd6;">@Id</span>
+    <span style="color: #569cd6;">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span style="color: #569cd6;">private</span> Long id;
+
+    <span style="color: #569cd6;">@ManyToOne</span>
+    <span style="color: #569cd6;">@JoinColumn</span>(name = <span style="color: #ce9178;">"image_id"</span>)
+    <span style="color: #569cd6;">private</span> ImageEntity image;    <span style="color: #6a9955;">// İlişkili görüntü</span>
+
+    <span style="color: #569cd6;">@ManyToOne</span>
+    <span style="color: #569cd6;">@JoinColumn</span>(name = <span style="color: #ce9178;">"user_id"</span>)
+    <span style="color: #569cd6;">private</span> User user;            <span style="color: #6a9955;">// Oluşturan kullanıcı</span>
+
+    <span style="color: #569cd6;">private</span> String type;          <span style="color: #6a9955;">// polygon, rectangle, ellipse, freehand</span>
+
+    <span style="color: #569cd6;">@Column</span>(columnDefinition = <span style="color: #ce9178;">"TEXT"</span>)
+    <span style="color: #569cd6;">private</span> String geometry;      <span style="color: #6a9955;">// W3C Annotation JSON</span>
+
+    <span style="color: #569cd6;">private</span> Instant created, updated;
+}</div>
+
+    <h4>📌 User Entity</h4>
+    <p>Spring Security UserDetails interface'ini implement eder.</p>
+    <div class="code-block"><span style="color: #569cd6;">@Entity</span>
+<span style="color: #569cd6;">@Table</span>(name = <span style="color: #ce9178;">"users"</span>)
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">User</span> <span style="color: #569cd6;">implements</span> <span style="color: #4ec9b0;">UserDetails</span> {
+    <span style="color: #569cd6;">@Id</span>
+    <span style="color: #569cd6;">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span style="color: #569cd6;">private</span> Long id;
+
+    <span style="color: #569cd6;">@Column</span>(unique = <span style="color: #569cd6;">true</span>, nullable = <span style="color: #569cd6;">false</span>)
+    <span style="color: #569cd6;">private</span> String username;
+
+    <span style="color: #569cd6;">private</span> String password;       <span style="color: #6a9955;">// BCrypt hash</span>
+    <span style="color: #569cd6;">private</span> String firstName, lastName;
+    <span style="color: #569cd6;">private</span> String email;
+
+    <span style="color: #569cd6;">@Enumerated</span>(EnumType.STRING)
+    <span style="color: #569cd6;">private</span> Role role;            <span style="color: #6a9955;">// ADMIN, DOCTOR</span>
+
+    <span style="color: #569cd6;">private boolean</span> enabled;
+
+    <span style="color: #6a9955;">// UserDetails methods...</span>
+    <span style="color: #569cd6;">@Override</span>
+    <span style="color: #569cd6;">public</span> Collection&lt;? <span style="color: #569cd6;">extends</span> GrantedAuthority&gt; getAuthorities() {
+        <span style="color: #569cd6;">return</span> List.of(<span style="color: #569cd6;">new</span> SimpleGrantedAuthority(<span style="color: #ce9178;">"ROLE_"</span> + role.name()));
+    }
+}</div>
+
+    <h4>📌 Project Entity</h4>
+    <p>Proje entity'si many-to-many ilişkilerle doktorları ve görüntüleri birleştirir.</p>
+    <div class="code-block"><span style="color: #569cd6;">@Entity</span>
+<span style="color: #569cd6;">@Table</span>(name = <span style="color: #ce9178;">"projects"</span>)
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">Project</span> {
+    <span style="color: #569cd6;">@Id</span>
+    <span style="color: #569cd6;">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span style="color: #569cd6;">private</span> Long id;
+
+    <span style="color: #569cd6;">private</span> String name;
+    <span style="color: #569cd6;">private</span> String description;
+    <span style="color: #569cd6;">private</span> Integer gradeLevel;    <span style="color: #6a9955;">// Derecelendirme seviyesi (1-5)</span>
+
+    <span style="color: #569cd6;">@ManyToMany</span>
+    <span style="color: #569cd6;">@JoinTable</span>(name = <span style="color: #ce9178;">"project_doctors"</span>, ...)
+    <span style="color: #569cd6;">private</span> Set&lt;User&gt; assignedDoctors;  <span style="color: #6a9955;">// Atanan doktorlar</span>
+
+    <span style="color: #569cd6;">@ManyToMany</span>
+    <span style="color: #569cd6;">@JoinTable</span>(name = <span style="color: #ce9178;">"project_images"</span>, ...)
+    <span style="color: #569cd6;">private</span> Set&lt;ImageEntity&gt; images;   <span style="color: #6a9955;">// Projedeki görüntüler</span>
+
+    <span style="color: #569cd6;">@OneToMany</span>(mappedBy = <span style="color: #ce9178;">"project"</span>, cascade = CascadeType.ALL)
+    <span style="color: #569cd6;">private</span> Set&lt;Label&gt; labels;         <span style="color: #6a9955;">// Proje etiketleri</span>
+
+    <span style="color: #569cd6;">@ManyToOne</span>
+    <span style="color: #569cd6;">private</span> User createdBy;
+}</div>
+
+    <h4>📌 Label Entity</h4>
+    <div class="code-block"><span style="color: #569cd6;">@Entity</span>
+<span style="color: #569cd6;">@Table</span>(name = <span style="color: #ce9178;">"labels"</span>)
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">Label</span> {
+    <span style="color: #569cd6;">@Id @GeneratedValue</span>
+    <span style="color: #569cd6;">private</span> Long id;
+
+    <span style="color: #569cd6;">@ManyToOne</span>(fetch = FetchType.LAZY)
+    <span style="color: #569cd6;">private</span> Project project;
+
+    <span style="color: #569cd6;">private</span> String name;          <span style="color: #6a9955;">// Etiket adı (Tumor, Necrosis, etc.)</span>
+    <span style="color: #569cd6;">private</span> String color;         <span style="color: #6a9955;">// Hex renk kodu (#ff0000)</span>
+    <span style="color: #569cd6;">private</span> String description;
+}</div>
+
+    <h3 id="section-3-3">3.3 Repository Layer</h3>
+
+    <p>Repository'ler Spring Data JPA <span class="code-inline">JpaRepository</span> interface'ini extend ederek CRUD operasyonlarını otomatik sağlar. Özel sorgular <span class="code-inline">@Query</span> anotasyonu ile tanımlanır.</p>
+
+    <div class="code-block"><span style="color: #569cd6;">@Repository</span>
+<span style="color: #569cd6;">public interface</span> <span style="color: #4ec9b0;">ImageRepository</span> <span style="color: #569cd6;">extends</span> <span style="color: #4ec9b0;">JpaRepository</span>&lt;ImageEntity, Long&gt; {
+    <span style="color: #6a9955;">// JpaRepository tüm temel CRUD metodlarını sağlar:</span>
+    <span style="color: #6a9955;">// save(), findById(), findAll(), deleteById(), etc.</span>
+}
+
+<span style="color: #569cd6;">@Repository</span>
+<span style="color: #569cd6;">public interface</span> <span style="color: #4ec9b0;">AnnotationRepository</span> <span style="color: #569cd6;">extends</span> <span style="color: #4ec9b0;">JpaRepository</span>&lt;AnnotationEntity, Long&gt; {
+    <span style="color: #6a9955;">// Method query - Spring Data otomatik SQL oluşturur</span>
+    List&lt;AnnotationEntity&gt; findByImageId(Long imageId);
+    List&lt;AnnotationEntity&gt; findByImageIdAndUserId(Long imageId, Long userId);
+    List&lt;AnnotationEntity&gt; findByUserId(Long userId);
+}
+
+<span style="color: #569cd6;">@Repository</span>
+<span style="color: #569cd6;">public interface</span> <span style="color: #4ec9b0;">ProjectRepository</span> <span style="color: #569cd6;">extends</span> <span style="color: #4ec9b0;">JpaRepository</span>&lt;Project, Long&gt; {
+    <span style="color: #6a9955;">// JPQL Query ile özel sorgu</span>
+    <span style="color: #569cd6;">@Query</span>(<span style="color: #ce9178;">"SELECT p FROM Project p JOIN p.assignedDoctors d WHERE d = :doctor AND p.active = true"</span>)
+    List&lt;Project&gt; findByAssignedDoctor(<span style="color: #569cd6;">@Param</span>(<span style="color: #ce9178;">"doctor"</span>) User doctor);
+
+    <span style="color: #6a9955;">// Doktor bu görüntüye erişebilir mi?</span>
+    <span style="color: #569cd6;">@Query</span>(<span style="color: #ce9178;">"SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+           FROM Project p JOIN p.images i JOIN p.assignedDoctors d
+           WHERE i.id = :imageId AND d.id = :doctorId"</span>)
+    <span style="color: #569cd6;">boolean</span> canDoctorAccessImage(<span style="color: #569cd6;">@Param</span> Long imageId, <span style="color: #569cd6;">@Param</span> Long doctorId);
+}</div>
+
+    <h3 id="section-3-4">3.4 Service Layer</h3>
+
+    <p>Service katmanı iş mantığını içerir. Transaction yönetimi <span class="code-inline">@Transactional</span> anotasyonu ile sağlanır.</p>
+
+    <h4>📌 ImageService Özeti</h4>
+    <div class="code-block"><span style="color: #569cd6;">@Service</span>
+<span style="color: #569cd6;">@Slf4j</span>  <span style="color: #6a9955;">// Lombok logger</span>
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">ImageService</span> {
+    <span style="color: #569cd6;">@Autowired private</span> ImageRepository imageRepository;
+    <span style="color: #569cd6;">@Autowired private</span> TileService tileService;
+    <span style="color: #569cd6;">@Autowired private</span> ApplicationEventPublisher events;
+
+    <span style="color: #6a9955;">// Desteklenen formatlar</span>
+    <span style="color: #569cd6;">private static final</span> List&lt;String&gt; SUPPORTED_EXTENSIONS = Arrays.asList(
+        <span style="color: #ce9178;">".tiff"</span>, <span style="color: #ce9178;">".tif"</span>, <span style="color: #ce9178;">".bif"</span>, <span style="color: #ce9178;">".svs"</span>, <span style="color: #ce9178;">".ndpi"</span>, <span style="color: #ce9178;">".scn"</span>,
+        <span style="color: #ce9178;">".png"</span>, <span style="color: #ce9178;">".jpg"</span>, <span style="color: #ce9178;">".jpeg"</span>
+    );
+
+    <span style="color: #6a9955;">// Görüntü oluşturma - Bio-Formats ile metadata okuma</span>
+    <span style="color: #569cd6;">public</span> ImageDTO create(String name, String inputPath) {
+        <span style="color: #6a9955;">// 1. Format doğrulama</span>
+        <span style="color: #6a9955;">// 2. Bio-Formats ile boyut ve metadata okuma</span>
+        <span style="color: #6a9955;">// 3. Entity kaydetme</span>
+        <span style="color: #6a9955;">// 4. Asenkron tile işleme başlatma</span>
+    }
+
+    <span style="color: #6a9955;">// Asenkron tile işleme</span>
+    <span style="color: #569cd6;">@Async</span>
+    <span style="color: #569cd6;">public void</span> processTilesAsync(ImageEntity image) {
+        <span style="color: #6a9955;">// Arka planda tile'ları oluştur</span>
+        tileService.processTiles(image);
+        events.publishEvent(<span style="color: #569cd6;">new</span> ImageReadyEvent(image.getId()));
+    }
+}</div>
+
+    <h4>📌 AnnotationService Özeti</h4>
+    <div class="code-block"><span style="color: #569cd6;">@Service</span>
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">AnnotationService</span> {
+    <span style="color: #6a9955;">// Rol bazlı erişim kontrolü</span>
+    <span style="color: #569cd6;">public</span> List&lt;AnnotationEntity&gt; getForImage(Long imageId, User currentUser) {
+        <span style="color: #569cd6;">if</span> (currentUser.getRole() == Role.ADMIN) {
+            <span style="color: #569cd6;">return</span> anno.findByImageId(imageId);  <span class="color: #6a9955;">// Admin tümünü görür</span>
+        }
+        <span style="color: #569cd6;">return</span> anno.findByImageIdAndUserId(imageId, currentUser.getId());  <span class="color: #6a9955;">// Doktor sadece kendininkini</span>
+    }
+
+    <span style="color: #6a9955;">// Kaydetmeden önce erişim kontrolü</span>
+    <span style="color: #569cd6;">public</span> AnnotationEntity save(Long imageId, AnnotationEntity annotation, User currentUser) {
+        <span style="color: #569cd6;">if</span> (currentUser.getRole() == Role.DOCTOR) {
+            <span style="color: #569cd6;">if</span> (!projectRepository.canDoctorAccessImage(imageId, currentUser.getId())) {
+                <span style="color: #569cd6;">throw new</span> AccessDeniedException(<span style="color: #ce9178;">"You don't have access to this image"</span>);
+            }
+        }
+        <span style="color: #6a9955;">// ...</span>
+    }
+}</div>
+
+    <h3 id="section-3-5">3.5 Controller Layer</h3>
+
+    <p>Controller'lar REST endpoint'lerini tanımlar ve HTTP request/response işlemlerini yönetir.</p>
+
+    <div class="code-block"><span style="color: #569cd6;">@RestController</span>
+<span style="color: #569cd6;">@RequestMapping</span>(<span style="color: #ce9178;">"/api/images"</span>)
+<span style="color: #569cd6;">@RequiredArgsConstructor</span>
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">ImageController</span> {
+
+    <span style="color: #569cd6;">@Autowired private</span> ImageService imageService;
+
+    <span style="color: #569cd6;">@GetMapping</span>(<span style="color: #ce9178;">"/metadata/{id}"</span>)
+    <span style="color: #569cd6;">public</span> ResponseEntity&lt;ImageMetadataDTO&gt; metadata(<span style="color: #569cd6;">@PathVariable</span> Long id) {
+        <span style="color: #569cd6;">return</span> imageService.findById(id)
+            .map(img -> ResponseEntity.ok(toMetadataDTO(img)))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    <span style="color: #569cd6;">@DeleteMapping</span>(<span style="color: #ce9178;">"/{id}"</span>)
+    <span style="color: #569cd6;">public</span> ResponseEntity&lt;Void&gt; deleteImage(
+            <span style="color: #569cd6;">@PathVariable</span> Long id,
+            <span style="color: #569cd6;">@AuthenticationPrincipal</span> User currentUser) {
+        <span style="color: #6a9955;">// Sadece ADMIN silebilir (Security config'de tanımlı)</span>
+        imageService.deleteImage(id);
+        <span style="color: #569cd6;">return</span> ResponseEntity.noContent().build();
+    }
+}</div>
+
+    <h3 id="section-3-6">3.6 Security Yapılandırması</h3>
+
+    <p>Spring Security ile JWT tabanlı stateless authentication kullanılır.</p>
+
+    <div class="code-block"><span style="color: #569cd6;">@Configuration</span>
+<span style="color: #569cd6;">@EnableWebSecurity</span>
+<span style="color: #569cd6;">@EnableMethodSecurity</span>
+<span style="color: #569cd6;">public class</span> <span style="color: #4ec9b0;">SecurityConfig</span> {
+
+    <span style="color: #569cd6;">@Bean</span>
+    <span style="color: #569cd6;">public</span> SecurityFilterChain securityFilterChain(HttpSecurity http) {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                <span style="color: #6a9955;">// Public endpoints</span>
+                .requestMatchers(<span style="color: #ce9178;">"/api/auth/**"</span>).permitAll()
+                .requestMatchers(<span style="color: #ce9178;">"/api/tiles/**"</span>).permitAll()
+                <span style="color: #6a9955;">// Admin only</span>
+                .requestMatchers(<span style="color: #ce9178;">"/api/admin/**"</span>).hasRole(<span style="color: #ce9178;">"ADMIN"</span>)
+                <span style="color: #6a9955;">// Authenticated</span>
+                .requestMatchers(<span style="color: #ce9178;">"/api/**"</span>).authenticated()
+            )
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        <span style="color: #569cd6;">return</span> http.build();
+    }
+}</div>
+
+    <div class="info-box">
+        <strong>🔐 JWT Token Akışı:</strong>
+        <ol>
+            <li>Kullanıcı <span class="code-inline">/api/auth/login</span> endpoint'ine credentials gönderir</li>
+            <li>Başarılı doğrulama sonrası JWT token döner</li>
+            <li>Frontend token'ı <span class="code-inline">Authorization: Bearer &lt;token&gt;</span> header'ında gönderir</li>
+            <li><span class="code-inline">JwtAuthenticationFilter</span> her request'te token'ı doğrular</li>
+        </ol>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 4: VERİTABANI ŞEMASI -->
+    <!-- ============================================== -->
+    <h2 id="section-4">4. Veritabanı Şeması</h2>
+
+    <p>LaPatho PostgreSQL 15 veritabanı kullanır. Şema <span class="code-inline">schema.sql</span> dosyasında tanımlıdır ve ilk çalıştırmada otomatik oluşturulur.</p>
+
+    <h3 id="section-4-1">4.1 ER Diyagramı (Entity-Relationship)</h3>
+
+    <div class="architecture-diagram" style="text-align: left; font-family: monospace; font-size: 12px; line-height: 1.4;">
+<pre style="margin: 0; white-space: pre;">
+┌─────────────────┐       ┌─────────────────────┐       ┌─────────────────┐
+│     users       │       │      projects       │       │     images      │
+├─────────────────┤       ├─────────────────────┤       ├─────────────────┤
+│ id (PK)         │◄──┐   │ id (PK)             │   ┌──►│ id (PK)         │
+│ username        │   │   │ name                │   │   │ name            │
+│ password        │   │   │ description         │   │   │ width, height   │
+│ first_name      │   │   │ created_by (FK)─────┼───┘   │ tile_size       │
+│ last_name       │   │   │ active              │       │ max_level       │
+│ email           │   │   │ grade_level         │       │ path            │
+│ role            │   │   │ created_at          │       │ status          │
+│ enabled         │   │   └─────────┬───────────┘       │ format          │
+│ created_at      │   │             │                   │ file_size       │
+└────────┬────────┘   │             │                   │ ...metadata     │
+         │            │             │                   └────────┬────────┘
+         │            │    ┌────────┴────────┐                   │
+         │            │    │                 │                   │
+         │            │    ▼                 ▼                   │
+         │      ┌─────┴────────┐     ┌──────────────┐            │
+         │      │project_doctors│     │project_images│            │
+         │      ├──────────────┤     ├──────────────┤            │
+         │      │project_id(FK)│     │project_id(FK)│            │
+         │      │user_id (FK)──┼─────┤image_id (FK)─┼────────────┘
+         │      └──────────────┘     └──────────────┘
+         │
+         │      ┌─────────────────┐       ┌─────────────────┐
+         │      │     labels      │       │   annotations   │
+         │      ├─────────────────┤       ├─────────────────┤
+         │      │ id (PK)         │       │ id (PK)         │
+         │      │ project_id (FK) │       │ image_id (FK)───┼──► images
+         └──────┤ name            │       │ user_id (FK)────┼──► users
+                │ color           │       │ creator         │
+                │ description     │       │ type            │
+                └─────────────────┘       │ geometry (TEXT) │
+                                          │ created         │
+                                          └─────────────────┘
+</pre>
+    </div>
+
+    <h3 id="section-4-2">4.2 Tablo Açıklamaları</h3>
+
+    <h4>📋 users</h4>
+    <p>Sistem kullanıcılarını tutar. Spring Security UserDetails ile entegredir.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">id</span></td><td>BIGSERIAL (PK)</td><td>Otomatik artan birincil anahtar</td></tr>
+        <tr><td><span class="code-inline">username</span></td><td>VARCHAR(50) UNIQUE</td><td>Benzersiz kullanıcı adı</td></tr>
+        <tr><td><span class="code-inline">password</span></td><td>VARCHAR(255)</td><td>BCrypt ile hashlenmiş şifre</td></tr>
+        <tr><td><span class="code-inline">first_name</span></td><td>VARCHAR(100)</td><td>Ad</td></tr>
+        <tr><td><span class="code-inline">last_name</span></td><td>VARCHAR(100)</td><td>Soyad</td></tr>
+        <tr><td><span class="code-inline">email</span></td><td>VARCHAR(255) UNIQUE</td><td>E-posta adresi</td></tr>
+        <tr><td><span class="code-inline">role</span></td><td>VARCHAR(20)</td><td>ADMIN veya DOCTOR</td></tr>
+        <tr><td><span class="code-inline">enabled</span></td><td>BOOLEAN</td><td>Hesap aktif mi?</td></tr>
+    </table>
+
+    <h4>📋 images</h4>
+    <p>Yüklenen görüntülerin metadata bilgilerini tutar.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">id</span></td><td>BIGSERIAL (PK)</td><td>Birincil anahtar</td></tr>
+        <tr><td><span class="code-inline">name</span></td><td>VARCHAR(255)</td><td>Dosya adı</td></tr>
+        <tr><td><span class="code-inline">width</span>, <span class="code-inline">height</span></td><td>INTEGER</td><td>Piksel boyutları</td></tr>
+        <tr><td><span class="code-inline">tile_size</span></td><td>INTEGER</td><td>Tile boyutu (default: 512)</td></tr>
+        <tr><td><span class="code-inline">max_level</span></td><td>INTEGER</td><td>Maksimum zoom seviyesi</td></tr>
+        <tr><td><span class="code-inline">path</span></td><td>VARCHAR(500)</td><td>Dosya sistemi yolu</td></tr>
+        <tr><td><span class="code-inline">status</span></td><td>VARCHAR(50)</td><td>PENDING, PROCESSING, READY, ERROR</td></tr>
+        <tr><td><span class="code-inline">format</span></td><td>VARCHAR(100)</td><td>TIFF, BIF, SVS, NDPI, etc.</td></tr>
+        <tr><td><span class="code-inline">file_size</span></td><td>BIGINT</td><td>Dosya boyutu (byte)</td></tr>
+        <tr><td><span class="code-inline">pixel_size_x/y</span></td><td>DOUBLE PRECISION</td><td>Piksel boyutu (µm)</td></tr>
+        <tr><td><span class="code-inline">magnification</span></td><td>DOUBLE PRECISION</td><td>Büyütme oranı (40x, etc.)</td></tr>
+        <tr><td><span class="code-inline">scanner</span></td><td>VARCHAR(255)</td><td>Tarayıcı model bilgisi</td></tr>
+    </table>
+
+    <h4>📋 projects</h4>
+    <p>Proje tanımlarını tutar. Görüntüler ve doktorlar projelere atanır.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">id</span></td><td>BIGSERIAL (PK)</td><td>Birincil anahtar</td></tr>
+        <tr><td><span class="code-inline">name</span></td><td>VARCHAR(255)</td><td>Proje adı</td></tr>
+        <tr><td><span class="code-inline">description</span></td><td>VARCHAR(1000)</td><td>Proje açıklaması</td></tr>
+        <tr><td><span class="code-inline">created_by</span></td><td>BIGINT (FK)</td><td>Oluşturan admin kullanıcı</td></tr>
+        <tr><td><span class="code-inline">active</span></td><td>BOOLEAN</td><td>Soft delete için</td></tr>
+        <tr><td><span class="code-inline">grade_level</span></td><td>INTEGER</td><td>Derecelendirme seviyesi (1-5)</td></tr>
+    </table>
+
+    <h4>📋 project_doctors (Junction Table)</h4>
+    <p>Proje-Doktor many-to-many ilişkisi.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">project_id</span></td><td>BIGINT (FK, PK)</td><td>Proje referansı</td></tr>
+        <tr><td><span class="code-inline">user_id</span></td><td>BIGINT (FK, PK)</td><td>Doktor referansı</td></tr>
+    </table>
+
+    <h4>📋 project_images (Junction Table)</h4>
+    <p>Proje-Görüntü many-to-many ilişkisi.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">project_id</span></td><td>BIGINT (FK, PK)</td><td>Proje referansı</td></tr>
+        <tr><td><span class="code-inline">image_id</span></td><td>BIGINT (FK, PK)</td><td>Görüntü referansı</td></tr>
+    </table>
+
+    <h4>📋 labels</h4>
+    <p>Projeye özel anotasyon etiketlerini tutar.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">id</span></td><td>BIGSERIAL (PK)</td><td>Birincil anahtar</td></tr>
+        <tr><td><span class="code-inline">project_id</span></td><td>BIGINT (FK)</td><td>Ait olduğu proje</td></tr>
+        <tr><td><span class="code-inline">name</span></td><td>VARCHAR(100)</td><td>Etiket adı (Tumor, Necrosis, etc.)</td></tr>
+        <tr><td><span class="code-inline">color</span></td><td>VARCHAR(20)</td><td>Hex renk kodu (#ff0000)</td></tr>
+        <tr><td><span class="code-inline">description</span></td><td>VARCHAR(255)</td><td>Etiket açıklaması</td></tr>
+    </table>
+
+    <h4>📋 annotations</h4>
+    <p>Görüntü üzerindeki anotasyonları tutar. Geometry alanı W3C Web Annotation formatında JSON içerir.</p>
+    <table>
+        <tr><th>Kolon</th><th>Tip</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">id</span></td><td>BIGSERIAL (PK)</td><td>Birincil anahtar</td></tr>
+        <tr><td><span class="code-inline">image_id</span></td><td>BIGINT (FK)</td><td>İlişkili görüntü</td></tr>
+        <tr><td><span class="code-inline">user_id</span></td><td>BIGINT (FK)</td><td>Oluşturan kullanıcı</td></tr>
+        <tr><td><span class="code-inline">creator</span></td><td>VARCHAR(255)</td><td>Kullanıcı adı (legacy)</td></tr>
+        <tr><td><span class="code-inline">type</span></td><td>VARCHAR(100)</td><td>polygon, rectangle, ellipse, freehand</td></tr>
+        <tr><td><span class="code-inline">geometry</span></td><td>TEXT</td><td>W3C Annotation JSON</td></tr>
+    </table>
+
+    <h3 id="section-4-3">4.3 İndeksler</h3>
+    <p>Performans optimizasyonu için aşağıdaki indeksler tanımlıdır:</p>
+    <div class="code-block"><span style="color: #6a9955;">-- Sık sorgulanan kolonlarda indeksler</span>
+CREATE INDEX idx_images_status ON images(status);
+CREATE INDEX idx_images_name ON images(name);
+CREATE INDEX idx_annotations_image_id ON annotations(image_id);
+CREATE INDEX idx_annotations_user_id ON annotations(user_id);
+CREATE INDEX idx_annotations_type ON annotations(type);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_projects_active ON projects(active);
+CREATE INDEX idx_labels_project_id ON labels(project_id);</div>
+
+    <h3 id="section-4-4">4.4 Varsayılan Veriler</h3>
+    <p><span class="code-inline">schema.sql</span> ilk çalıştırmada aşağıdaki varsayılan verileri oluşturur:</p>
+
+    <h4>Varsayılan Kullanıcılar</h4>
+    <table>
+        <tr><th>Username</th><th>Password</th><th>Role</th><th>Email</th></tr>
+        <tr><td><span class="code-inline">admin</span></td><td><span class="code-inline">admin123</span></td><td>ADMIN</td><td>admin@lapatho.com</td></tr>
+        <tr><td><span class="code-inline">doctor</span></td><td><span class="code-inline">doctor123</span></td><td>DOCTOR</td><td>doctor@lapatho.com</td></tr>
+    </table>
+
+    <h4>Varsayılan Projeler</h4>
+    <table>
+        <tr><th>Proje</th><th>Açıklama</th><th>Varsayılan Etiketler</th></tr>
+        <tr>
+            <td><strong>Pathology</strong></td>
+            <td>Default pathology project for tissue analysis</td>
+            <td>Nucleus, Tumor, Necrosis, Stroma, Muscle</td>
+        </tr>
+        <tr>
+            <td><strong>Dental</strong></td>
+            <td>Default dental imaging project</td>
+            <td>Cavity, Enamel, Root Canal, Gum</td>
+        </tr>
+    </table>
+
+    <h3 id="section-4-5">4.5 Annotation Geometry Formatı</h3>
+    <p>Anotasyonlar W3C Web Annotation Data Model formatında saklanır:</p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"@context"</span>: <span style="color: #ce9178;">"http://www.w3.org/ns/anno.jsonld"</span>,
+  <span style="color: #ce9178;">"id"</span>: <span style="color: #ce9178;">"#unique-id"</span>,
+  <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"Annotation"</span>,
+  <span style="color: #ce9178;">"body"</span>: [{
+    <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"TextualBody"</span>,
+    <span style="color: #ce9178;">"purpose"</span>: <span style="color: #ce9178;">"tagging"</span>,
+    <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"Tumor"</span>  <span style="color: #6a9955;">// Etiket değeri</span>
+  }],
+  <span style="color: #ce9178;">"target"</span>: {
+    <span style="color: #ce9178;">"selector"</span>: {
+      <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"SvgSelector"</span>,
+      <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"&lt;svg&gt;&lt;polygon points='...'&gt;&lt;/polygon&gt;&lt;/svg&gt;"</span>
+    }
+  }
+}</div>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 5: REST API DOKÜMANTASYONU -->
+    <!-- ============================================== -->
+    <h2 id="section-5">5. REST API Dokümantasyonu</h2>
+
+    <p>LaPatho REST API'si JSON formatında veri alışverişi yapar. Tüm korumalı endpoint'ler JWT token gerektirir.</p>
+
+    <h3 id="section-5-1">5.1 Authentication API</h3>
+    <p>Kimlik doğrulama endpoint'leri. Public erişime açıktır.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th><th>Auth</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/auth/login</span></td>
+            <td>Kullanıcı girişi</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/auth/register</span></td>
+            <td>Yeni kullanıcı kaydı</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/auth/change-password</span></td>
+            <td>Şifre değiştirme</td>
+            <td>✅</td>
+        </tr>
+    </table>
+
+    <h4>📌 POST /api/auth/login</h4>
+    <p><strong>Request Body:</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"username"</span>: <span style="color: #ce9178;">"doctor"</span>,
+  <span style="color: #ce9178;">"password"</span>: <span style="color: #ce9178;">"doctor123"</span>
+}</div>
+    <p><strong>Response (200 OK):</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"token"</span>: <span style="color: #ce9178;">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span style="color: #ce9178;">"username"</span>: <span style="color: #ce9178;">"doctor"</span>,
+  <span style="color: #ce9178;">"firstName"</span>: <span style="color: #ce9178;">"Default"</span>,
+  <span style="color: #ce9178;">"lastName"</span>: <span style="color: #ce9178;">"Doctor"</span>,
+  <span style="color: #ce9178;">"email"</span>: <span style="color: #ce9178;">"doctor@lapatho.com"</span>,
+  <span style="color: #ce9178;">"role"</span>: <span style="color: #ce9178;">"DOCTOR"</span>
+}</div>
+
+    <h4>📌 POST /api/auth/register</h4>
+    <p><strong>Request Body:</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"username"</span>: <span style="color: #ce9178;">"newuser"</span>,
+  <span style="color: #ce9178;">"password"</span>: <span style="color: #ce9178;">"securePassword123"</span>,
+  <span style="color: #ce9178;">"firstName"</span>: <span style="color: #ce9178;">"John"</span>,
+  <span style="color: #ce9178;">"lastName"</span>: <span style="color: #ce9178;">"Doe"</span>,
+  <span style="color: #ce9178;">"email"</span>: <span style="color: #ce9178;">"john.doe@example.com"</span>,
+  <span style="color: #ce9178;">"role"</span>: <span style="color: #ce9178;">"DOCTOR"</span>  <span style="color: #6a9955;">// Opsiyonel, varsayılan: DOCTOR</span>
+}</div>
+
+    <h3 id="section-5-2">5.2 Admin API</h3>
+    <p>Kullanıcı yönetimi endpoint'leri. Sadece ADMIN rolü erişebilir.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/admin/users</span></td>
+            <td>Tüm kullanıcıları listele</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/admin/doctors</span></td>
+            <td>Sadece doktorları listele</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/admin/users/{id}</span></td>
+            <td>Belirli kullanıcı detayı</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/admin/users</span></td>
+            <td>Yeni kullanıcı oluştur</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#dc3545;">DELETE</span></td>
+            <td><span class="code-inline">/api/admin/users/{id}</span></td>
+            <td>Kullanıcı sil</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#ffc107;color:#000;">PATCH</span></td>
+            <td><span class="code-inline">/api/admin/users/{id}/status?enabled=true</span></td>
+            <td>Kullanıcı durumunu değiştir</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#ffc107;color:#000;">PATCH</span></td>
+            <td><span class="code-inline">/api/admin/users/{id}/password</span></td>
+            <td>Kullanıcı şifresini değiştir</td>
+        </tr>
+    </table>
+
+    <h3 id="section-5-3">5.3 Image API</h3>
+    <p>Görüntü yönetimi endpoint'leri.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th><th>Auth</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images</span></td>
+            <td>Tüm görüntüler (metadata ile)</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images/get-images-list</span></td>
+            <td>Görüntü listesi (rol bazlı filtreleme)</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images/{id}</span></td>
+            <td>Görüntü detayı</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images/metadata/{id}</span></td>
+            <td>Detaylı metadata bilgisi</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/images/upload</span></td>
+            <td>Görüntü yükle (multipart/form-data)</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#007bff;">PUT</span></td>
+            <td><span class="code-inline">/api/images/{id}</span></td>
+            <td>Görüntü güncelle (ADMIN)</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#dc3545;">DELETE</span></td>
+            <td><span class="code-inline">/api/images/{id}</span></td>
+            <td>Görüntü sil (ADMIN)</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+    </table>
+
+    <h4>📌 POST /api/images/upload</h4>
+    <p><strong>Request:</strong> <span class="code-inline">Content-Type: multipart/form-data</span></p>
+    <div class="code-block">Form Fields:
+  file: [Binary WSI file - .tiff, .bif, .svs, etc.]</div>
+    <p><strong>Response (200 OK):</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"id"</span>: 15,
+  <span style="color: #ce9178;">"name"</span>: <span style="color: #ce9178;">"sample-tissue.bif"</span>,
+  <span style="color: #ce9178;">"status"</span>: <span style="color: #ce9178;">"PROCESSING"</span>,
+  <span style="color: #ce9178;">"width"</span>: 98304,
+  <span style="color: #ce9178;">"height"</span>: 65536,
+  <span style="color: #ce9178;">"format"</span>: <span style="color: #ce9178;">"BIF"</span>,
+  <span style="color: #ce9178;">"message"</span>: <span style="color: #ce9178;">"File uploaded successfully, processing started"</span>
+}</div>
+
+    <h4>📌 GET /api/images/metadata/{id}</h4>
+    <p><strong>Response (200 OK):</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"id"</span>: 15,
+  <span style="color: #ce9178;">"fileName"</span>: <span style="color: #ce9178;">"sample-tissue.bif"</span>,
+  <span style="color: #ce9178;">"width"</span>: 98304,
+  <span style="color: #ce9178;">"height"</span>: 65536,
+  <span style="color: #ce9178;">"tileSize"</span>: 512,
+  <span style="color: #ce9178;">"maxLevel"</span>: 8,
+  <span style="color: #ce9178;">"format"</span>: <span style="color: #ce9178;">"BIF"</span>,
+  <span style="color: #ce9178;">"fileSize"</span>: 2147483648,
+  <span style="color: #ce9178;">"pixelSizeX"</span>: 0.2525,
+  <span style="color: #ce9178;">"pixelSizeY"</span>: 0.2525,
+  <span style="color: #ce9178;">"magnification"</span>: 40.0,
+  <span style="color: #ce9178;">"scanner"</span>: <span style="color: #ce9178;">"Ventana DP 200"</span>,
+  <span style="color: #ce9178;">"status"</span>: <span style="color: #ce9178;">"READY"</span>
+}</div>
+
+    <h3 id="section-5-4">5.4 Tile API</h3>
+    <p>Görüntü tile'larını sunan endpoint'ler. Public erişime açıktır (OpenSeadragon için).</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/tiles/{imageId}/{level}/{tileX}_{tileY}.jpg</span></td>
+            <td>Belirli tile'ı getir</td>
+        </tr>
+    </table>
+
+    <p><strong>Örnek:</strong> <span class="code-inline">/api/tiles/15/5/3_2.jpg</span> → Image 15, Level 5, Tile (3,2)</p>
+
+    <h3 id="section-5-5">5.5 Annotation API</h3>
+    <p>Anotasyon yönetimi endpoint'leri.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images/annotations/{imageId}</span></td>
+            <td>Görüntünün anotasyonları (rol bazlı filtreleme)</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/images/annotations/{imageId}</span></td>
+            <td>Yeni anotasyon oluştur</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/images/annotations/{imageId}/{annotationId}</span></td>
+            <td>Belirli anotasyon detayı</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#007bff;">PUT</span></td>
+            <td><span class="code-inline">/api/images/annotations/{imageId}/{annotationId}</span></td>
+            <td>Anotasyon güncelle</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#dc3545;">DELETE</span></td>
+            <td><span class="code-inline">/api/images/annotations/{imageId}/{annotationId}</span></td>
+            <td>Anotasyon sil</td>
+        </tr>
+    </table>
+
+    <h4>📌 POST /api/images/annotations/{imageId}</h4>
+    <p><strong>Request Body:</strong></p>
+    <div class="code-block">{
+  <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"polygon"</span>,
+  <span style="color: #ce9178;">"geometry"</span>: <span style="color: #ce9178;">"{\"@context\":\"http://www.w3.org/ns/anno.jsonld\", ...}"</span>
+}</div>
+
+    <div class="info-box">
+        <strong>📝 Not:</strong> Doktorlar sadece kendi oluşturdukları anotasyonları görebilir ve düzenleyebilir. Admin tüm anotasyonları görebilir.
+    </div>
+
+    <h3 id="section-5-6">5.6 Project API</h3>
+    <p>Proje yönetimi endpoint'leri.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th><th>Auth</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/projects</span></td>
+            <td>Tüm projeler</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/projects/my-projects</span></td>
+            <td>Doktorun atandığı projeler</td>
+            <td>🔒 DOCTOR</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/projects/{id}</span></td>
+            <td>Proje detayı</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/projects</span></td>
+            <td>Yeni proje oluştur</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#007bff;">PUT</span></td>
+            <td><span class="code-inline">/api/projects/{id}</span></td>
+            <td>Proje güncelle</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#dc3545;">DELETE</span></td>
+            <td><span class="code-inline">/api/projects/{id}</span></td>
+            <td>Proje sil (soft delete)</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/doctors/{doctorId}</span></td>
+            <td>Projeye doktor ata</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/images/{imageId}</span></td>
+            <td>Projeye görüntü ekle</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+    </table>
+
+    <h3 id="section-5-7">5.7 Label API</h3>
+    <p>Proje etiketleri yönetimi.</p>
+
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th><th>Auth</th></tr>
+        <tr>
+            <td><span class="badge" style="background:#17a2b8;">GET</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/labels</span></td>
+            <td>Projenin etiketleri</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#28a745;">POST</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/labels</span></td>
+            <td>Yeni etiket oluştur</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#007bff;">PUT</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/labels/{labelId}</span></td>
+            <td>Etiket güncelle</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+        <tr>
+            <td><span class="badge" style="background:#dc3545;">DELETE</span></td>
+            <td><span class="code-inline">/api/projects/{projectId}/labels/{labelId}</span></td>
+            <td>Etiket sil</td>
+            <td>🔒 ADMIN</td>
+        </tr>
+    </table>
+
+    <h3 id="section-5-8">5.8 HTTP Durum Kodları</h3>
+    <table>
+        <tr><th>Kod</th><th>Anlam</th><th>Açıklama</th></tr>
+        <tr><td><span class="code-inline">200</span></td><td>OK</td><td>İstek başarılı</td></tr>
+        <tr><td><span class="code-inline">201</span></td><td>Created</td><td>Kaynak oluşturuldu</td></tr>
+        <tr><td><span class="code-inline">204</span></td><td>No Content</td><td>Silme başarılı</td></tr>
+        <tr><td><span class="code-inline">400</span></td><td>Bad Request</td><td>Geçersiz istek verisi</td></tr>
+        <tr><td><span class="code-inline">401</span></td><td>Unauthorized</td><td>Token eksik veya geçersiz</td></tr>
+        <tr><td><span class="code-inline">403</span></td><td>Forbidden</td><td>Yetkisiz erişim (rol yetersiz)</td></tr>
+        <tr><td><span class="code-inline">404</span></td><td>Not Found</td><td>Kaynak bulunamadı</td></tr>
+        <tr><td><span class="code-inline">500</span></td><td>Internal Server Error</td><td>Sunucu hatası</td></tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 6: FRONTEND MİMARİSİ -->
+    <!-- ============================================== -->
+    <h2 id="section-6">6. Frontend Mimarisi</h2>
+
+    <p>LaPatho frontend'i Angular 19 framework üzerine inşa edilmiştir. Standalone component mimarisi kullanılır.</p>
+
+    <h3 id="section-6-1">6.1 Angular Yapısı</h3>
+
+    <div class="architecture-diagram">
+        <div style="margin-bottom: 15px;">
+            <div class="architecture-box" style="background: #dd0031; color: white; border-color: #dd0031;">
+                📱 <strong>Components</strong><br>
+                <small>UI Bileşenleri</small>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 20px; margin: 15px 0;">
+            <div class="architecture-box" style="background: #1976d2; color: white; border-color: #1976d2;">
+                🔧 <strong>Services</strong><br>
+                <small>İş Mantığı & API</small>
+            </div>
+            <div class="architecture-box" style="background: #7b1fa2; color: white; border-color: #7b1fa2;">
+                🛡️ <strong>Guards</strong><br>
+                <small>Route Koruması</small>
+            </div>
+            <div class="architecture-box" style="background: #388e3c; color: white; border-color: #388e3c;">
+                🔄 <strong>Interceptors</strong><br>
+                <small>HTTP İşleme</small>
+            </div>
+        </div>
+        <div style="font-size: 20px; color: #764ba2;">⬇️</div>
+        <div style="margin-top: 15px;">
+            <div class="architecture-box" style="background: #f57c00; color: white; border-color: #f57c00;">
+                🌐 <strong>HttpClient</strong><br>
+                <small>Backend API İletişimi</small>
+            </div>
+        </div>
+    </div>
+
+    <h3 id="section-6-2">6.2 Component Yapısı</h3>
+
+    <div class="file-tree">
+<span class="folder">src/app/components/</span>
+├── <span class="folder">admin/</span>                 <span class="comment"># Admin paneli (kullanıcı, proje, görüntü yönetimi)</span>
+├── <span class="folder">home/</span>                  <span class="comment"># Ana sayfa (görüntü listesi, upload)</span>
+├── <span class="folder">login/</span>                 <span class="comment"># Giriş sayfası</span>
+├── <span class="folder">register/</span>              <span class="comment"># Kayıt sayfası</span>
+├── <span class="folder">image-annotator/</span>       <span class="comment"># Anotasyon ekranı (OpenSeadragon)</span>
+├── <span class="folder">image-edit-modal/</span>      <span class="comment"># Görüntü düzenleme modalı</span>
+├── <span class="folder">change-password-modal/</span> <span class="comment"># Şifre değiştirme modalı</span>
+├── <span class="folder">confirm-dialog/</span>        <span class="comment"># Onay dialogu</span>
+├── <span class="folder">toast/</span>                 <span class="comment"># Bildirim toast'ları</span>
+├── <span class="folder">skeleton/</span>              <span class="comment"># Loading skeleton</span>
+└── <span class="folder">language-switcher/</span>    <span class="comment"># Dil değiştirici (TR/EN)</span>
+    </div>
+
+    <h4>📌 Standalone Component Örneği</h4>
+    <div class="code-block"><span style="color: #569cd6;">@Component</span>({
+  selector: <span style="color: #ce9178;">'app-home'</span>,
+  <span style="color: #569cd6;">standalone: true</span>,  <span style="color: #6a9955;">// Angular 19 standalone component</span>
+  imports: [
+    CommonModule,
+    RouterModule,
+    TranslateModule,
+    ImageEditModalComponent,
+    SkeletonComponent
+  ],
+  templateUrl: <span style="color: #ce9178;">'./home.component.html'</span>,
+  styleUrls: [<span style="color: #ce9178;">'./home.component.scss'</span>]
+})
+<span style="color: #569cd6;">export class</span> <span style="color: #4ec9b0;">HomeComponent</span> <span style="color: #569cd6;">implements</span> OnInit, OnDestroy {
+  images: ImageOverview[] = [];
+  isLoading = <span style="color: #569cd6;">true</span>;
+
+  <span style="color: #569cd6;">constructor</span>(
+    <span style="color: #569cd6;">private</span> imageService: ImageService,
+    <span style="color: #569cd6;">public</span> authService: AuthService,
+    <span style="color: #569cd6;">private</span> router: Router
+  ) {}
+}</div>
+
+    <h3 id="section-6-3">6.3 Services (Servisler)</h3>
+
+    <table>
+        <tr><th>Service</th><th>Sorumluluk</th><th>Ana Metodlar</th></tr>
+        <tr>
+            <td><span class="code-inline">AuthService</span></td>
+            <td>Kimlik doğrulama, token yönetimi</td>
+            <td>login(), logout(), isAdmin(), getToken()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">ImageService</span></td>
+            <td>Görüntü CRUD işlemleri</td>
+            <td>getImages(), getMetadata(), deleteImage()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">AnnotationService</span></td>
+            <td>Anotasyon işlemleri</td>
+            <td>getAnnotations(), saveAnnotation(), updateAnnotation()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">ImageUploadService</span></td>
+            <td>Dosya yükleme, progress tracking</td>
+            <td>uploadFile(), getProgress()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">AdminService</span></td>
+            <td>Admin panel işlemleri</td>
+            <td>getUsers(), getProjects(), getLabels()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">ToastService</span></td>
+            <td>Bildirim gösterimi</td>
+            <td>success(), error(), info()</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">LanguageService</span></td>
+            <td>Çoklu dil desteği</td>
+            <td>setLanguage(), getCurrentLang()</td>
+        </tr>
+    </table>
+
+    <h4>📌 AuthService Örneği</h4>
+    <div class="code-block"><span style="color: #569cd6;">@Injectable</span>({ providedIn: <span style="color: #ce9178;">'root'</span> })
+<span style="color: #569cd6;">export class</span> <span style="color: #4ec9b0;">AuthService</span> {
+  <span style="color: #569cd6;">private readonly</span> TOKEN_KEY = <span style="color: #ce9178;">'auth_token'</span>;
+  <span style="color: #569cd6;">private</span> currentUserSubject = <span style="color: #569cd6;">new</span> BehaviorSubject&lt;AuthResponse | <span style="color: #569cd6;">null</span>&gt;(<span style="color: #569cd6;">null</span>);
+  <span style="color: #569cd6;">public</span> currentUser$ = <span style="color: #569cd6;">this</span>.currentUserSubject.asObservable();
+
+  login(request: LoginRequest): Observable&lt;AuthResponse&gt; {
+    <span style="color: #569cd6;">return this</span>.http.post&lt;AuthResponse&gt;(<span style="color: #ce9178;">`/api/auth/login`</span>, request).pipe(
+      tap(response => {
+        localStorage.setItem(<span style="color: #569cd6;">this</span>.TOKEN_KEY, response.token);
+        <span style="color: #569cd6;">this</span>.currentUserSubject.next(response);
+      })
+    );
+  }
+
+  isAdmin(): <span style="color: #569cd6;">boolean</span> {
+    <span style="color: #569cd6;">return this</span>.currentUserSubject.value?.role === <span style="color: #ce9178;">'ADMIN'</span>;
+  }
+}</div>
+
+    <h3 id="section-6-4">6.4 Guards (Route Koruması)</h3>
+
+    <p>Angular functional guards kullanılarak route'lar korunur.</p>
+
+    <div class="code-block"><span style="color: #6a9955;">// auth.guard.ts</span>
+<span style="color: #569cd6;">export const</span> authGuard: CanActivateFn = (route, state) => {
+  <span style="color: #569cd6;">const</span> authService = inject(AuthService);
+  <span style="color: #569cd6;">const</span> router = inject(Router);
+
+  <span style="color: #569cd6;">if</span> (authService.isLoggedIn()) {
+    <span style="color: #569cd6;">return true</span>;
+  }
+
+  router.navigate([<span style="color: #ce9178;">'/login'</span>], { queryParams: { returnUrl: state.url } });
+  <span style="color: #569cd6;">return false</span>;
+};
+
+<span style="color: #569cd6;">export const</span> adminGuard: CanActivateFn = (route, state) => {
+  <span style="color: #569cd6;">const</span> authService = inject(AuthService);
+
+  <span style="color: #569cd6;">if</span> (authService.isLoggedIn() && authService.isAdmin()) {
+    <span style="color: #569cd6;">return true</span>;
+  }
+  <span style="color: #569cd6;">return false</span>;
+};</div>
+
+    <h3 id="section-6-5">6.5 Interceptors</h3>
+
+    <p>HTTP interceptor'lar tüm request'lere JWT token ekler ve 401 hatalarını yakalar.</p>
+
+    <div class="code-block"><span style="color: #569cd6;">@Injectable</span>()
+<span style="color: #569cd6;">export class</span> <span style="color: #4ec9b0;">AuthInterceptor</span> <span style="color: #569cd6;">implements</span> HttpInterceptor {
+
+  intercept(request: HttpRequest&lt;<span style="color: #569cd6;">any</span>&gt;, next: HttpHandler): Observable&lt;HttpEvent&lt;<span style="color: #569cd6;">any</span>&gt;&gt; {
+    <span style="color: #569cd6;">const</span> token = <span style="color: #569cd6;">this</span>.authService.getToken();
+
+    <span style="color: #569cd6;">if</span> (token) {
+      request = request.clone({
+        setHeaders: {
+          Authorization: <span style="color: #ce9178;">`Bearer </span>${token}<span style="color: #ce9178;">`</span>
+        }
+      });
+    }
+
+    <span style="color: #569cd6;">return</span> next.handle(request).pipe(
+      catchError((error: HttpErrorResponse) => {
+        <span style="color: #569cd6;">if</span> (error.status === <span style="color: #b5cea8;">401</span>) {
+          <span style="color: #569cd6;">this</span>.authService.logout();  <span style="color: #6a9955;">// Token expired</span>
+        }
+        <span style="color: #569cd6;">return</span> throwError(() => error);
+      })
+    );
+  }
+}</div>
+
+    <h3 id="section-6-6">6.6 Routing</h3>
+
+    <p>Lazy loading ile component'ler yüklenir.</p>
+
+    <div class="code-block"><span style="color: #6a9955;">// app.routes.ts</span>
+<span style="color: #569cd6;">export const</span> routes: Routes = [
+  {
+    path: <span style="color: #ce9178;">'login'</span>,
+    loadComponent: () => <span style="color: #569cd6;">import</span>(<span style="color: #ce9178;">'./components/login/login.component'</span>)
+      .then(m => m.LoginComponent)
+  },
+  {
+    path: <span style="color: #ce9178;">'admin'</span>,
+    loadComponent: () => <span style="color: #569cd6;">import</span>(<span style="color: #ce9178;">'./components/admin/admin.component'</span>)
+      .then(m => m.AdminComponent),
+    canActivate: [adminGuard]  <span style="color: #6a9955;">// Sadece ADMIN</span>
+  },
+  {
+    path: <span style="color: #ce9178;">'annotate/:id'</span>,
+    loadComponent: () => <span style="color: #569cd6;">import</span>(<span style="color: #ce9178;">'./components/image-annotator/image-annotator.component'</span>)
+      .then(m => m.ImageAnnotatorComponent),
+    canActivate: [authGuard]  <span style="color: #6a9955;">// Giriş yapmış kullanıcı</span>
+  },
+  {
+    path: <span style="color: #ce9178;">''</span>,
+    loadComponent: () => <span style="color: #569cd6;">import</span>(<span style="color: #ce9178;">'./components/home/home.component'</span>)
+      .then(m => m.HomeComponent),
+    canActivate: [authGuard]
+  },
+  { path: <span style="color: #ce9178;">'**'</span>, redirectTo: <span style="color: #ce9178;">''</span> }
+];</div>
+
+    <h3 id="section-6-7">6.7 Uygulama Konfigürasyonu</h3>
+
+    <div class="code-block"><span style="color: #6a9955;">// app.config.ts</span>
+<span style="color: #569cd6;">export const</span> appConfig: ApplicationConfig = {
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: <span style="color: #569cd6;">true</span> }),
+    provideRouter(routes),
+    provideHttpClient(withInterceptorsFromDi()),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: <span style="color: #569cd6;">true</span>
+    },
+    importProvidersFrom(
+      TranslateModule.forRoot({
+        defaultLanguage: <span style="color: #ce9178;">'tr'</span>,
+        loader: {
+          provide: TranslateLoader,
+          useFactory: createTranslateLoader,
+          deps: [HttpClient]
+        }
+      })
+    )
+  ]
+};</div>
+
+    <h3 id="section-6-8">6.8 Çoklu Dil Desteği (i18n)</h3>
+
+    <p>ngx-translate kütüphanesi ile Türkçe ve İngilizce dil desteği sağlanır.</p>
+
+    <div class="file-tree">
+<span class="folder">src/assets/i18n/</span>
+├── <span class="file">tr.json</span>   <span class="comment"># Türkçe çeviriler</span>
+└── <span class="file">en.json</span>   <span class="comment"># İngilizce çeviriler</span>
+    </div>
+
+    <div class="code-block"><span style="color: #6a9955;">// Template'de kullanım</span>
+&lt;h1&gt;{{ <span style="color: #ce9178;">'HOME.TITLE'</span> | translate }}&lt;/h1&gt;
+&lt;button&gt;{{ <span style="color: #ce9178;">'BUTTONS.SAVE'</span> | translate }}&lt;/button&gt;
+
+<span style="color: #6a9955;">// Component'te kullanım</span>
+<span style="color: #569cd6;">this</span>.translate.instant(<span style="color: #ce9178;">'MESSAGES.SUCCESS'</span>);</div>
+
+    <h3 id="section-6-9">6.9 State Management</h3>
+
+    <p>LaPatho basit state yönetimi için RxJS BehaviorSubject kullanır.</p>
+
+    <div class="code-block"><span style="color: #6a9955;">// AuthService'de kullanıcı state'i</span>
+<span style="color: #569cd6;">private</span> currentUserSubject = <span style="color: #569cd6;">new</span> BehaviorSubject&lt;User | <span style="color: #569cd6;">null</span>&gt;(<span style="color: #569cd6;">null</span>);
+<span style="color: #569cd6;">public</span> currentUser$ = <span style="color: #569cd6;">this</span>.currentUserSubject.asObservable();
+
+<span style="color: #6a9955;">// Component'te subscribe</span>
+<span style="color: #569cd6;">this</span>.authService.currentUser$.subscribe(user => {
+  <span style="color: #569cd6;">this</span>.currentUser = user;
+});</div>
+
+    <div class="info-box">
+        <strong>💡 İpucu:</strong> Büyük ölçekli state yönetimi gerekirse NgRx veya Akita gibi kütüphaneler entegre edilebilir.
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 7: OPENSEADRAGON & ANNOTORIOUS -->
+    <!-- ============================================== -->
+    <h2 id="section-7">7. OpenSeadragon & Annotorious Entegrasyonu</h2>
+
+    <p>LaPatho, yüksek çözünürlüklü patoloji görüntülerini görüntülemek için OpenSeadragon ve anotasyon yapmak için Annotorious kütüphanelerini kullanır.</p>
+
+    <h3 id="section-7-1">7.1 Tile Sistemi</h3>
+
+    <p>Büyük WSI (Whole Slide Images) dosyaları piramit yapısında tile'lara bölünerek sunulur. Bu sayede sadece görüntülenen bölge yüklenir.</p>
+
+    <div class="architecture-diagram">
+        <pre style="text-align: left; font-family: monospace; font-size: 11px; margin: 0;">
+Level 0 (En küçük)     Level 1              Level 2         ...    Level N (Orijinal)
+┌────┐                ┌────┬────┐          ┌──┬──┬──┬──┐           ┌─┬─┬─┬─┬─┬─┬─┬─┐
+│    │                │    │    │          │  │  │  │  │           │ │ │ │ │ │ │ │ │
+│    │       →        ├────┼────┤     →    ├──┼──┼──┼──┤    →      ├─┼─┼─┼─┼─┼─┼─┼─┤
+│    │                │    │    │          │  │  │  │  │           │ │ │ │ │ │ │ │ │
+└────┘                └────┴────┘          └──┴──┴──┴──┘           └─┴─┴─┴─┴─┴─┴─┴─┘
+1 tile                4 tiles              16 tiles                 N² tiles
+        </pre>
+    </div>
+
+    <h4>📌 Tile URL Formatı</h4>
+    <div class="code-block">/api/tiles/{imageId}/{level}/{tileX}_{tileY}.jpg
+
+<span style="color: #6a9955;">Örnek:</span> /api/tiles/15/5/3_2.jpg
+  → Image ID: 15
+  → Zoom Level: 5
+  → Tile Koordinatları: X=3, Y=2
+  → Dosya: tiles/15/5/tile_3_2.jpg</div>
+
+    <h4>📌 Tile Hesaplama Formülleri</h4>
+    <div class="code-block"><span style="color: #6a9955;">// Maksimum zoom seviyesi</span>
+maxLevel = ceil(log2(max(width, height) / tileSize))
+
+<span style="color: #6a9955;">// Belirli seviyedeki ölçek</span>
+scale = 1 / 2^(maxLevel - level)
+
+<span style="color: #6a9955;">// Ölçeklenmiş boyutlar</span>
+scaledWidth = originalWidth × scale
+scaledHeight = originalHeight × scale
+
+<span style="color: #6a9955;">// Tile sayısı</span>
+tilesX = ceil(scaledWidth / tileSize)
+tilesY = ceil(scaledHeight / tileSize)</div>
+
+    <h3 id="section-7-2">7.2 OpenSeadragon Yapılandırması</h3>
+
+    <div class="code-block"><span style="color: #6a9955;">// image-annotator.component.ts</span>
+initializeViewer(): <span style="color: #569cd6;">void</span> {
+  <span style="color: #569cd6;">this</span>.viewer = OpenSeadragon({
+    element: <span style="color: #569cd6;">this</span>.viewerContainer.nativeElement,
+
+    <span style="color: #6a9955;">// Tile kaynağı - Custom tile URL template</span>
+    tileSources: {
+      height: metadata.height,
+      width: metadata.width,
+      tileSize: metadata.tileSize,
+      maxLevel: metadata.maxLevel,
+      minLevel: <span style="color: #b5cea8;">0</span>,
+      getTileUrl: (level: <span style="color: #569cd6;">number</span>, x: <span style="color: #569cd6;">number</span>, y: <span style="color: #569cd6;">number</span>) => {
+        <span style="color: #569cd6;">return</span> <span style="color: #ce9178;">`/api/tiles/${imageId}/${level}/${x}_${y}.jpg`</span>;
+      }
+    },
+
+    <span style="color: #6a9955;">// Görüntüleme ayarları</span>
+    showNavigator: <span style="color: #569cd6;">true</span>,           <span style="color: #6a9955;">// Mini harita</span>
+    navigatorPosition: <span style="color: #ce9178;">'BOTTOM_RIGHT'</span>,
+    showRotationControl: <span style="color: #569cd6;">true</span>,    <span style="color: #6a9955;">// Döndürme kontrolü</span>
+    gestureSettingsMouse: {
+      clickToZoom: <span style="color: #569cd6;">false</span>         <span style="color: #6a9955;">// Anotasyon için tıklamayı engelle</span>
+    },
+
+    <span style="color: #6a9955;">// Zoom limitleri</span>
+    minZoomLevel: <span style="color: #b5cea8;">0.1</span>,
+    maxZoomLevel: <span style="color: #b5cea8;">100</span>,
+    visibilityRatio: <span style="color: #b5cea8;">1.0</span>,
+    constrainDuringPan: <span style="color: #569cd6;">true</span>
+  });
+}</div>
+
+    <h3 id="section-7-3">7.3 Annotorious Entegrasyonu</h3>
+
+    <p>Annotorious, OpenSeadragon üzerinde çalışan bir anotasyon katmanı sağlar.</p>
+
+    <div class="code-block"><span style="color: #6a9955;">// annotorious-integration.ts</span>
+<span style="color: #569cd6;">export class</span> <span style="color: #4ec9b0;">AnnotoriousIntegration</span> {
+  <span style="color: #569cd6;">private</span> annotorious: <span style="color: #569cd6;">any</span>;
+  <span style="color: #569cd6;">private</span> viewer: <span style="color: #569cd6;">any</span>;
+
+  <span style="color: #6a9955;">// Anotasyon storage</span>
+  <span style="color: #569cd6;">private</span> annotationsMap: Map&lt;<span style="color: #569cd6;">string</span>, AnnotationData&gt; = <span style="color: #569cd6;">new</span> Map();
+
+  <span style="color: #6a9955;">// Katman yönetimi</span>
+  <span style="color: #569cd6;">private</span> layers: Map&lt;<span style="color: #569cd6;">string</span>, Layer&gt; = <span style="color: #569cd6;">new</span> Map();
+  <span style="color: #569cd6;">private</span> tagVocabulary: <span style="color: #569cd6;">string</span>[] = [];
+
+  <span style="color: #6a9955;">// Observable for annotation changes</span>
+  <span style="color: #569cd6;">public</span> annotationsChanged$ = <span style="color: #569cd6;">new</span> BehaviorSubject&lt;AnnotationData[]&gt;([]);
+
+  init(viewer: <span style="color: #569cd6;">any</span>, imageId: <span style="color: #569cd6;">number</span>): <span style="color: #569cd6;">void</span> {
+    <span style="color: #569cd6;">this</span>.viewer = viewer;
+    <span style="color: #569cd6;">this</span>.imageId = imageId;
+
+    <span style="color: #569cd6;">// Annotorious'u OpenSeadragon'a bağla</span>
+    <span style="color: #569cd6;">this</span>.annotorious = Annotorious(<span style="color: #569cd6;">this</span>.viewer, {
+      readOnly: <span style="color: #569cd6;">false</span>,
+      allowEmpty: <span style="color: #569cd6;">true</span>
+    });
+
+    <span style="color: #6a9955;">// Event handler'ları kur</span>
+    <span style="color: #569cd6;">this</span>.setupEventHandlers();
+  }
+}</div>
+
+    <h3 id="section-7-4">7.4 Desteklenen Anotasyon Araçları</h3>
+
+    <table>
+        <tr><th>Araç</th><th>Açıklama</th><th>Kısayol</th></tr>
+        <tr>
+            <td>🔲 <strong>Rectangle</strong></td>
+            <td>Dikdörtgen seçim</td>
+            <td><span class="code-inline">R</span></td>
+        </tr>
+        <tr>
+            <td>⬭ <strong>Ellipse</strong></td>
+            <td>Elips/daire seçim</td>
+            <td><span class="code-inline">E</span></td>
+        </tr>
+        <tr>
+            <td>⬡ <strong>Polygon</strong></td>
+            <td>Çokgen seçim (nokta nokta)</td>
+            <td><span class="code-inline">P</span></td>
+        </tr>
+        <tr>
+            <td>✏️ <strong>Freehand</strong></td>
+            <td>Serbest çizim</td>
+            <td><span class="code-inline">F</span></td>
+        </tr>
+        <tr>
+            <td>👆 <strong>Pan/Select</strong></td>
+            <td>Görüntü kaydırma / seçim</td>
+            <td><span class="code-inline">V</span></td>
+        </tr>
+    </table>
+
+    <h3 id="section-7-5">7.5 Anotasyon Veri Yapısı</h3>
+
+    <p>Anotasyonlar W3C Web Annotation Data Model formatında saklanır:</p>
+
+    <div class="code-block">{
+  <span style="color: #ce9178;">"@context"</span>: <span style="color: #ce9178;">"http://www.w3.org/ns/anno.jsonld"</span>,
+  <span style="color: #ce9178;">"id"</span>: <span style="color: #ce9178;">"annotation-1704456789123"</span>,
+  <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"Annotation"</span>,
+  <span style="color: #ce9178;">"body"</span>: [
+    {
+      <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"TextualBody"</span>,
+      <span style="color: #ce9178;">"purpose"</span>: <span style="color: #ce9178;">"tagging"</span>,
+      <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"Tumor"</span>         <span style="color: #6a9955;">// Etiket</span>
+    },
+    {
+      <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"TextualBody"</span>,
+      <span style="color: #ce9178;">"purpose"</span>: <span style="color: #ce9178;">"grading"</span>,
+      <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"3"</span>              <span style="color: #6a9955;">// Grade değeri</span>
+    },
+    {
+      <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"TextualBody"</span>,
+      <span style="color: #ce9178;">"purpose"</span>: <span style="color: #ce9178;">"commenting"</span>,
+      <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"Şüpheli bölge"</span>  <span style="color: #6a9955;">// Not</span>
+    }
+  ],
+  <span style="color: #ce9178;">"target"</span>: {
+    <span style="color: #ce9178;">"selector"</span>: {
+      <span style="color: #ce9178;">"type"</span>: <span style="color: #ce9178;">"SvgSelector"</span>,
+      <span style="color: #ce9178;">"value"</span>: <span style="color: #ce9178;">"&lt;svg&gt;&lt;polygon points='0.25,0.30 0.45,0.30 0.45,0.50 0.25,0.50'/&gt;&lt;/svg&gt;"</span>
+    }
+  }
+}</div>
+
+    <div class="info-box">
+        <strong>📝 Koordinat Sistemi:</strong> Annotorious normalize koordinatlar kullanır (0-1 aralığında). Görüntü boyutu ne olursa olsun koordinatlar orantılı kalır.
+    </div>
+
+    <h3 id="section-7-6">7.6 Event Handler'lar</h3>
+
+    <div class="code-block"><span style="color: #569cd6;">private</span> setupEventHandlers(): <span style="color: #569cd6;">void</span> {
+  <span style="color: #6a9955;">// Yeni anotasyon oluşturulduğunda</span>
+  <span style="color: #569cd6;">this</span>.annotorious.on(<span style="color: #ce9178;">'createSelection'</span>, (selection: <span style="color: #569cd6;">any</span>) => {
+    <span style="color: #569cd6;">this</span>.showCustomPopup(selection, <span style="color: #569cd6;">true</span>);  <span class="color: #6a9955;">// Popup göster</span>
+  });
+
+  <span style="color: #6a9955;">// Anotasyon seçildiğinde</span>
+  <span style="color: #569cd6;">this</span>.annotorious.on(<span style="color: #ce9178;">'selectAnnotation'</span>, (annotation: <span style="color: #569cd6;">any</span>) => {
+    <span style="color: #569cd6;">this</span>.showCustomPopup(annotation, <span style="color: #569cd6;">false</span>);
+  });
+
+  <span style="color: #6a9955;">// Anotasyon güncellendiğinde</span>
+  <span style="color: #569cd6;">this</span>.annotorious.on(<span style="color: #ce9178;">'updateAnnotation'</span>, (annotation: <span style="color: #569cd6;">any</span>) => {
+    <span style="color: #569cd6;">this</span>.updateAnnotationInBackend(annotation);
+  });
+
+  <span style="color: #6a9955;">// Anotasyon silindiğinde</span>
+  <span style="color: #569cd6;">this</span>.annotorious.on(<span style="color: #ce9178;">'deleteAnnotation'</span>, (annotation: <span style="color: #569cd6;">any</span>) => {
+    <span style="color: #569cd6;">this</span>.deleteAnnotationFromBackend(annotation);
+  });
+}</div>
+
+    <h3 id="section-7-7">7.7 Katman Yönetimi</h3>
+
+    <p>Her anotasyon tipi (etiket) bir katman olarak yönetilir. Katmanlar proje bazlı veritabanından yüklenir.</p>
+
+    <div class="code-block"><span style="color: #6a9955;">// Katman güncelleme</span>
+updateTagVocab(layers: Layer[]): <span style="color: #569cd6;">void</span> {
+  <span style="color: #569cd6;">this</span>.tagVocabulary = layers.map(l => l.name);
+
+  layers.forEach(layer => {
+    <span style="color: #569cd6;">this</span>.layers.set(layer.type, layer);
+    <span style="color: #569cd6;">this</span>.layerColors.set(layer.type, layer.color);
+  });
+}
+
+<span style="color: #6a9955;">// Katman görünürlüğü toggle</span>
+toggleLayerVisibility(layerType: <span style="color: #569cd6;">string</span>): <span style="color: #569cd6;">void</span> {
+  <span style="color: #569cd6;">const</span> visible = !<span style="color: #569cd6;">this</span>.layerVisibility.get(layerType);
+  <span style="color: #569cd6;">this</span>.layerVisibility.set(layerType, visible);
+
+  <span style="color: #6a9955;">// İlgili anotasyonları göster/gizle</span>
+  <span style="color: #569cd6;">this</span>.annotationsMap.forEach((ann, id) => {
+    <span style="color: #569cd6;">if</span> (ann.type === layerType) {
+      <span style="color: #569cd6;">this</span>.setAnnotationVisibility(id, visible);
+    }
+  });
+}</div>
+
+    <div class="page-break"></div>
+
+    <!-- ============================================== -->
+    <!-- BÖLÜM 8: DEPLOYMENT -->
+    <!-- ============================================== -->
+    <h2 id="section-8">8. Deployment</h2>
+
+    <p>LaPatho Docker container'ları kullanılarak deploy edilir. Production ve development için farklı konfigürasyonlar mevcuttur.</p>
+
+    <h3 id="section-8-1">8.1 Production Build</h3>
+
+    <h4>📌 Backend Build</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Maven ile JAR oluştur</span>
+./mvnw clean package -DskipTests
+
+<span style="color: #6a9955;"># Çıktı: target/LaPatho-0.0.1-SNAPSHOT.jar</span></div>
+
+    <h4>📌 Frontend Build</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Angular production build</span>
+cd src/main/web-ui
+npm run build
+
+<span style="color: #6a9955;"># Çıktı: dist/web-ui/browser/</span></div>
+
+    <h3 id="section-8-2">8.2 Docker Deployment</h3>
+
+    <h4>📌 Tek Komutla Deployment</h4>
+    <div class="code-block"><span style="color: #6a9955;"># Tüm servisleri build et ve başlat</span>
+docker-compose up -d --build
+
+<span style="color: #6a9955;"># Logları kontrol et</span>
+docker-compose logs -f</div>
+
+    <h4>📌 Servis Mimarisi</h4>
+    <div class="architecture-diagram">
+        <pre style="text-align: left; font-family: monospace; font-size: 11px; margin: 0;">
+                    ┌─────────────────────────────────────┐
+                    │           Docker Network            │
+                    │                                     │
+   Internet         │  ┌─────────┐      ┌─────────────┐  │
+       │            │  │         │      │             │  │
+       ▼            │  │  Nginx  │─────►│   Backend   │  │
+   ┌───────┐        │  │ :80     │ /api │   :8080     │  │
+   │ User  │───────►│  │         │      │             │  │
+   └───────┘        │  └─────────┘      └──────┬──────┘  │
+                    │       │                  │         │
+                    │       │ static           │ JDBC    │
+                    │       ▼                  ▼         │
+                    │  ┌─────────┐      ┌─────────────┐  │
+                    │  │ Angular │      │  PostgreSQL │  │
+                    │  │  Files  │      │    :5432    │  │
+                    │  └─────────┘      └─────────────┘  │
+                    │                                     │
+                    │       ┌─────────────┐              │
+                    │       │   pgAdmin   │              │
+                    │       │    :5050    │              │
+                    │       └─────────────┘              │
+                    └─────────────────────────────────────┘
+        </pre>
+    </div>
+
+    <h3 id="section-8-3">8.3 Nginx Konfigürasyonu</h3>
+
+    <div class="code-block"><span style="color: #6a9955;"># nginx.conf ana ayarları</span>
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    <span style="color: #6a9955;"># Angular SPA routing</span>
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    <span style="color: #6a9955;"># Backend API proxy</span>
+    location /api/ {
+        proxy_pass http://backend:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+
+        <span style="color: #6a9955;"># Büyük dosya upload için</span>
+        client_max_body_size 2048M;
+        proxy_read_timeout 300s;
+    }
+}</div>
+
+    <h3 id="section-8-4">8.4 Environment Variables</h3>
+
+    <table>
+        <tr><th>Variable</th><th>Servis</th><th>Açıklama</th><th>Varsayılan</th></tr>
+        <tr>
+            <td><span class="code-inline">SPRING_PROFILES_ACTIVE</span></td>
+            <td>Backend</td>
+            <td>Spring profili</td>
+            <td>docker</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">POSTGRES_DB</span></td>
+            <td>Database</td>
+            <td>Veritabanı adı</td>
+            <td>lapatho</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">POSTGRES_USER</span></td>
+            <td>Database</td>
+            <td>Kullanıcı adı</td>
+            <td>lapatho</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">POSTGRES_PASSWORD</span></td>
+            <td>Database</td>
+            <td>Şifre</td>
+            <td>password</td>
+        </tr>
+        <tr>
+            <td><span class="code-inline">PGADMIN_DEFAULT_EMAIL</span></td>
+            <td>pgAdmin</td>
+            <td>Admin email</td>
+            <td>admin@lapatho.com</td>
+        </tr>
+    </table>
+
+    <div class="warning-box">
+        <strong>⚠️ Güvenlik:</strong> Production ortamında <span class="code-inline">POSTGRES_PASSWORD</span> ve <span class="code-inline">jwt.secret</span> değerlerini mutlaka değiştirin!
+    </div>
+
+    <h3 id="section-8-5">8.5 Volume Mount'lar</h3>
+
+    <div class="code-block"><span style="color: #6a9955;"># docker-compose.yml volume tanımları</span>
+volumes:
+  - postgres_data:/var/lib/postgresql/data  <span style="color: #6a9955;"># DB persist</span>
+  - ./uploads:/app/uploads:rw               <span style="color: #6a9955;"># Yüklenen dosyalar</span>
+  - ./tiles:/app/tiles:rw                   <span style="color: #6a9955;"># İşlenmiş tile'lar</span></div>
+
+    <h3 id="section-8-6">8.6 Sunucu Gereksinimleri</h3>
+
+    <table>
+        <tr><th>Kaynak</th><th>Minimum</th><th>Önerilen</th></tr>
+        <tr>
+            <td>CPU</td>
+            <td>2 core</td>
+            <td>4+ core</td>
+        </tr>
+        <tr>
+            <td>RAM</td>
+            <td>4 GB</td>
+            <td>8+ GB</td>
+        </tr>
+        <tr>
+            <td>Disk</td>
+            <td>50 GB SSD</td>
+            <td>200+ GB SSD</td>
+        </tr>
+        <tr>
+            <td>Network</td>
+            <td>100 Mbps</td>
+            <td>1 Gbps</td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <strong>💡 Not:</strong> WSI dosyaları çok büyük olabilir (1-10 GB). Disk alanını buna göre planlayın. Tile işleme CPU yoğun bir işlemdir.
+    </div>
+
+    <h3 id="section-8-7">8.7 Health Check</h3>
+
+    <div class="code-block"><span style="color: #6a9955;"># Backend health endpoint</span>
+curl http://localhost:8080/actuator/health
+
+<span style="color: #6a9955;"># Beklenen yanıt</span>
+{
+  "status": "UP"
+}</div>
+
+    <div class="page-break"></div>
+
+    <div class="page-break"></div>
+
+
+    <div class="version-info">
+        <p><strong>LaPatho - Patoloji Görüntü Anotasyon Sistemi</strong></p>
+        <p>Geliştirici Kılavuzu v1.0</p>
+        <p>Son güncelleme: 5 Ocak 2026</p>
+        <p style="margin-top: 10px; font-size: 11px; color: #999;">
+            Bu dokümantasyon KTÜ CVLAB tarafından hazırlanmıştır.
+        </p>
+    </div>
+
+    </main>
+
+    <script>
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+
+        // Toggle subsection visibility
+        function toggleSubsection(element) {
+            event.preventDefault();
+            const subsection = element.nextElementSibling;
+            if (subsection && subsection.classList.contains('nav-subsection')) {
+                subsection.classList.toggle('show');
+            }
+            // Navigate to section
+            const href = element.getAttribute('href');
+            if (href) {
+                document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+            }
+            // Close sidebar on mobile
+            if (window.innerWidth <= 1024) {
+                toggleSidebar();
+            }
+        }
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Update progress bar and active nav items on scroll
+        window.addEventListener('scroll', function() {
+            // Progress bar
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            document.querySelector('.progress-bar-fill').style.width = progress + '%';
+
+            // Scroll to top button
+            const scrollTopBtn = document.querySelector('.scroll-top');
+            if (scrollTop > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+
+            // Highlight active section in sidebar
+            const sections = document.querySelectorAll('h2[id], h3[id]');
+            let currentSection = '';
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (scrollTop >= sectionTop) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            // Update active nav items
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + currentSection) {
+                    link.classList.add('active');
+                    // Expand parent subsection
+                    const parentLi = link.closest('.nav-subsection');
+                    if (parentLi) {
+                        parentLi.classList.add('show');
+                    }
+                }
+            });
+        });
+
+        // Handle subsection link clicks
+        document.querySelectorAll('.nav-subsection a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                // Close sidebar on mobile
+                if (window.innerWidth <= 1024) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // Initialize - open first section subsection
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstSubsection = document.querySelector('.nav-subsection');
+            if (firstSubsection) {
+                firstSubsection.classList.add('show');
+            }
+        });
+    </script>
+
+</body>
+</html>
+
