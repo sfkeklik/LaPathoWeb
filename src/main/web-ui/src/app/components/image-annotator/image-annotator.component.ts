@@ -46,6 +46,11 @@ import {
     updated?: Date;
     geometry?: any;
     grade?: string;
+    // Dental labeling fields
+    region?: string;
+    subRegion?: string;
+    finding?: string;
+    findingSubtype?: string;
   }
 
   interface LayerItem {
@@ -497,7 +502,13 @@ import {
         area: ann.area,
         created: ann.created?.toISOString(),
         updated: ann.updated?.toISOString(),
-        geometry: ann.geometry
+        geometry: ann.geometry,
+        // Dental labeling fields
+        region: ann.region || '',
+        subRegion: ann.subRegion || '',
+        finding: ann.finding || '',
+        findingSubtype: ann.findingSubtype || '',
+        grade: ann.grade || ''
       }))
     };
   }
@@ -508,10 +519,16 @@ import {
   }
 
   private downloadAsCSV(data: any): void {
-    const headers = ['ID', 'Type', 'Creator', 'Notes', 'Color', 'Area', 'Created', 'Updated'];
+    // Updated headers to include all dental labeling fields
+    const headers = ['ID', 'Type', 'Region', 'SubRegion', 'Finding', 'FindingSubtype', 'Grade', 'Creator', 'Notes', 'Color', 'Area', 'Created', 'Updated'];
     const rows = data.annotations.map((ann: any) => [
       ann.id,
       ann.type,
+      ann.region || '',
+      ann.subRegion || '',
+      ann.finding || '',
+      ann.findingSubtype || '',
+      ann.grade || '',
       ann.creator,
       ann.notes || '',
       ann.color || '',
@@ -522,10 +539,10 @@ import {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row: any[]) => row.map((cell: any) => `"${cell}"`).join(','))
+      ...rows.map((row: any[]) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
     this.downloadBlob(blob, `annotations-${this.imageId}-${Date.now()}.csv`);
   }
 

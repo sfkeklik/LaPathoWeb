@@ -25,6 +25,10 @@ export interface AnnotationData {
   // Hierarchical label data
   region?: string;
   subRegion?: string;
+  // Single finding with its subtype (only one finding per annotation)
+  finding?: string;        // Bulgu adı (örn: "Osteolizis", "Sekestr")
+  findingSubtype?: string; // Bulgu alt tipi (örn: "Fokal", "Diffüz")
+  // Legacy support for multiple findings (deprecated)
   findings?: { [key: string]: string }; // { "Osteolizis": "Extended", "Sekestr": "Serbest" }
 }
 
@@ -419,11 +423,9 @@ export class AnnotoriousIntegration {
     }
 
     /**
-     * Dental popup with regions and findings
+     * Dental popup with regions and findings (single selection only)
      */
     private createDentalPopupHTML(metadata: AnnotationData, isNew: boolean): string {
-      const findings = metadata.findings || {};
-
       return `
         <div class="popup-header">
           <div class="drag-indicator"><span></span><span></span><span></span></div>
@@ -450,11 +452,22 @@ export class AnnotoriousIntegration {
             </div>
           </div>
 
-          <!-- Findings Section -->
+          <!-- Findings Section - Single Selection Only -->
           <div class="popup-section-group">
-            <div class="section-title">🔬 Radyografik Bulgular</div>
-            <div class="findings-list" id="findings-list">
-              ${this.findingLabels.map(finding => this.generateFindingHTML(finding, findings[finding.name])).join('')}
+            <div class="section-title">🔬 Radyografik Bulgu</div>
+            <div class="popup-section">
+              <select class="popup-select" id="finding-select">
+                <option value="">-- Bulgu Seçiniz --</option>
+                ${this.findingLabels.map(finding =>
+                  `<option value="${finding.name}" ${metadata.finding === finding.name ? 'selected' : ''}>${finding.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="popup-section finding-subtype-section" id="finding-subtype-container" style="display: ${metadata.finding ? 'block' : 'none'}">
+              <label>Bulgu Tipi</label>
+              <div class="radio-group" id="finding-subtype-group">
+                ${this.generateFindingSubtypeOptions(metadata.finding, metadata.findingSubtype)}
+              </div>
             </div>
           </div>
 
@@ -506,7 +519,24 @@ export class AnnotoriousIntegration {
     }
 
     /**
-     * Generate finding item HTML based on input type
+     * Generate finding subtype radio options based on selected finding
+     */
+    private generateFindingSubtypeOptions(findingName: string | undefined, selectedSubtype: string | undefined): string {
+      if (!findingName) return '';
+
+      const finding = this.findingLabels.find(f => f.name === findingName);
+      if (!finding || !finding.options || finding.options.length === 0) return '';
+
+      return finding.options.map(option =>
+        `<label class="radio-label">
+          <input type="radio" name="finding-subtype" value="${option}" ${selectedSubtype === option ? 'checked' : ''}>
+          <span>${option}</span>
+        </label>`
+      ).join('');
+    }
+
+    /**
+     * Generate finding item HTML based on input type (kept for backward compatibility)
      */
     private generateFindingHTML(finding: Layer, selectedValue: string | undefined): string {
       const isChecked = !!selectedValue;
@@ -595,45 +625,38 @@ export class AnnotoriousIntegration {
         });
       });
 
-      // Findings toggle and options
-      popup.querySelectorAll('.finding-item').forEach(item => {
-        const findingName = item.getAttribute('data-finding') || '';
-        const checkbox = item.querySelector('.finding-toggle') as HTMLInputElement;
-        const optionsContainer = item.querySelector('.finding-options') as HTMLElement;
+      // Single Finding select change
+      const findingSelect = popup.querySelector('#finding-select') as HTMLSelectElement;
+      if (findingSelect) {
+        findingSelect.addEventListener('change', () => {
+          metadata.finding = findingSelect.value || undefined;
+          metadata.findingSubtype = ''; // Reset subtype when finding changes
 
-        if (checkbox && optionsContainer) {
-          checkbox.addEventListener('change', () => {
-            optionsContainer.style.display = checkbox.checked ? (optionsContainer.classList.contains('boolean-options') ? 'flex' : 'block') : 'none';
+          // Update finding subtype container
+          const subtypeContainer = popup.querySelector('#finding-subtype-container') as HTMLElement;
+          const subtypeGroup = popup.querySelector('#finding-subtype-group') as HTMLElement;
 
-            if (!checkbox.checked) {
-              // Remove finding from metadata
-              if (metadata.findings) {
-                delete metadata.findings[findingName];
-              }
-            }
-          });
-        }
+          if (findingSelect.value && subtypeContainer && subtypeGroup) {
+            subtypeGroup.innerHTML = this.generateFindingSubtypeOptions(findingSelect.value, '');
+            subtypeContainer.style.display = 'block';
 
-        // Radio options (BOOLEAN type)
-        item.querySelectorAll('input[type="radio"]').forEach(radio => {
-          radio.addEventListener('change', (e) => {
-            if (!metadata.findings) metadata.findings = {};
-            metadata.findings[findingName] = (e.target as HTMLInputElement).value;
-          });
+            // Add event listeners to new radio buttons
+            subtypeGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
+              radio.addEventListener('change', (e) => {
+                metadata.findingSubtype = (e.target as HTMLInputElement).value;
+              });
+            });
+          } else if (subtypeContainer) {
+            subtypeContainer.style.display = 'none';
+          }
         });
+      }
 
-        // Select options (SELECT type)
-        const selectEl = item.querySelector('.finding-select') as HTMLSelectElement;
-        if (selectEl) {
-          selectEl.addEventListener('change', () => {
-            if (!metadata.findings) metadata.findings = {};
-            if (selectEl.value) {
-              metadata.findings[findingName] = selectEl.value;
-            } else {
-              delete metadata.findings[findingName];
-            }
-          });
-        }
+      // Finding subtype radio change (for existing options)
+      popup.querySelectorAll('#finding-subtype-group input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          metadata.findingSubtype = (e.target as HTMLInputElement).value;
+        });
       });
 
       // Grade select
@@ -806,7 +829,25 @@ export class AnnotoriousIntegration {
       });
     }
 
-    // Dental labeling - Findings ekle (JSON olarak)
+    // Dental labeling - Single Finding ekle
+    if (metadata.finding) {
+      newAnnotation.body.push({
+        type: 'TextualBody',
+        purpose: 'finding',
+        value: metadata.finding
+      });
+    }
+
+    // Dental labeling - Finding Subtype ekle
+    if (metadata.findingSubtype) {
+      newAnnotation.body.push({
+        type: 'TextualBody',
+        purpose: 'findingSubtype',
+        value: metadata.findingSubtype
+      });
+    }
+
+    // Legacy support - Dental labeling - Findings ekle (JSON olarak)
     if (metadata.findings && Object.keys(metadata.findings).length > 0) {
       newAnnotation.body.push({
         type: 'TextualBody',
@@ -1331,6 +1372,8 @@ export class AnnotoriousIntegration {
             // Dental labeling fields from backend
             region: ann.region || '',
             subRegion: ann.subRegion || '',
+            finding: ann.finding || '',
+            findingSubtype: ann.findingSubtype || '',
             findings: ann.findings || {},
             grade: ann.grade || '0'
           };
@@ -1994,7 +2037,8 @@ export class AnnotoriousIntegration {
       // Dental labeling fields
       region: metadata.region,
       subRegion: metadata.subRegion,
-      findings: metadata.findings,
+      finding: metadata.finding,
+      findingSubtype: metadata.findingSubtype,
       grade: metadata.grade,
       notes: metadata.notes
     });
@@ -2006,6 +2050,8 @@ export class AnnotoriousIntegration {
       // Dental labeling fields
       region: metadata.region || null,
       subRegion: metadata.subRegion || null,
+      finding: metadata.finding || null,
+      findingSubtype: metadata.findingSubtype || null,
       findings: metadata.findings ? JSON.stringify(metadata.findings) : null,
       grade: metadata.grade || null,
       notes: metadata.notes || null
@@ -2045,6 +2091,8 @@ export class AnnotoriousIntegration {
       // Dental labeling fields
       region: metadata.region || null,
       subRegion: metadata.subRegion || null,
+      finding: metadata.finding || null,
+      findingSubtype: metadata.findingSubtype || null,
       findings: metadata.findings ? JSON.stringify(metadata.findings) : null,
       grade: metadata.grade || null,
       notes: metadata.notes || null

@@ -41,6 +41,14 @@ public class AnnotationEntity {
     @Column(name = "sub_region")
     private String subRegion;
 
+    // Single finding with its subtype (new approach - only one per annotation)
+    @Column(name = "finding")
+    private String finding;
+
+    @Column(name = "finding_subtype")
+    private String findingSubtype;
+
+    // Legacy field for multiple findings (deprecated)
     @Column(name = "findings", columnDefinition = "TEXT")
     private String findings; // JSON format: {"Osteolizis": "Extended", "Sekestr": "Serbest"}
 

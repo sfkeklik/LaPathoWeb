@@ -106,6 +106,14 @@ public class AnnotationService {
         if (annotationData.getSubRegion() != null) {
             existing.setSubRegion(annotationData.getSubRegion());
         }
+        // Single finding with subtype
+        if (annotationData.getFinding() != null) {
+            existing.setFinding(annotationData.getFinding());
+        }
+        if (annotationData.getFindingSubtype() != null) {
+            existing.setFindingSubtype(annotationData.getFindingSubtype());
+        }
+        // Legacy multiple findings
         if (annotationData.getFindings() != null) {
             existing.setFindings(annotationData.getFindings());
         }
@@ -142,6 +150,14 @@ public class AnnotationService {
         if (annotationData.getSubRegion() != null) {
             existing.setSubRegion(annotationData.getSubRegion());
         }
+        // Single finding with subtype
+        if (annotationData.getFinding() != null) {
+            existing.setFinding(annotationData.getFinding());
+        }
+        if (annotationData.getFindingSubtype() != null) {
+            existing.setFindingSubtype(annotationData.getFindingSubtype());
+        }
+        // Legacy multiple findings
         if (annotationData.getFindings() != null) {
             existing.setFindings(annotationData.getFindings());
         }

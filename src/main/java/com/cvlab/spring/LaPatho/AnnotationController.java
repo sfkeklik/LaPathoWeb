@@ -60,10 +60,13 @@ public class AnnotationController {
                         // Dental labeling fields
                         result.put("region", e.getRegion());
                         result.put("subRegion", e.getSubRegion());
+                        // Single finding with subtype
+                        result.put("finding", e.getFinding());
+                        result.put("findingSubtype", e.getFindingSubtype());
                         result.put("grade", e.getGrade());
                         result.put("notes", e.getNotes());
 
-                        // Findings JSON'ı parse et
+                        // Legacy: Findings JSON'ı parse et
                         if (e.getFindings() != null && !e.getFindings().isEmpty()) {
                             try {
                                 JsonNode findingsJson = objectMapper.readTree(e.getFindings());
@@ -105,7 +108,9 @@ public class AnnotationController {
         System.out.println("Geometry: " + annotation.getGeometry());
         System.out.println("Region: " + annotation.getRegion());
         System.out.println("SubRegion: " + annotation.getSubRegion());
-        System.out.println("Findings: " + annotation.getFindings());
+        System.out.println("Finding: " + annotation.getFinding());
+        System.out.println("FindingSubtype: " + annotation.getFindingSubtype());
+        System.out.println("Findings (legacy): " + annotation.getFindings());
         System.out.println("Grade: " + annotation.getGrade());
         System.out.println("Notes: " + annotation.getNotes());
 
