@@ -57,6 +57,11 @@ public class AnnotationController {
                         result.put("databaseId", e.getId());
                         result.put("annotation", parsed);
 
+                        // Creator bilgisi - user varsa username, yoksa legacy creator field
+                        String creator = e.getUser() != null ? e.getUser().getUsername() :
+                                        (e.getCreator() != null ? e.getCreator() : "Unknown");
+                        result.put("creator", creator);
+
                         // Dental labeling fields
                         result.put("region", e.getRegion());
                         result.put("subRegion", e.getSubRegion());
