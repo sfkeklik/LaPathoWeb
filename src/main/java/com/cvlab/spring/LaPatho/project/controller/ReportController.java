@@ -67,7 +67,6 @@ public class ReportController {
         report.append("image_height").append(SEP);
         report.append("label_id").append(SEP);
         report.append("label_name").append(SEP);
-        report.append("region").append(SEP);
         report.append("sub_region").append(SEP);
         report.append("finding").append(SEP);
         report.append("finding_subtype").append(SEP);
@@ -102,7 +101,6 @@ public class ReportController {
                 GeometryData geom = parseGeometry(annotation.getGeometry());
 
                 // Get dental labeling fields directly from entity
-                String region = annotation.getRegion() != null ? annotation.getRegion() : "";
                 String subRegion = annotation.getSubRegion() != null ? annotation.getSubRegion() : "";
                 String finding = annotation.getFinding() != null ? annotation.getFinding() : "";
                 String findingSubtype = annotation.getFindingSubtype() != null ? annotation.getFindingSubtype() : "";
@@ -114,7 +112,6 @@ public class ReportController {
                 // Log for debugging
                 System.out.println("📊 Annotation ID: " + annotation.getId() +
                     ", Type: " + labelName +
-                    ", Region: " + region +
                     ", SubRegion: " + subRegion +
                     ", Finding: " + finding +
                     ", FindingSubtype: " + findingSubtype +
@@ -128,7 +125,6 @@ public class ReportController {
                 report.append(imageHeight).append(SEP);
                 report.append(labelId).append(SEP);
                 report.append(sanitize(labelName)).append(SEP);
-                report.append(sanitize(region)).append(SEP);
                 report.append(sanitize(subRegion)).append(SEP);
                 report.append(sanitize(finding)).append(SEP);
                 report.append(sanitize(findingSubtype)).append(SEP);
