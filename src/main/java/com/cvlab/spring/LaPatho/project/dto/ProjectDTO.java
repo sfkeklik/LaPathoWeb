@@ -25,5 +25,7 @@ public class ProjectDTO {
     private Instant createdAt;
     private String createdByName;
     private Integer gradeLevel;
+    private Boolean showGrade;
+    private Boolean showNotes;
 }
 

@@ -33,6 +33,8 @@ public class ProjectService {
                 .createdBy(createdBy)
                 .active(true)
                 .gradeLevel(request.getGradeLevel() != null ? request.getGradeLevel() : 3)
+                .showGrade(request.getShowGrade() != null ? request.getShowGrade() : true)
+                .showNotes(request.getShowNotes() != null ? request.getShowNotes() : true)
                 .build();
 
         if (request.getDoctorIds() != null && !request.getDoctorIds().isEmpty()) {
@@ -82,6 +84,14 @@ public class ProjectService {
 
         if (request.getGradeLevel() != null) {
             project.setGradeLevel(request.getGradeLevel());
+        }
+
+        if (request.getShowGrade() != null) {
+            project.setShowGrade(request.getShowGrade());
+        }
+
+        if (request.getShowNotes() != null) {
+            project.setShowNotes(request.getShowNotes());
         }
 
         if (request.getDoctorIds() != null) {
@@ -190,6 +200,8 @@ public class ProjectService {
                         ? project.getCreatedBy().getFirstName() + " " + project.getCreatedBy().getLastName()
                         : null)
                 .gradeLevel(project.getGradeLevel() != null ? project.getGradeLevel() : 3)
+                .showGrade(project.getShowGrade() != null ? project.getShowGrade() : true)
+                .showNotes(project.getShowNotes() != null ? project.getShowNotes() : true)
                 .build();
     }
 }

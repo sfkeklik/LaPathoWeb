@@ -99,6 +99,22 @@ public class AnnotationService {
         if (annotationData.getGeometry() != null) {
             existing.setGeometry(annotationData.getGeometry());
         }
+        // Dental labeling fields
+        if (annotationData.getRegion() != null) {
+            existing.setRegion(annotationData.getRegion());
+        }
+        if (annotationData.getSubRegion() != null) {
+            existing.setSubRegion(annotationData.getSubRegion());
+        }
+        if (annotationData.getFindings() != null) {
+            existing.setFindings(annotationData.getFindings());
+        }
+        if (annotationData.getGrade() != null) {
+            existing.setGrade(annotationData.getGrade());
+        }
+        if (annotationData.getNotes() != null) {
+            existing.setNotes(annotationData.getNotes());
+        }
         existing.setUpdated(java.time.Instant.now());
 
         return anno.save(existing);
@@ -118,6 +134,22 @@ public class AnnotationService {
         }
         if (annotationData.getGeometry() != null) {
             existing.setGeometry(annotationData.getGeometry());
+        }
+        // Dental labeling fields
+        if (annotationData.getRegion() != null) {
+            existing.setRegion(annotationData.getRegion());
+        }
+        if (annotationData.getSubRegion() != null) {
+            existing.setSubRegion(annotationData.getSubRegion());
+        }
+        if (annotationData.getFindings() != null) {
+            existing.setFindings(annotationData.getFindings());
+        }
+        if (annotationData.getGrade() != null) {
+            existing.setGrade(annotationData.getGrade());
+        }
+        if (annotationData.getNotes() != null) {
+            existing.setNotes(annotationData.getNotes());
         }
         existing.setUpdated(java.time.Instant.now());
         

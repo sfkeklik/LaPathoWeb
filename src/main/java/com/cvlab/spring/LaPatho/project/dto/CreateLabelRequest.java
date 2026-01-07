@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,7 +22,13 @@ public class CreateLabelRequest {
     @Size(max = 20, message = "Color must be at most 20 characters")
     private String color;
 
-    @Size(max = 255, message = "Description must be at most 255 characters")
+    @Size(max = 500, message = "Description must be at most 500 characters")
     private String description;
+
+    private Long parentId;           // Üst kategori ID'si (null = root)
+    private String labelType;        // REGION, FINDING, SIMPLE
+    private String inputType;        // NONE, SELECT, BOOLEAN
+    private List<String> options;    // Alt seçenekler
+    private Integer sortOrder;       // Sıralama
 }
 

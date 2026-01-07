@@ -21,5 +21,9 @@ public class CreateProjectRequest {
     private List<Long> imageIds;
 
     private Integer gradeLevel;
+
+    private Boolean showGrade;
+
+    private Boolean showNotes;
 }
 

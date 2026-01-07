@@ -16,20 +16,33 @@ export interface Project {
   createdAt: string;
   createdByName: string;
   gradeLevel: number;
+  showGrade?: boolean;
+  showNotes?: boolean;
 }
 
 export interface Label {
   id: number;
   projectId: number;
+  parentId?: number;
   name: string;
   color: string;
   description?: string;
+  labelType?: string;     // REGION, FINDING, SIMPLE
+  inputType?: string;     // NONE, SELECT, BOOLEAN
+  options?: string[];     // Alt seçenekler
+  sortOrder?: number;
+  children?: Label[];     // Alt kategoriler (recursive)
 }
 
 export interface CreateLabelRequest {
   name: string;
   color?: string;
   description?: string;
+  parentId?: number;
+  labelType?: string;
+  inputType?: string;
+  options?: string[];
+  sortOrder?: number;
 }
 
 export interface CreateProjectRequest {
@@ -38,6 +51,8 @@ export interface CreateProjectRequest {
   doctorIds?: number[];
   imageIds?: number[];
   gradeLevel?: number;
+  showGrade?: boolean;
+  showNotes?: boolean;
 }
 
 @Injectable({
@@ -120,6 +135,18 @@ export class AdminService {
     return this.http.get<Label[]>(`${this.PROJECT_URL}/${projectId}/labels`);
   }
 
+  getHierarchicalLabels(projectId: number): Observable<Label[]> {
+    return this.http.get<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/hierarchical`);
+  }
+
+  getRegionLabels(projectId: number): Observable<Label[]> {
+    return this.http.get<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/regions`);
+  }
+
+  getFindingLabels(projectId: number): Observable<Label[]> {
+    return this.http.get<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/findings`);
+  }
+
   createLabel(projectId: number, label: CreateLabelRequest): Observable<Label> {
     return this.http.post<Label>(`${this.PROJECT_URL}/${projectId}/labels`, label);
   }
@@ -134,6 +161,10 @@ export class AdminService {
 
   createDefaultLabels(projectId: number): Observable<Label[]> {
     return this.http.post<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/defaults`, {});
+  }
+
+  createDentalLabels(projectId: number): Observable<Label[]> {
+    return this.http.post<Label[]>(`${this.PROJECT_URL}/${projectId}/labels/dental-template`, {});
   }
 
   // Get projects containing a specific image

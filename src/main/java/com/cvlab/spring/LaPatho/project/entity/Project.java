@@ -70,6 +70,14 @@ public class Project {
     @Builder.Default
     private Integer gradeLevel = 3;
 
+    @Column(name = "show_grade")
+    @Builder.Default
+    private Boolean showGrade = true;
+
+    @Column(name = "show_notes")
+    @Builder.Default
+    private Boolean showNotes = true;
+
     @PrePersist
     public void prePersist() {
         createdAt = Instant.now();

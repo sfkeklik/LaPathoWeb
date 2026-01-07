@@ -52,10 +52,28 @@ public class AnnotationController {
                         JsonNode parsed = objectMapper.readTree(e.getGeometry());
                         System.out.println("Parse edildi: " + parsed);
 
-                        // Database ID'sini de ekleyelim
+                        // Database ID'sini ve dental labeling alanlarını da ekleyelim
                         Map<String, Object> result = new HashMap<>();
                         result.put("databaseId", e.getId());
                         result.put("annotation", parsed);
+
+                        // Dental labeling fields
+                        result.put("region", e.getRegion());
+                        result.put("subRegion", e.getSubRegion());
+                        result.put("grade", e.getGrade());
+                        result.put("notes", e.getNotes());
+
+                        // Findings JSON'ı parse et
+                        if (e.getFindings() != null && !e.getFindings().isEmpty()) {
+                            try {
+                                JsonNode findingsJson = objectMapper.readTree(e.getFindings());
+                                result.put("findings", findingsJson);
+                            } catch (JsonProcessingException ex) {
+                                result.put("findings", null);
+                            }
+                        } else {
+                            result.put("findings", null);
+                        }
 
                         return result;
                     } catch (JsonProcessingException ex) {
@@ -85,6 +103,11 @@ public class AnnotationController {
         System.out.println("Gelen annotation: " + annotation);
         System.out.println("Type: " + annotation.getType());
         System.out.println("Geometry: " + annotation.getGeometry());
+        System.out.println("Region: " + annotation.getRegion());
+        System.out.println("SubRegion: " + annotation.getSubRegion());
+        System.out.println("Findings: " + annotation.getFindings());
+        System.out.println("Grade: " + annotation.getGrade());
+        System.out.println("Notes: " + annotation.getNotes());
 
         // Geometry validation
         if (annotation.getGeometry() == null || annotation.getGeometry().trim().isEmpty()) {

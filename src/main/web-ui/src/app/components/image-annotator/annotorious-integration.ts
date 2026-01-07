@@ -21,7 +21,11 @@ export interface AnnotationData {
   updated?: Date;
   geometry?: any;
   layerType?: string;
-  grade?: string; // Add grade property
+  grade?: string;
+  // Hierarchical label data
+  region?: string;
+  subRegion?: string;
+  findings?: { [key: string]: string }; // { "Osteolizis": "Extended", "Sekestr": "Serbest" }
 }
 
 export interface Layer {
@@ -30,6 +34,9 @@ export interface Layer {
   type: string;
   visible: boolean;
   color: string;
+  labelType?: string;    // REGION, FINDING, SIMPLE
+  inputType?: string;    // NONE, SELECT, BOOLEAN
+  options?: string[];    // Alt seçenekler
 }
 
 export class AnnotoriousIntegration {
@@ -55,6 +62,15 @@ export class AnnotoriousIntegration {
   private tagVocabulary: string[] = [];
   private defaultColors: Record<string, string> = {};
   private gradeLevel: number = 3;
+
+  // Hierarchical labels for dental radiology
+  private regionLabels: Layer[] = [];
+  private findingLabels: Layer[] = [];
+  private simpleLabels: Layer[] = [];
+
+  // Project settings for showing/hiding fields
+  private showGrade: boolean = true;
+  private showNotes: boolean = true;
 
   // Custom widget for grade and tag selection
   // Custom formatter for displaying annotation metadata
@@ -123,7 +139,12 @@ export class AnnotoriousIntegration {
     this.layerVisibility.clear();
     this.layerColors.clear();
 
-    // Update tag vocabulary
+    // Categorize labels by type
+    this.regionLabels = layers.filter(l => l.labelType === 'REGION');
+    this.findingLabels = layers.filter(l => l.labelType === 'FINDING');
+    this.simpleLabels = layers.filter(l => !l.labelType || l.labelType === 'SIMPLE');
+
+    // Update tag vocabulary (for backward compatibility)
     this.tagVocabulary = layers.map(l => l.name);
 
     // Update default colors
@@ -135,7 +156,18 @@ export class AnnotoriousIntegration {
       this.defaultColors[layer.name] = layer.color;
     });
 
-    console.log('Annotorious layers updated:', this.tagVocabulary);
+    console.log('Annotorious layers updated:', {
+      regions: this.regionLabels.length,
+      findings: this.findingLabels.length,
+      simple: this.simpleLabels.length
+    });
+  }
+
+  /**
+   * Check if dental (hierarchical) labels are available
+   */
+  private hasDentalLabels(): boolean {
+    return this.regionLabels.length > 0 || this.findingLabels.length > 0;
   }
 
   /**
@@ -144,6 +176,15 @@ export class AnnotoriousIntegration {
   setGradeLevel(level: number): void {
     this.gradeLevel = level > 0 ? level : 3;
     console.log('Grade level set to:', this.gradeLevel);
+  }
+
+  /**
+   * Set project settings for showing/hiding fields
+   */
+  setProjectSettings(showGrade: boolean, showNotes: boolean): void {
+    this.showGrade = showGrade;
+    this.showNotes = showNotes;
+    console.log('Project settings updated:', { showGrade, showNotes });
   }
 
   /**
@@ -196,56 +237,28 @@ export class AnnotoriousIntegration {
       popup.className = 'custom-annotation-popup';
       popup.id = 'custom-popup-' + annotation.id;
 
-      const metadata = isNew
+      const metadata: AnnotationData = isNew
         ? {
             id: annotation.id,
-            type: this.tagVocabulary[0],
+            type: this.tagVocabulary[0] || '',
             creator: 'Current User',
             notes: '',
             color: this.defaultColors[this.tagVocabulary[0]] || '#ff0000',
             created: new Date(),
             geometry: annotation,
-            grade: '0'
+            grade: '0',
+            region: '',
+            subRegion: '',
+            findings: {}
           }
         : (this.annotationsMap.get(annotation.id) || this.createMetadataFromAnnotation(annotation));
 
-      popup.innerHTML = `
-        <div class="popup-header">
-          <h4>${isNew ? 'Yeni Anotasyon' : 'Anotasyon Detayları'}</h4>
-          <button class="popup-close">×</button>
-        </div>
-        <div class="popup-body compact">
-          <div class="popup-section inline">
-            <label>Tip</label>
-            <select class="popup-select" id="type-select">
-              ${this.tagVocabulary.map(tag =>
-                `<option value="${tag}" ${metadata.type === tag ? 'selected' : ''}>${tag}</option>`
-              ).join('')}
-            </select>
-          </div>
-
-          <div class="popup-section inline">
-            <label>Grade</label>
-            <select class="popup-select" id="grade-select">
-              ${this.generateGradeOptions((metadata as any).grade || '0')}
-            </select>
-          </div>
-
-          <div class="popup-section">
-            <label>Notlar</label>
-            <textarea class="popup-textarea" id="notes-textarea" rows="2" placeholder="Notlarınızı yazın...">${metadata.notes || ''}</textarea>
-          </div>
-
-          <div class="popup-actions">
-            ${isNew
-              ? `<button class="popup-btn save-btn">Oluştur</button>
-                 <button class="popup-btn cancel-btn">İptal</button>`
-              : `<button class="popup-btn save-btn">Kaydet</button>
-                 <button class="popup-btn delete-btn">Sil</button>`
-            }
-          </div>
-        </div>
-      `;
+      // Dental (hierarchical) popup veya simple popup
+      if (this.hasDentalLabels()) {
+        popup.innerHTML = this.createDentalPopupHTML(metadata, isNew);
+      } else {
+        popup.innerHTML = this.createSimplePopupHTML(metadata, isNew);
+      }
 
       this.addPopupStyles();
 
@@ -263,9 +276,416 @@ export class AnnotoriousIntegration {
         });
       }
 
-      this.setupPopupEventHandlers(popup, annotation, metadata, isNew);
+      if (this.hasDentalLabels()) {
+        this.setupDentalPopupEventHandlers(popup, annotation, metadata, isNew);
+      } else {
+        this.setupPopupEventHandlers(popup, annotation, metadata, isNew);
+      }
       this.positionPopup(popup, annotation);
+
+      // Setup drag functionality
+      this.setupPopupDrag(popup);
     }
+
+    /**
+     * Setup drag functionality for popup
+     */
+    private setupPopupDrag(popup: HTMLElement) {
+      const header = popup.querySelector('.popup-header') as HTMLElement;
+      if (!header) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let initialLeft = 0;
+      let initialTop = 0;
+
+      const onMouseDown = (e: MouseEvent) => {
+        // Close button'a tıklanmışsa drag yapma
+        if ((e.target as HTMLElement).closest('.popup-close')) return;
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        const rect = popup.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        popup.style.transition = 'none';
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+
+        e.preventDefault();
+      };
+
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        let newLeft = initialLeft + deltaX;
+        let newTop = initialTop + deltaY;
+
+        // Ekran sınırları kontrolü
+        const popupRect = popup.getBoundingClientRect();
+        const margin = 10;
+
+        // Sol sınır
+        if (newLeft < margin) newLeft = margin;
+        // Sağ sınır
+        if (newLeft + popupRect.width > window.innerWidth - margin) {
+          newLeft = window.innerWidth - popupRect.width - margin;
+        }
+        // Üst sınır
+        if (newTop < margin) newTop = margin;
+        // Alt sınır
+        if (newTop + popupRect.height > window.innerHeight - margin) {
+          newTop = window.innerHeight - popupRect.height - margin;
+        }
+
+        popup.style.left = `${newLeft}px`;
+        popup.style.top = `${newTop}px`;
+        popup.style.transform = 'none';
+      };
+
+      const onMouseUp = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        popup.style.transition = '';
+      };
+
+      header.addEventListener('mousedown', onMouseDown);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+
+      // Cleanup için event listener'ları popup'a bağla
+      (popup as any).__dragCleanup = () => {
+        header.removeEventListener('mousedown', onMouseDown);
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+    }
+
+    /**
+     * Simple popup for legacy labels
+     */
+    private createSimplePopupHTML(metadata: AnnotationData, isNew: boolean): string {
+      return `
+        <div class="popup-header">
+          <div class="drag-indicator"><span></span><span></span><span></span></div>
+          <h4>${isNew ? 'Yeni Anotasyon' : 'Anotasyon Detayları'}</h4>
+          <button class="popup-close">×</button>
+        </div>
+        <div class="popup-body compact">
+          <div class="popup-section inline">
+            <label>Tip</label>
+            <select class="popup-select" id="type-select">
+              ${this.tagVocabulary.map(tag =>
+                `<option value="${tag}" ${metadata.type === tag ? 'selected' : ''}>${tag}</option>`
+              ).join('')}
+            </select>
+          </div>
+
+          ${this.showGrade ? `
+          <div class="popup-section inline">
+            <label>Grade</label>
+            <select class="popup-select" id="grade-select">
+              ${this.generateGradeOptions((metadata as any).grade || '0')}
+            </select>
+          </div>
+          ` : ''}
+
+          ${this.showNotes ? `
+          <div class="popup-section">
+            <label>Notlar</label>
+            <textarea class="popup-textarea" id="notes-textarea" rows="2" placeholder="Notlarınızı yazın...">${metadata.notes || ''}</textarea>
+          </div>
+          ` : ''}
+
+          <div class="popup-actions">
+            ${isNew
+              ? `<button class="popup-btn save-btn">Oluştur</button>
+                 <button class="popup-btn cancel-btn">İptal</button>`
+              : `<button class="popup-btn save-btn">Kaydet</button>
+                 <button class="popup-btn delete-btn">Sil</button>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * Dental popup with regions and findings
+     */
+    private createDentalPopupHTML(metadata: AnnotationData, isNew: boolean): string {
+      const findings = metadata.findings || {};
+
+      return `
+        <div class="popup-header">
+          <div class="drag-indicator"><span></span><span></span><span></span></div>
+          <h4>${isNew ? 'Yeni Anotasyon' : 'Anotasyon Detayları'}</h4>
+          <button class="popup-close">×</button>
+        </div>
+        <div class="popup-body dental">
+          <!-- Region Section -->
+          <div class="popup-section-group">
+            <div class="section-title">📍 Bölge</div>
+            <div class="popup-section">
+              <select class="popup-select" id="region-select">
+                <option value="">-- Bölge Seçiniz --</option>
+                ${this.regionLabels.map(region =>
+                  `<option value="${region.name}" ${metadata.region === region.name ? 'selected' : ''}>${region.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="popup-section sub-region-section" id="sub-region-container" style="display: ${metadata.region ? 'block' : 'none'}">
+              <label>Alt Bölge</label>
+              <div class="radio-group" id="sub-region-group">
+                ${this.generateSubRegionOptions(metadata.region, metadata.subRegion)}
+              </div>
+            </div>
+          </div>
+
+          <!-- Findings Section -->
+          <div class="popup-section-group">
+            <div class="section-title">🔬 Radyografik Bulgular</div>
+            <div class="findings-list" id="findings-list">
+              ${this.findingLabels.map(finding => this.generateFindingHTML(finding, findings[finding.name])).join('')}
+            </div>
+          </div>
+
+          ${this.showGrade ? `
+          <!-- Grade Section -->
+          <div class="popup-section inline">
+            <label>Grade</label>
+            <select class="popup-select" id="grade-select">
+              ${this.generateGradeOptions((metadata as any).grade || '0')}
+            </select>
+          </div>
+          ` : ''}
+
+          ${this.showNotes ? `
+          <!-- Notes Section -->
+          <div class="popup-section">
+            <label>Notlar</label>
+            <textarea class="popup-textarea" id="notes-textarea" rows="2" placeholder="Notlarınızı yazın...">${metadata.notes || ''}</textarea>
+          </div>
+          ` : ''}
+
+          <div class="popup-actions">
+            ${isNew
+              ? `<button class="popup-btn save-btn">Oluştur</button>
+                 <button class="popup-btn cancel-btn">İptal</button>`
+              : `<button class="popup-btn save-btn">Kaydet</button>
+                 <button class="popup-btn delete-btn">Sil</button>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * Generate sub-region radio options based on selected region
+     */
+    private generateSubRegionOptions(regionName: string | undefined, selectedSubRegion: string | undefined): string {
+      if (!regionName) return '';
+
+      const region = this.regionLabels.find(r => r.name === regionName);
+      if (!region || !region.options || region.options.length === 0) return '';
+
+      return region.options.map(option =>
+        `<label class="radio-label">
+          <input type="radio" name="sub-region" value="${option}" ${selectedSubRegion === option ? 'checked' : ''}>
+          <span>${option}</span>
+        </label>`
+      ).join('');
+    }
+
+    /**
+     * Generate finding item HTML based on input type
+     */
+    private generateFindingHTML(finding: Layer, selectedValue: string | undefined): string {
+      const isChecked = !!selectedValue;
+      const inputType = finding.inputType || 'BOOLEAN';
+      const options = finding.options || ['Var', 'Yok'];
+
+      if (inputType === 'BOOLEAN') {
+        return `
+          <div class="finding-item" data-finding="${finding.name}">
+            <label class="finding-checkbox">
+              <input type="checkbox" class="finding-toggle" ${isChecked ? 'checked' : ''}>
+              <span class="finding-name">${finding.name}</span>
+            </label>
+            <div class="finding-options boolean-options" style="display: ${isChecked ? 'flex' : 'none'}">
+              ${options.map(opt =>
+                `<label class="radio-label small">
+                  <input type="radio" name="finding-${finding.name.replace(/\s+/g, '-')}" value="${opt}" ${selectedValue === opt ? 'checked' : ''}>
+                  <span>${opt}</span>
+                </label>`
+              ).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        // SELECT type
+        return `
+          <div class="finding-item" data-finding="${finding.name}">
+            <label class="finding-checkbox">
+              <input type="checkbox" class="finding-toggle" ${isChecked ? 'checked' : ''}>
+              <span class="finding-name">${finding.name}</span>
+            </label>
+            <div class="finding-options select-options" style="display: ${isChecked ? 'block' : 'none'}">
+              <select class="popup-select small finding-select">
+                <option value="">-- Seçiniz --</option>
+                ${options.map(opt =>
+                  `<option value="${opt}" ${selectedValue === opt ? 'selected' : ''}>${opt}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * Setup event handlers for dental popup
+     */
+    private setupDentalPopupEventHandlers(popup: HTMLElement, annotation: any, metadata: AnnotationData, isNew: boolean) {
+      // Region select change
+      const regionSelect = popup.querySelector('#region-select') as HTMLSelectElement;
+      if (regionSelect) {
+        regionSelect.addEventListener('change', () => {
+          metadata.region = regionSelect.value;
+          metadata.subRegion = ''; // Reset sub-region when region changes
+
+          // Update sub-region container
+          const subRegionContainer = popup.querySelector('#sub-region-container') as HTMLElement;
+          const subRegionGroup = popup.querySelector('#sub-region-group') as HTMLElement;
+
+          if (regionSelect.value && subRegionContainer && subRegionGroup) {
+            subRegionGroup.innerHTML = this.generateSubRegionOptions(regionSelect.value, '');
+            subRegionContainer.style.display = 'block';
+
+            // Add event listeners to new radio buttons
+            subRegionGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
+              radio.addEventListener('change', (e) => {
+                metadata.subRegion = (e.target as HTMLInputElement).value;
+              });
+            });
+          } else if (subRegionContainer) {
+            subRegionContainer.style.display = 'none';
+          }
+
+          // Update color based on region
+          if (regionSelect.value) {
+            metadata.color = this.defaultColors[regionSelect.value] || '#ff0000';
+            metadata.type = regionSelect.value;
+          }
+        });
+      }
+
+      // Sub-region radio change (for existing options)
+      popup.querySelectorAll('#sub-region-group input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          metadata.subRegion = (e.target as HTMLInputElement).value;
+        });
+      });
+
+      // Findings toggle and options
+      popup.querySelectorAll('.finding-item').forEach(item => {
+        const findingName = item.getAttribute('data-finding') || '';
+        const checkbox = item.querySelector('.finding-toggle') as HTMLInputElement;
+        const optionsContainer = item.querySelector('.finding-options') as HTMLElement;
+
+        if (checkbox && optionsContainer) {
+          checkbox.addEventListener('change', () => {
+            optionsContainer.style.display = checkbox.checked ? (optionsContainer.classList.contains('boolean-options') ? 'flex' : 'block') : 'none';
+
+            if (!checkbox.checked) {
+              // Remove finding from metadata
+              if (metadata.findings) {
+                delete metadata.findings[findingName];
+              }
+            }
+          });
+        }
+
+        // Radio options (BOOLEAN type)
+        item.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            if (!metadata.findings) metadata.findings = {};
+            metadata.findings[findingName] = (e.target as HTMLInputElement).value;
+          });
+        });
+
+        // Select options (SELECT type)
+        const selectEl = item.querySelector('.finding-select') as HTMLSelectElement;
+        if (selectEl) {
+          selectEl.addEventListener('change', () => {
+            if (!metadata.findings) metadata.findings = {};
+            if (selectEl.value) {
+              metadata.findings[findingName] = selectEl.value;
+            } else {
+              delete metadata.findings[findingName];
+            }
+          });
+        }
+      });
+
+      // Grade select
+      const gradeSelect = popup.querySelector('#grade-select') as HTMLSelectElement;
+      if (gradeSelect) {
+        gradeSelect.addEventListener('change', () => {
+          (metadata as any).grade = gradeSelect.value;
+        });
+      }
+
+      // Notes textarea
+      const notesTextarea = popup.querySelector('#notes-textarea') as HTMLTextAreaElement;
+      if (notesTextarea) {
+        notesTextarea.addEventListener('input', () => {
+          metadata.notes = notesTextarea.value;
+        });
+      }
+
+      // Save/Create button
+      const saveBtn = popup.querySelector('.save-btn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          if (isNew) {
+            this.createAnnotationFromPopup(annotation, metadata);
+          } else {
+            this.savePopupChanges(annotation, metadata);
+          }
+          this.closeCustomPopup();
+        });
+      }
+
+      // Cancel button
+      const cancelBtn = popup.querySelector('.cancel-btn');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          this.annotorious.cancelSelected();
+          this.closeCustomPopup();
+        });
+      }
+
+      // Delete button
+      const deleteBtn = popup.querySelector('.delete-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+          if (confirm('Bu anotasyonu silmek istediğinize emin misiniz?')) {
+            this.deleteByAnnotation(annotation);
+            this.closeCustomPopup();
+          }
+        });
+      }
+    }
+
 
     private setupPopupEventHandlers(popup: HTMLElement, annotation: any, metadata: AnnotationData, isNew: boolean) {
       const typeSelect = popup.querySelector('#type-select') as HTMLSelectElement;
@@ -336,7 +756,7 @@ export class AnnotoriousIntegration {
         }
       }
     }
-  private createAnnotationFromPopup(selection: any, metadata: any) {
+  private createAnnotationFromPopup(selection: any, metadata: AnnotationData) {
     // Yeni anotasyon objesi oluştur
     const newAnnotation = {
       ...selection,
@@ -345,7 +765,7 @@ export class AnnotoriousIntegration {
         {
           type: 'TextualBody',
           purpose: 'tagging',
-          value: metadata.type
+          value: metadata.type || metadata.region || 'Unlabeled'
         }
       ]
     };
@@ -365,6 +785,33 @@ export class AnnotoriousIntegration {
         type: 'TextualBody',
         purpose: 'commenting',
         value: metadata.notes
+      });
+    }
+
+    // Dental labeling - Region ekle
+    if (metadata.region) {
+      newAnnotation.body.push({
+        type: 'TextualBody',
+        purpose: 'region',
+        value: metadata.region
+      });
+    }
+
+    // Dental labeling - SubRegion ekle
+    if (metadata.subRegion) {
+      newAnnotation.body.push({
+        type: 'TextualBody',
+        purpose: 'subRegion',
+        value: metadata.subRegion
+      });
+    }
+
+    // Dental labeling - Findings ekle (JSON olarak)
+    if (metadata.findings && Object.keys(metadata.findings).length > 0) {
+      newAnnotation.body.push({
+        type: 'TextualBody',
+        purpose: 'findings',
+        value: JSON.stringify(metadata.findings)
       });
     }
 
@@ -509,7 +956,13 @@ export class AnnotoriousIntegration {
 
     private closeCustomPopup() {
       const popups = document.querySelectorAll('.custom-annotation-popup');
-      popups.forEach(popup => popup.remove());
+      popups.forEach(popup => {
+        // Cleanup drag event listeners
+        if ((popup as any).__dragCleanup) {
+          (popup as any).__dragCleanup();
+        }
+        popup.remove();
+      });
     }
 
     private savePopupChanges(annotation: any, metadata: AnnotationData) {
@@ -574,6 +1027,26 @@ export class AnnotoriousIntegration {
           position: sticky;
           top: 0;
           z-index: 1;
+          cursor: move;
+          user-select: none;
+        }
+
+        .popup-header:active {
+          cursor: grabbing;
+        }
+
+        .popup-header .drag-indicator {
+          display: flex;
+          gap: 2px;
+          margin-right: 8px;
+          opacity: 0.4;
+        }
+
+        .popup-header .drag-indicator span {
+          width: 3px;
+          height: 3px;
+          background: #6b7280;
+          border-radius: 50%;
         }
 
         .popup-header h4 {
@@ -654,6 +1127,108 @@ export class AnnotoriousIntegration {
         .save-btn { background: #10b981; color: white; }
         .delete-btn { background: #ef4444; color: white; }
         .cancel-btn { background: #e5e7eb; color: #111827; }
+
+        /* Dental Popup Styles */
+        .popup-body.dental {
+          padding: 12px;
+          max-height: 70vh;
+          overflow-y: auto;
+        }
+
+        .popup-section-group {
+          margin-bottom: 12px;
+          padding: 10px;
+          background: #f8fafc;
+          border-radius: 6px;
+          border: 1px solid #e5e7eb;
+        }
+
+        .section-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sub-region-section {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px dashed #e5e7eb;
+        }
+
+        .radio-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .radio-label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #374151;
+          cursor: pointer;
+        }
+
+        .radio-label input[type="radio"] {
+          margin: 0;
+          cursor: pointer;
+        }
+
+        .radio-label.small {
+          font-size: 10px;
+        }
+
+        .findings-list {
+          max-height: 200px;
+          overflow-y: auto;
+        }
+
+        .finding-item {
+          padding: 8px;
+          margin-bottom: 6px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+        }
+
+        .finding-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .finding-checkbox input[type="checkbox"] {
+          margin: 0;
+          cursor: pointer;
+        }
+
+        .finding-name {
+          flex: 1;
+        }
+
+        .finding-options {
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px dashed #e5e7eb;
+        }
+
+        .finding-options.boolean-options {
+          display: flex;
+          gap: 12px;
+        }
+
+        .finding-options .popup-select.small {
+          padding: 4px 6px;
+          font-size: 11px;
+        }
       `;
 
       document.head.appendChild(style);
@@ -733,7 +1308,7 @@ export class AnnotoriousIntegration {
       next: (annotations) => {
         console.log('📥 Loading existing annotations:', annotations.length);
 
-        const annotoriousFormat = annotations.map(ann => {
+        const annotoriousFormat = annotations.map((ann: any) => {
           const annotationData = ann.annotation;
 
           // Add database ID
@@ -741,24 +1316,38 @@ export class AnnotoriousIntegration {
             annotationData.databaseId = ann.databaseId;
           }
 
-          // Extract metadata and store in our map
+          // Extract metadata and store in our map - including dental labeling fields
           const metadata: AnnotationData = {
             id: annotationData.id || String(ann.databaseId),
             databaseId: ann.databaseId,
             type: this.extractAnnotationType(annotationData),
             creator: ann.creator || 'Unknown',
-            notes: this.extractAnnotationNotes(annotationData),
+            notes: ann.notes || this.extractAnnotationNotes(annotationData),
             color: this.extractAnnotationColor(annotationData),
             created: ann.created ? new Date(ann.created) : new Date(),
             updated: ann.updated ? new Date(ann.updated) : undefined,
             geometry: annotationData,
-            layerType: this.extractAnnotationType(annotationData)
+            layerType: this.extractAnnotationType(annotationData),
+            // Dental labeling fields from backend
+            region: ann.region || '',
+            subRegion: ann.subRegion || '',
+            findings: ann.findings || {},
+            grade: ann.grade || '0'
           };
+
+          console.log('📋 Loaded annotation metadata:', {
+            id: metadata.id,
+            region: metadata.region,
+            subRegion: metadata.subRegion,
+            findings: metadata.findings,
+            grade: metadata.grade,
+            notes: metadata.notes
+          });
 
           this.annotationsMap.set(metadata.id, metadata);
 
           // Apply layer color if exists
-          const layerColor = this.layerColors.get(metadata.type);
+          const layerColor = this.layerColors.get(metadata.type) || this.layerColors.get(metadata.region || '');
           if (layerColor) {
             this.applyColorToAnnotation(annotationData, layerColor);
           }
@@ -1401,14 +1990,28 @@ export class AnnotoriousIntegration {
       hasSelector: !!annotation.target?.selector,
       selectorType: annotation.target?.selector?.type,
       selectorValue: annotation.target?.selector?.value?.substring?.(0, 100) || annotation.target?.selector?.value,
-      body: annotation.body
+      body: annotation.body,
+      // Dental labeling fields
+      region: metadata.region,
+      subRegion: metadata.subRegion,
+      findings: metadata.findings,
+      grade: metadata.grade,
+      notes: metadata.notes
     });
 
-    const annotationEntity = {
+    const annotationEntity: any = {
       creator: metadata.creator,
-      type: metadata.type,
-      geometry: JSON.stringify(annotation)
+      type: metadata.type || metadata.region || 'Unlabeled',
+      geometry: JSON.stringify(annotation),
+      // Dental labeling fields
+      region: metadata.region || null,
+      subRegion: metadata.subRegion || null,
+      findings: metadata.findings ? JSON.stringify(metadata.findings) : null,
+      grade: metadata.grade || null,
+      notes: metadata.notes || null
     };
+
+    console.log('📤 Sending to backend:', annotationEntity);
 
     this.annotationService.saveAnnotation(this.imageId.toString(), annotationEntity).subscribe({
       next: (result) => {
@@ -1437,10 +2040,17 @@ export class AnnotoriousIntegration {
 
     const annotationEntity = {
       creator: metadata.creator,
-      type: metadata.type,
-      notes: metadata.notes,
-      geometry: JSON.stringify(annotation)
+      type: metadata.type || metadata.region || 'Unlabeled',
+      geometry: JSON.stringify(annotation),
+      // Dental labeling fields
+      region: metadata.region || null,
+      subRegion: metadata.subRegion || null,
+      findings: metadata.findings ? JSON.stringify(metadata.findings) : null,
+      grade: metadata.grade || null,
+      notes: metadata.notes || null
     };
+
+    console.log('📤 Updating annotation in backend:', annotationEntity);
 
     this.annotationService.updateAnnotation(this.imageId, annotation.databaseId, annotationEntity).subscribe({
       next: (result) => {
@@ -1634,9 +2244,9 @@ export class AnnotoriousIntegration {
     }
 
     console.log('🔧 Annotorious Configuration:');
-    console.log('- Drawing enabled:', this.annotorious.getDrawingEnabled?.());
-    console.log('- Current tool:', this.annotorious.getDrawingTool?.());
-    console.log('- Annotation count:', this.annotorious.getAnnotations?.().length);
+    console.log('- Drawing enabled:', this.annotorious?.getDrawingEnabled?.());
+    console.log('- Current tool:', this.annotorious?.getDrawingTool?.());
+    console.log('- Annotation count:', this.annotorious?.getAnnotations?.()?.length);
 
     // Check if widgets are properly registered
     try {

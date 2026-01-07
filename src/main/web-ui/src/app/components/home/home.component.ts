@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { interval, Subject, switchMap, takeUntil, startWith } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
@@ -50,6 +50,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   currentFilter: string = 'all';
   currentSort: string = 'date-desc';
   allImages: ImageOverview[] = []; // Orijinal liste
+
+  // User menu dropdown
+  showUserMenu = false;
 
   // destroy sinyali
   private destroy$ = new Subject<void>();
@@ -324,7 +327,23 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   /** Şifre değiştirme modalını aç */
   openChangePasswordModal(): void {
+    this.showUserMenu = false;
     this.changePasswordModal.open();
+  }
+
+  /** User menu toggle */
+  toggleUserMenu(): void {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  /** Dışarı tıklandığında user menu'yü kapat */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const userDropdown = target.closest('.user-dropdown');
+    if (!userDropdown && this.showUserMenu) {
+      this.showUserMenu = false;
+    }
   }
 
   /** Liste yenileme */

@@ -203,6 +203,12 @@ import {
             if (this.anno && projects[0].gradeLevel) {
               this.anno.setGradeLevel(projects[0].gradeLevel);
             }
+            // Set project settings for showing/hiding fields
+            if (this.anno) {
+              const showGrade = projects[0].showGrade !== false; // default true
+              const showNotes = projects[0].showNotes !== false; // default true
+              this.anno.setProjectSettings(showGrade, showNotes);
+            }
             this.loadProjectLabels(projects[0].id);
           } else {
             // No project assigned - show warning
@@ -231,7 +237,10 @@ import {
               visible: true,
               color: label.color,
               count: 0,
-              type: label.name
+              type: label.name,
+              labelType: label.labelType,
+              inputType: label.inputType,
+              options: label.options
             }));
             console.log('Loaded', labels.length, 'labels from database for project', projectId);
           } else {
@@ -253,14 +262,17 @@ import {
 
     updateTagVocab(): void {
       this.tagVocabInput = this.annotationLayers.map(l => l.name).join(',');
-      // Update annotorious integration with new labels if needed
+      // Update annotorious integration with new labels including hierarchical data
       if (this.anno) {
         this.anno.updateTagVocab(this.annotationLayers.map(l => ({
           id: l.id,
           name: l.name,
           type: l.type,
           visible: l.visible,
-          color: l.color
+          color: l.color,
+          labelType: (l as any).labelType,
+          inputType: (l as any).inputType,
+          options: (l as any).options
         })));
       }
     }
@@ -272,7 +284,7 @@ import {
     ngOnDestroy(): void {
        this.cleanup();
         if (this.anno) {
-          this.anno.destroy();
+          (this.anno as any).destroy();
         }
     }
 
@@ -412,7 +424,7 @@ import {
     if (confirm(`${count} anotasyonu silmek istediğinize emin misiniz?`)) {
       // Fire persistent deletes; UI will sync from integration stream
       Array.from(this.selectedAnnotationIds).forEach(id => {
-        this.anno!.deleteAnnotationById(id);
+        (this.anno as any).deleteAnnotationById(id);
       });
 
       this.addActivity('delete', `${count} anotasyon için silme isteği gönderildi`);
@@ -433,7 +445,7 @@ import {
     Array.from(this.selectedAnnotationIds).forEach(id => {
       const ann = this.annotations.find(a => a.id === id);
       if (ann) {
-        this.anno.updateAnnotationProperties(id, { type: newType });
+        (this.anno as any).updateAnnotationProperties(id, { type: newType });
         ann.type = newType;
       }
     });
@@ -872,11 +884,11 @@ import {
 
       // ⬇️ Annotorious'u burada başlat
       try {
-        await this.anno.initAnnotorious(this.viewer, this.imageId, this.annotationService);
+        await (this.anno as any).initAnnotorious(this.viewer, this.imageId, this.annotationService);
         console.log('✅ Annotorious hazır');
 
         // Her zaman seçim modunda başla (çizim kapalı)
-        this.anno.setTool(null);
+        (this.anno as any).setTool(null);
         this.currentTool = null;
         console.log('✅ Başlangıç aracı: Seçim modu');
       } catch (e) {
@@ -892,12 +904,12 @@ import {
 
     setTool(tool: string | null) {
       this.currentTool = tool;
-      this.anno.setTool(tool);
+      (this.anno as any).setTool(tool);
     }
 
     exportAnnotations(): void {
       if (this.anno) {
-        const annotoriousData = this.anno.exportAnnotations();
+        const annotoriousData = (this.anno as any).exportAnnotations();
         const exportData = {
           imageId: this.imageId,
           timestamp: new Date().toISOString(),
@@ -935,7 +947,7 @@ import {
           next: () => {
             // Clear Annotorious and local state
             if (this.anno) {
-              this.anno.clearAnnotations();
+              (this.anno as any).clearAnnotations();
             }
             this.annotations = [];
             this.selectedAnnotation = null;
@@ -958,7 +970,7 @@ import {
         .split(',')
         .map(s => s.trim())
         .filter(Boolean);
-      this.anno.setTagVocabulary(list);
+      (this.anno as any).setTagVocabulary(list);
       console.log('✅ TAG vocabulary güncellendi:', list);
     }
 
@@ -991,7 +1003,7 @@ import {
     refreshAnnotations(): void {
       // Get annotations from Annotorious instead of backend
       if (this.anno) {
-        const annotations = this.anno.getAnnotations();
+        const annotations = (this.anno as any).getAnnotations();
         this.annotations = annotations;
         this.updateLayerCounts();
         this.calculateStats();
@@ -1004,13 +1016,13 @@ import {
 
      // Highlight annotation in viewer
      if (this.anno) {
-       this.anno.highlightAnnotation(annotation.id);
+       (this.anno as any).highlightAnnotation(annotation.id);
      }
    }
 
     zoomToAnnotation(annotation: AnnotationItem): void {
       if (this.anno) {
-        this.anno.zoomToAnnotation(annotation.id);
+        (this.anno as any).zoomToAnnotation(annotation.id);
       }
     }
 
@@ -1018,7 +1030,7 @@ import {
       if (confirm(`"${annotation.type}" anotasyonunu silmek istediğinize emin misiniz?`)) {
         if (this.anno) {
           // Trigger persistent delete; UI will update via annotationsChanged$ on success
-          this.anno.deleteAnnotationById(annotation.id);
+          (this.anno as any).deleteAnnotationById(annotation.id);
 
           // Do not mutate local state here; wait for integration emission
           if (this.selectedAnnotation?.id === annotation.id) {
@@ -1035,7 +1047,7 @@ import {
 
       // Use the fixed toggleLayerVisibility method
       if (this.anno) {
-        this.anno.toggleLayerVisibility(layer.type, layer.visible);
+        (this.anno as any).toggleLayerVisibility(layer.type, layer.visible);
       }
 
       this.addActivity('update', `${layer.name} katmanı ${layer.visible ? 'görünür' : 'gizli'} yapıldı`);
@@ -1049,7 +1061,7 @@ import {
 
         // Use the fixed method
         if (this.anno) {
-          this.anno.toggleLayerVisibility(layer.type, layer.visible);
+          (this.anno as any).toggleLayerVisibility(layer.type, layer.visible);
         }
       });
 
@@ -1062,7 +1074,7 @@ import {
 
       // Use the fixed updateLayerColor method
       if (this.anno) {
-        this.anno.updateLayerColor(layer.type, layer.color);
+        (this.anno as any).updateLayerColor(layer.type, layer.color);
       }
 
       this.addActivity('update', `${layer.name} katman rengi değiştirildi`);

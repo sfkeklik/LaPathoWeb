@@ -25,6 +25,8 @@ public class ImageService {
     @Autowired private ImageRepository imageRepository;
     @Autowired private TileService tileService;
     @Autowired private ApplicationEventPublisher events;
+    @Autowired private AnnotationRepository annotationRepository;
+    @Autowired private com.cvlab.spring.LaPatho.project.repository.ProjectRepository projectRepository;
 
     // Desteklenen formatların listesi
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(
@@ -223,10 +225,73 @@ public class ImageService {
 
     @Transactional
     public void delete(Long id) {
-        if (!imageRepository.existsById(id)) {
-            throw new EntityNotFoundException("Image not found");
+        ImageEntity image = imageRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Image not found with id: " + id));
+
+        log.info("Görüntü silme işlemi başlatıldı: id={}, name={}", id, image.getName());
+
+        // 1. Görüntüye ait tüm annotation'ları sil
+        List<AnnotationEntity> annotations = annotationRepository.findByImageId(id);
+        if (!annotations.isEmpty()) {
+            log.info("Silinecek annotation sayısı: {}", annotations.size());
+            annotationRepository.deleteAll(annotations);
+            log.info("Annotation'lar silindi");
         }
-        imageRepository.deleteById(id);
+
+        // 2. Görüntüyü tüm projelerden kaldır (project_images ara tablosu)
+        List<com.cvlab.spring.LaPatho.project.entity.Project> projects = projectRepository.findAll();
+        for (com.cvlab.spring.LaPatho.project.entity.Project project : projects) {
+            if (project.getImages().removeIf(img -> img.getId().equals(id))) {
+                projectRepository.save(project);
+                log.info("Görüntü projeden kaldırıldı: projectId={}", project.getId());
+            }
+        }
+
+        // 3. Disk'teki dosyaları temizle
+        cleanupImageFiles(image);
+
+        // 4. Veritabanından görüntüyü sil
+        imageRepository.delete(image);
+        log.info("Görüntü başarıyla silindi: id={}", id);
+    }
+
+    /**
+     * Görüntüye ait disk dosyalarını temizler (upload dosyası ve tile'lar)
+     */
+    private void cleanupImageFiles(ImageEntity image) {
+        // Upload dosyasını sil
+        if (image.getPath() != null) {
+            try {
+                Path uploadPath = Paths.get(image.getPath());
+                if (Files.exists(uploadPath)) {
+                    Files.delete(uploadPath);
+                    log.info("Upload dosyası silindi: {}", image.getPath());
+                }
+            } catch (IOException e) {
+                log.warn("Upload dosyası silinemedi: {} - {}", image.getPath(), e.getMessage());
+            }
+        }
+
+        // Tile klasörünü sil
+        try {
+            Path tilesDir = Paths.get("tiles", image.getId().toString());
+            if (Files.exists(tilesDir)) {
+                // Klasördeki tüm dosyaları recursive olarak sil
+                try (var stream = Files.walk(tilesDir)) {
+                    stream.sorted(java.util.Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                log.warn("Tile dosyası silinemedi: {} - {}", path, e.getMessage());
+                            }
+                        });
+                }
+                log.info("Tile klasörü silindi: {}", tilesDir);
+            }
+        } catch (IOException e) {
+            log.warn("Tile klasörü temizlenemedi: {}", e.getMessage());
+        }
     }
 
     // Async tile üretimi

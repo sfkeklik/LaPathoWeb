@@ -18,9 +18,36 @@ public class LabelController {
 
     private final LabelService labelService;
 
+    /**
+     * Projeye ait tüm etiketleri düz liste olarak getir (eski uyumluluk)
+     */
     @GetMapping
     public ResponseEntity<List<LabelDTO>> getLabelsForProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(labelService.getLabelsForProject(projectId));
+    }
+
+    /**
+     * Projeye ait etiketleri hiyerarşik yapıda getir
+     */
+    @GetMapping("/hierarchical")
+    public ResponseEntity<List<LabelDTO>> getHierarchicalLabels(@PathVariable Long projectId) {
+        return ResponseEntity.ok(labelService.getHierarchicalLabelsForProject(projectId));
+    }
+
+    /**
+     * Sadece bölge (REGION) etiketlerini getir
+     */
+    @GetMapping("/regions")
+    public ResponseEntity<List<LabelDTO>> getRegionLabels(@PathVariable Long projectId) {
+        return ResponseEntity.ok(labelService.getRegionLabels(projectId));
+    }
+
+    /**
+     * Sadece bulgu (FINDING) etiketlerini getir
+     */
+    @GetMapping("/findings")
+    public ResponseEntity<List<LabelDTO>> getFindingLabels(@PathVariable Long projectId) {
+        return ResponseEntity.ok(labelService.getFindingLabels(projectId));
     }
 
     @GetMapping("/{labelId}")
@@ -54,10 +81,22 @@ public class LabelController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Varsayılan patoloji etiketleri oluştur
+     */
     @PostMapping("/defaults")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<LabelDTO>> createDefaultLabels(@PathVariable Long projectId) {
         return ResponseEntity.ok(labelService.createDefaultLabels(projectId));
+    }
+
+    /**
+     * Dental radyografi için hazır şablon oluştur (10 bölge + 11 bulgu)
+     */
+    @PostMapping("/dental-template")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<LabelDTO>> createDentalLabels(@PathVariable Long projectId) {
+        return ResponseEntity.ok(labelService.createDentalLabels(projectId));
     }
 }
 

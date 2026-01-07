@@ -4,13 +4,12 @@
     <div class="header-content">
       <div class="header-left">
         <div class="logo">
-          <i class="fas fa-tooth"></i>
           <h1>🦷 {{ 'home.title' | translate }}</h1>
         </div>
         <p class="subtitle">{{ 'home.subtitle' | translate }}</p>
       </div>
 
-      <div class="header-right">
+      <div class="header-center">
         <div class="stats-card">
           <i class="fas fa-images"></i>
           <div class="stats-info">
@@ -19,32 +18,62 @@
           </div>
         </div>
 
-        <div class="stats-card">
+        <div class="stats-card success">
           <i class="fas fa-check-circle"></i>
           <div class="stats-info">
             <span class="stats-value">{{ readyImagesCount }}</span>
             <span class="stats-label">{{ 'home.readyImages' | translate }}</span>
           </div>
         </div>
+      </div>
 
+      <div class="header-right">
         <!-- Language Switcher -->
         <app-language-switcher></app-language-switcher>
 
-        <!-- User Info & Logout -->
-        <div class="user-menu">
-          <span class="user-name">
-            <i class="fas fa-user-md"></i>
-            {{ authService.getCurrentUser()?.firstName }} {{ authService.getCurrentUser()?.lastName }}
-          </span>
-          <a *ngIf="authService.isAdmin()" routerLink="/admin" class="btn-admin">
-            <i class="fas fa-cog"></i> {{ 'admin.title' | translate }}
-          </a>
-          <button class="btn-change-password" (click)="openChangePasswordModal()">
-            <i class="fas fa-key"></i> {{ 'auth.changePassword' | translate }}
+        <!-- User Dropdown Menu -->
+        <div class="user-dropdown">
+          <button class="user-dropdown-trigger" (click)="toggleUserMenu()">
+            <div class="user-avatar">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="user-info-text">
+              <span class="user-name">{{ authService.getCurrentUser()?.firstName }} {{ authService.getCurrentUser()?.lastName }}</span>
+              <span class="user-role">{{ authService.isAdmin() ? 'Admin' : 'Doktor' }}</span>
+            </div>
+            <i class="fas fa-chevron-down dropdown-icon" [class.rotated]="showUserMenu"></i>
           </button>
-          <button class="btn-logout" (click)="authService.logout()">
-            <i class="fas fa-sign-out-alt"></i> {{ 'auth.logout' | translate }}
-          </button>
+
+          <div class="user-dropdown-menu" *ngIf="showUserMenu" (click)="$event.stopPropagation()">
+            <div class="dropdown-header">
+              <div class="dropdown-avatar">
+                <i class="fas fa-user-md"></i>
+              </div>
+              <div class="dropdown-user-info">
+                <span class="dropdown-name">{{ authService.getCurrentUser()?.firstName }} {{ authService.getCurrentUser()?.lastName }}</span>
+                <span class="dropdown-email">{{ authService.getCurrentUser()?.email }}</span>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <a *ngIf="authService.isAdmin()" routerLink="/admin" class="dropdown-item">
+              <i class="fas fa-cog"></i>
+              <span>{{ 'admin.title' | translate }}</span>
+            </a>
+
+            <button class="dropdown-item" (click)="openChangePasswordModal()">
+              <i class="fas fa-key"></i>
+              <span>{{ 'auth.changePassword' | translate }}</span>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item danger" (click)="authService.logout()">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>{{ 'auth.logout' | translate }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -170,12 +199,14 @@
 
           <!-- Quick Actions - Only visible for ADMIN -->
           <div class="quick-actions" *ngIf="img.status === 'READY' && authService.isAdmin()">
+            <!-- Edit button temporarily hidden
             <button
               class="action-btn"
               (click)="editImage(img, $event)"
               [title]="'common.edit' | translate">
               <i class="fas fa-edit"></i>
             </button>
+            -->
             <button
               class="action-btn delete"
               (click)="deleteImage(img, $event)"

@@ -34,6 +34,22 @@ public class AnnotationEntity {
     @Column(columnDefinition = "TEXT")
     private String geometry;
 
+    // Dental labeling fields
+    @Column(name = "region")
+    private String region;
+
+    @Column(name = "sub_region")
+    private String subRegion;
+
+    @Column(name = "findings", columnDefinition = "TEXT")
+    private String findings; // JSON format: {"Osteolizis": "Extended", "Sekestr": "Serbest"}
+
+    @Column(name = "grade")
+    private String grade;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     private Instant created;
     private Instant updated;
 

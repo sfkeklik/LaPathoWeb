@@ -124,6 +124,14 @@
     <!-- Spacer to push right section to the end -->
     <div class="toolbar-spacer"></div>
 
+    <!-- Image Name Display -->
+    <div class="toolbar-section image-name-section" *ngIf="imageMetadata">
+      <span class="image-name" [title]="imageMetadata.name">
+        <i class="fas fa-image"></i>
+        {{ imageMetadata.name | slice:0:30 }}{{ imageMetadata.name && imageMetadata.name.length > 30 ? '...' : '' }}
+      </span>
+    </div>
+
     <!-- Right Section: Home and Logout -->
     <div class="toolbar-section toolbar-right">
       <button class="toolbar-btn" (click)="navigateHome()" [title]="'admin.home' | translate">

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,19 +18,51 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
     <div class="admin-container">
       <header class="admin-header">
         <div class="header-left">
-          <h1>🦷 {{ 'admin.title' | translate }}</h1>
+          <a routerLink="/" class="logo-link">
+            <h1>🦷 {{ 'admin.title' | translate }}</h1>
+          </a>
           <span class="subtitle">{{ 'admin.subtitle' | translate }}</span>
         </div>
         <div class="header-right">
           <app-language-switcher></app-language-switcher>
-          <a routerLink="/" class="btn-home">
-            <i class="fas fa-home"></i> {{ 'admin.home' | translate }}
+
+          <a routerLink="/" class="btn-nav">
+            <i class="fas fa-home"></i>
+            <span class="btn-text">{{ 'admin.home' | translate }}</span>
           </a>
-          <a routerLink="/" class="btn-viewer">
-            <i class="fas fa-images"></i> {{ 'admin.goToImageViewer' | translate }}
-          </a>
-          <span class="user-info">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
-          <button class="btn-logout" (click)="logout()">{{ 'auth.logout' | translate }}</button>
+
+          <!-- User Dropdown Menu -->
+          <div class="user-dropdown">
+            <button class="user-dropdown-trigger" (click)="toggleUserMenu()">
+              <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <div class="user-info-text">
+                <span class="user-name">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
+                <span class="user-role">Admin</span>
+              </div>
+              <i class="fas fa-chevron-down dropdown-icon" [class.rotated]="showUserMenu"></i>
+            </button>
+
+            <div class="user-dropdown-menu" *ngIf="showUserMenu" (click)="$event.stopPropagation()">
+              <div class="dropdown-header">
+                <div class="dropdown-avatar">
+                  <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="dropdown-user-info">
+                  <span class="dropdown-name">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
+                  <span class="dropdown-email">{{ currentUser?.email }}</span>
+                </div>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <button class="dropdown-item danger" (click)="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>{{ 'auth.logout' | translate }}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -408,65 +440,280 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
       <!-- Labels Modal -->
       <div class="modal-overlay" *ngIf="showLabelsModal" (click)="showLabelsModal = false">
-        <div class="modal modal-large" (click)="$event.stopPropagation()">
-          <h2>🏷️ {{ 'admin.manageLabels' | translate }} - {{ selectedProjectForLabels?.name }}</h2>
-
-          <!-- Grade Level Section -->
-          <div class="grade-level-section">
-            <h4>📊 {{ 'admin.gradeLevel' | translate }}</h4>
-            <div class="grade-level-control">
-              <select [(ngModel)]="selectedProjectGradeLevel" (change)="updateProjectGradeLevel()">
-                <option *ngFor="let level of gradeLevelOptions" [value]="level">{{ level }}</option>
-              </select>
-              <small class="form-hint">{{ 'admin.gradeLevelHint' | translate }}</small>
+        <div class="modal modal-labels" (click)="$event.stopPropagation()">
+          <!-- Modal Header -->
+          <div class="modal-header-custom">
+            <div class="modal-title-section">
+              <h2>🏷️ {{ 'admin.manageLabels' | translate }}</h2>
+              <span class="project-badge">{{ selectedProjectForLabels?.name }}</span>
             </div>
+            <button class="modal-close-btn" (click)="showLabelsModal = false">×</button>
           </div>
 
-          <div class="labels-section">
-            <div class="labels-list">
-              <div class="label-item" *ngFor="let label of projectLabels">
-                <div class="label-color" [style.background-color]="label.color"></div>
-                <div class="label-info">
-                  <strong>{{ label.name }}</strong>
-                  <span *ngIf="label.description">{{ label.description }}</span>
+          <!-- Tab Navigation -->
+          <div class="labels-tabs">
+            <button class="tab-btn" [class.active]="labelsModalTab === 'labels'" (click)="labelsModalTab = 'labels'">
+              <i class="tab-icon">🏷️</i>
+              <span>Etiketler</span>
+              <span class="tab-count">{{ projectLabels.length }}</span>
+            </button>
+            <button class="tab-btn" [class.active]="labelsModalTab === 'settings'" (click)="labelsModalTab = 'settings'">
+              <i class="tab-icon">⚙️</i>
+              <span>Ayarlar</span>
+            </button>
+          </div>
+
+          <!-- Tab Content: Labels -->
+          <div class="tab-content" *ngIf="labelsModalTab === 'labels'">
+            <!-- Quick Template Buttons -->
+            <div class="template-section">
+              <div class="template-header">
+                <span class="section-label">Hızlı Şablonlar</span>
+              </div>
+              <div class="template-buttons-row">
+                <button class="btn-template-modern btn-dental" (click)="createDentalLabels()" [disabled]="loadingLabels">
+                  <span class="template-icon">🦷</span>
+                  <span class="template-text">
+                    <strong>Dental Şablonu</strong>
+                    <small>10 bölge + 11 bulgu</small>
+                  </span>
+                </button>
+                <button class="btn-template-modern" (click)="createDefaultLabels()" [disabled]="loadingLabels">
+                  <span class="template-icon">🔬</span>
+                  <span class="template-text">
+                    <strong>Varsayılan Şablon</strong>
+                    <small>Temel etiketler</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Labels Content -->
+            <div class="labels-content">
+              <!-- Labels List -->
+              <div class="labels-panel">
+                <div class="panel-header">
+                  <h4>Mevcut Etiketler</h4>
+                  <span class="label-count-badge">{{ projectLabels.length }} etiket</span>
                 </div>
-                <div class="label-actions">
-                  <button class="btn-small" (click)="editLabel(label)">{{ 'common.edit' | translate }}</button>
-                  <button class="btn-small btn-danger" (click)="deleteLabel(label)">{{ 'common.delete' | translate }}</button>
+
+                <div class="labels-scroll-area">
+                  <!-- Region Labels -->
+                  <div class="label-group" *ngIf="getRegionLabels().length > 0">
+                    <div class="group-header">
+                      <span class="group-icon">📍</span>
+                      <span class="group-title">Bölgeler</span>
+                      <span class="group-count">{{ getRegionLabels().length }}</span>
+                    </div>
+                    <div class="label-card" *ngFor="let label of getRegionLabels()" [class.editing]="editingLabel?.id === label.id">
+                      <div class="label-color-indicator" [style.background-color]="label.color"></div>
+                      <div class="label-content">
+                        <div class="label-main-info">
+                          <strong class="label-name">{{ label.name }}</strong>
+                          <span class="label-badge region">BÖLGE</span>
+                        </div>
+                        <div class="label-meta" *ngIf="label.options && label.options.length > 0">
+                          <span class="meta-label">Alt seçenekler:</span>
+                          <span class="meta-value">{{ label.options.join(', ') }}</span>
+                        </div>
+                      </div>
+                      <div class="label-actions-compact">
+                        <button class="btn-icon" (click)="editLabel(label)" title="Düzenle">
+                          <i>✏️</i>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" (click)="deleteLabel(label)" title="Sil">
+                          <i>🗑️</i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Finding Labels -->
+                  <div class="label-group" *ngIf="getFindingLabels().length > 0">
+                    <div class="group-header">
+                      <span class="group-icon">🔬</span>
+                      <span class="group-title">Radyografik Bulgular</span>
+                      <span class="group-count">{{ getFindingLabels().length }}</span>
+                    </div>
+                    <div class="label-card" *ngFor="let label of getFindingLabels()" [class.editing]="editingLabel?.id === label.id">
+                      <div class="label-color-indicator" [style.background-color]="label.color"></div>
+                      <div class="label-content">
+                        <div class="label-main-info">
+                          <strong class="label-name">{{ label.name }}</strong>
+                          <span class="label-badge finding">{{ label.inputType === 'SELECT' ? 'SEÇİM' : label.inputType === 'BOOLEAN' ? 'VAR/YOK' : 'BULGU' }}</span>
+                        </div>
+                        <div class="label-meta" *ngIf="label.options && label.options.length > 0">
+                          <span class="meta-label">Seçenekler:</span>
+                          <span class="meta-value">{{ label.options.join(', ') }}</span>
+                        </div>
+                      </div>
+                      <div class="label-actions-compact">
+                        <button class="btn-icon" (click)="editLabel(label)" title="Düzenle">
+                          <i>✏️</i>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" (click)="deleteLabel(label)" title="Sil">
+                          <i>🗑️</i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Simple Labels -->
+                  <div class="label-group" *ngIf="getSimpleLabels().length > 0">
+                    <div class="group-header">
+                      <span class="group-icon">🏷️</span>
+                      <span class="group-title">Basit Etiketler</span>
+                      <span class="group-count">{{ getSimpleLabels().length }}</span>
+                    </div>
+                    <div class="label-card" *ngFor="let label of getSimpleLabels()" [class.editing]="editingLabel?.id === label.id">
+                      <div class="label-color-indicator" [style.background-color]="label.color"></div>
+                      <div class="label-content">
+                        <div class="label-main-info">
+                          <strong class="label-name">{{ label.name }}</strong>
+                          <span class="label-badge simple">BASİT</span>
+                        </div>
+                        <div class="label-meta" *ngIf="label.description">
+                          <span class="meta-value">{{ label.description }}</span>
+                        </div>
+                      </div>
+                      <div class="label-actions-compact">
+                        <button class="btn-icon" (click)="editLabel(label)" title="Düzenle">
+                          <i>✏️</i>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" (click)="deleteLabel(label)" title="Sil">
+                          <i>🗑️</i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="projectLabels.length === 0" class="empty-state">
+                    <div class="empty-icon">🏷️</div>
+                    <h4>Henüz etiket yok</h4>
+                    <p>Yukarıdaki şablonlardan birini kullanarak hızlıca etiket ekleyebilir veya sağdaki formdan manuel oluşturabilirsiniz.</p>
+                  </div>
                 </div>
               </div>
 
-              <div *ngIf="projectLabels.length === 0" class="no-labels">
-                <p>{{ 'admin.noLabels' | translate }}</p>
-                <button class="btn-primary" (click)="createDefaultLabels()">{{ 'admin.createDefaultLabels' | translate }}</button>
-              </div>
-            </div>
+              <!-- Add/Edit Label Form -->
+              <div class="form-panel" [class.editing-mode]="editingLabel">
+                <div class="panel-header">
+                  <h4>{{ editingLabel ? '✏️ Etiket Düzenle' : '➕ Yeni Etiket' }}</h4>
+                </div>
 
-            <div class="add-label-form">
-              <h4>{{ editingLabel ? ('admin.editLabel' | translate) : ('admin.addNewLabel' | translate) }}</h4>
-              <form (ngSubmit)="saveLabel()">
-                <div class="form-group">
-                  <label>{{ 'admin.labelName' | translate }}</label>
-                  <input type="text" [(ngModel)]="newLabel.name" name="labelName" required />
-                </div>
-                <div class="form-group">
-                  <label>{{ 'annotator.color' | translate }}</label>
-                  <input type="color" [(ngModel)]="newLabel.color" name="labelColor" />
-                </div>
-                <div class="form-group">
-                  <label>{{ 'common.description' | translate }} ({{ 'common.optional' | translate }})</label>
-                  <input type="text" [(ngModel)]="newLabel.description" name="labelDescription" />
-                </div>
-                <div class="form-actions">
-                  <button type="button" class="btn-secondary" *ngIf="editingLabel" (click)="cancelEditLabel()">{{ 'common.cancel' | translate }}</button>
-                  <button type="submit" class="btn-primary">{{ editingLabel ? ('common.update' | translate) : ('admin.addLabel' | translate) }}</button>
-                </div>
-              </form>
+                <form class="label-form" (ngSubmit)="saveLabel()">
+                  <div class="form-group">
+                    <label class="form-label">Etiket Adı <span class="required">*</span></label>
+                    <input type="text" class="form-input" [(ngModel)]="newLabel.name" name="labelName" required placeholder="Örn: Mandibula" />
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label class="form-label">Renk</label>
+                      <div class="color-picker-wrapper">
+                        <input type="color" [(ngModel)]="newLabel.color" name="labelColor" class="color-input" />
+                        <span class="color-preview" [style.background-color]="newLabel.color"></span>
+                        <span class="color-value">{{ newLabel.color }}</span>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Etiket Türü</label>
+                      <select class="form-select" [(ngModel)]="newLabel.labelType" name="labelType">
+                        <option value="SIMPLE">Basit</option>
+                        <option value="REGION">Bölge</option>
+                        <option value="FINDING">Bulgu</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group" *ngIf="newLabel.labelType !== 'SIMPLE'">
+                    <label class="form-label">Giriş Türü</label>
+                    <select class="form-select" [(ngModel)]="newLabel.inputType" name="inputType">
+                      <option value="NONE">Yok</option>
+                      <option value="SELECT">Seçim (Dropdown)</option>
+                      <option value="BOOLEAN">Var/Yok</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" *ngIf="newLabel.inputType === 'SELECT' || newLabel.inputType === 'BOOLEAN'">
+                    <label class="form-label">Alt Seçenekler</label>
+                    <input type="text" class="form-input" [(ngModel)]="newLabelOptionsText" name="labelOptions"
+                           placeholder="Örn: Localized, Extended, Advanced" />
+                    <small class="form-hint">Virgülle ayırarak birden fazla seçenek girin</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Açıklama <span class="optional">(opsiyonel)</span></label>
+                    <input type="text" class="form-input" [(ngModel)]="newLabel.description" name="labelDescription" placeholder="Kısa bir açıklama..." />
+                  </div>
+
+                  <div class="form-actions-sticky">
+                    <button type="button" class="btn-cancel" *ngIf="editingLabel" (click)="cancelEditLabel()">İptal</button>
+                    <button type="submit" class="btn-submit">
+                      {{ editingLabel ? 'Güncelle' : 'Ekle' }}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button type="button" class="btn-secondary" (click)="showLabelsModal = false">{{ 'common.close' | translate }}</button>
+          <!-- Tab Content: Settings -->
+          <div class="tab-content" *ngIf="labelsModalTab === 'settings'">
+            <div class="settings-grid">
+              <!-- Grade Level Setting -->
+              <div class="setting-card">
+                <div class="setting-icon">📊</div>
+                <div class="setting-content">
+                  <h4>Grade Seviyesi</h4>
+                  <p>Anotasyonlarda kullanılacak maksimum grade değeri</p>
+                  <div class="setting-control">
+                    <select class="form-select" [(ngModel)]="selectedProjectGradeLevel" (change)="updateProjectGradeLevel()">
+                      <option *ngFor="let level of gradeLevelOptions" [value]="level">{{ level }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Show Grade Toggle -->
+              <div class="setting-card">
+                <div class="setting-icon">🎯</div>
+                <div class="setting-content">
+                  <h4>Grade Alanını Göster</h4>
+                  <p>Anotasyon popup'ında grade seçeneğini göster/gizle</p>
+                  <div class="setting-control">
+                    <label class="toggle-switch">
+                      <input type="checkbox" [(ngModel)]="projectShowGrade" (change)="updateProjectSettings()">
+                      <span class="toggle-slider"></span>
+                      <span class="toggle-label">{{ projectShowGrade ? 'Açık' : 'Kapalı' }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Show Notes Toggle -->
+              <div class="setting-card">
+                <div class="setting-icon">📝</div>
+                <div class="setting-content">
+                  <h4>Notlar Alanını Göster</h4>
+                  <p>Anotasyon popup'ında not yazma alanını göster/gizle</p>
+                  <div class="setting-control">
+                    <label class="toggle-switch">
+                      <input type="checkbox" [(ngModel)]="projectShowNotes" (change)="updateProjectSettings()">
+                      <span class="toggle-slider"></span>
+                      <span class="toggle-label">{{ projectShowNotes ? 'Açık' : 'Kapalı' }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="modal-footer-custom">
+            <button type="button" class="btn-close-modal" (click)="showLabelsModal = false">Kapat</button>
           </div>
         </div>
       </div>
@@ -511,6 +758,216 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       display: flex;
       align-items: center;
       gap: 16px;
+    }
+
+    .logo-link {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo-link:hover h1 {
+      opacity: 0.9;
+    }
+
+    .btn-nav {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .btn-nav .btn-text {
+      display: inline;
+    }
+
+    @media (max-width: 768px) {
+      .btn-nav .btn-text {
+        display: none;
+      }
+    }
+
+    /* User Dropdown */
+    .user-dropdown {
+      position: relative;
+    }
+
+    .user-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: white;
+    }
+
+    .user-dropdown-trigger:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .user-info-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.2;
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-role {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .dropdown-icon {
+      font-size: 10px;
+      opacity: 0.8;
+      transition: transform 0.2s;
+    }
+
+    .dropdown-icon.rotated {
+      transform: rotate(180deg);
+    }
+
+    .user-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      min-width: 240px;
+      z-index: 1000;
+      overflow: hidden;
+      animation: dropdownFadeIn 0.2s ease;
+    }
+
+    @keyframes dropdownFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .dropdown-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .dropdown-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .dropdown-user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dropdown-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .dropdown-email {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      width: 100%;
+      border: none;
+      background: none;
+      color: #374151;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .dropdown-item:hover {
+      background: #f3f4f6;
+    }
+
+    .dropdown-item i {
+      width: 18px;
+      text-align: center;
+      color: #6b7280;
+    }
+
+    .dropdown-item.danger {
+      color: #dc2626;
+    }
+
+    .dropdown-item.danger i {
+      color: #dc2626;
+    }
+
+    .dropdown-item.danger:hover {
+      background: #fef2f2;
+    }
+
+    @media (max-width: 768px) {
+      .user-info-text {
+        display: none;
+      }
+
+      .user-dropdown-trigger {
+        padding: 6px;
+      }
     }
 
     .user-info {
@@ -1478,6 +1935,103 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       color: #666;
     }
 
+    .no-labels .hint {
+      font-size: 0.85rem;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    /* Template Buttons */
+    .template-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .btn-template {
+      padding: 12px 20px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-template:hover:not(:disabled) {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    .btn-template:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-template.btn-dental {
+      border-color: #17a2b8;
+      background: #e8f7fa;
+    }
+
+    .btn-template.btn-dental:hover:not(:disabled) {
+      background: #d4f1f7;
+      border-color: #138496;
+    }
+
+    /* Label Categories */
+    .label-category {
+      margin-bottom: 20px;
+    }
+
+    .label-category h5 {
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #eee;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .label-item.hierarchical {
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+    }
+
+    .label-type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .label-type-badge.region {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .label-type-badge.finding {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .label-options {
+      display: block;
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
     .add-label-form {
       background: #f9f9f9;
       border-radius: 8px;
@@ -1501,6 +2055,660 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
       gap: 8px;
       justify-content: flex-end;
     }
+
+    /* ===== NEW LABELS MODAL STYLES ===== */
+    .modal-labels {
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .modal-header-custom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .modal-title-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-title-section h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .project-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    .modal-close-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* Tabs */
+    .labels-tabs {
+      display: flex;
+      gap: 0;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #6b7280;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      background: white;
+    }
+
+    .tab-icon {
+      font-style: normal;
+    }
+
+    .tab-count {
+      background: #e5e7eb;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tab-btn.active .tab-count {
+      background: #667eea;
+      color: white;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    /* Template Section */
+    .template-section {
+      margin-bottom: 20px;
+    }
+
+    .template-header {
+      margin-bottom: 12px;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .template-buttons-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-template-modern {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border: 2px dashed #d1d5db;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-template-modern:hover:not(:disabled) {
+      border-color: #667eea;
+      background: #f5f3ff;
+    }
+
+    .btn-template-modern.btn-dental {
+      border-color: #0891b2;
+      background: #ecfeff;
+    }
+
+    .btn-template-modern.btn-dental:hover:not(:disabled) {
+      border-color: #0e7490;
+      background: #cffafe;
+    }
+
+    .btn-template-modern:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .template-icon {
+      font-size: 1.5rem;
+    }
+
+    .template-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .template-text strong {
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    .template-text small {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    /* Labels Content Grid */
+    .labels-content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .labels-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Labels Panel */
+    .labels-panel, .form-panel {
+      background: #f9fafb;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .panel-header h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .label-count-badge {
+      background: #e5e7eb;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .labels-scroll-area {
+      max-height: 350px;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    /* Label Groups */
+    .label-group {
+      margin-bottom: 16px;
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .group-icon {
+      font-size: 1rem;
+    }
+
+    .group-title {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .group-count {
+      background: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      color: #6b7280;
+    }
+
+    /* Label Cards */
+    .label-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      transition: all 0.2s;
+    }
+
+    .label-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    }
+
+    .label-card.editing {
+      border-color: #667eea;
+      background: #f5f3ff;
+    }
+
+    .label-color-indicator {
+      width: 12px;
+      height: 32px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .label-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .label-main-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .label-name {
+      font-size: 0.9rem;
+      color: #1f2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .label-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .label-badge.region {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .label-badge.finding {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .label-badge.simple {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+
+    .label-meta {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .meta-label {
+      margin-right: 4px;
+    }
+
+    .label-actions-compact {
+      display: flex;
+      gap: 4px;
+    }
+
+    .btn-icon {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-icon-danger:hover {
+      background: #fee2e2;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state h4 {
+      margin: 0 0 8px;
+      color: #374151;
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    /* Form Panel */
+    .form-panel {
+      position: sticky;
+      top: 0;
+    }
+
+    .form-panel.editing-mode .panel-header {
+      background: #667eea;
+      color: white;
+    }
+
+    .label-form {
+      padding: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .form-label .required {
+      color: #dc2626;
+    }
+
+    .form-label .optional {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-input {
+      width: 50px;
+      height: 36px;
+      padding: 2px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+    }
+
+    .color-value {
+      font-size: 0.8rem;
+      color: #6b7280;
+      font-family: monospace;
+    }
+
+    .form-hint {
+      display: block;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .form-actions-sticky {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-cancel {
+      padding: 10px 18px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+      background: #f3f4f6;
+    }
+
+    .btn-submit {
+      padding: 10px 18px;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-submit:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Settings Grid */
+    .settings-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .setting-card {
+      display: flex;
+      gap: 16px;
+      padding: 20px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+    }
+
+    .setting-icon {
+      font-size: 1.5rem;
+      width: 48px;
+      height: 48px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .setting-content {
+      flex: 1;
+    }
+
+    .setting-content h4 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      color: #1f2937;
+    }
+
+    .setting-content p {
+      margin: 0 0 12px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .setting-control .form-select {
+      width: auto;
+      min-width: 100px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .toggle-switch input {
+      display: none;
+    }
+
+    .toggle-slider {
+      width: 44px;
+      height: 24px;
+      background: #d1d5db;
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #667eea;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::after {
+      transform: translateX(20px);
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    /* Modal Footer */
+    .modal-footer-custom {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      background: #f9fafb;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-close-modal {
+      padding: 10px 24px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-close-modal:hover {
+      background: #f3f4f6;
+    }
   `]
 })
 export class AdminComponent implements OnInit {
@@ -1509,6 +2717,9 @@ export class AdminComponent implements OnInit {
   doctors: User[] = [];
   projects: Project[] = [];
   currentUser: any;
+
+  // User menu dropdown
+  showUserMenu = false;
 
   showCreateUserModal = false;
   showCreateProjectModal = false;
@@ -1535,12 +2746,20 @@ export class AdminComponent implements OnInit {
   selectedProjectForLabels: Project | null = null;
   projectLabels: Label[] = [];
   editingLabel: Label | null = null;
+  loadingLabels = false;
+  labelsModalTab: 'labels' | 'settings' = 'labels';
   newLabel: CreateLabelRequest = {
     name: '',
     color: '#ff0000',
-    description: ''
+    description: '',
+    labelType: 'SIMPLE',
+    inputType: 'NONE',
+    options: []
   };
+  newLabelOptionsText = ''; // Options input için text field
   selectedProjectGradeLevel: number = 3;
+  projectShowGrade = true;
+  projectShowNotes = true;
 
   // Bulk image selection properties
   selectedAvailableImages: Set<number> = new Set();
@@ -1797,7 +3016,23 @@ export class AdminComponent implements OnInit {
   }
 
   logout(): void {
+    this.showUserMenu = false;
     this.authService.logout();
+  }
+
+  /** User menu toggle */
+  toggleUserMenu(): void {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  /** Dışarı tıklandığında user menu'yü kapat */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const userDropdown = target.closest('.user-dropdown');
+    if (!userDropdown && this.showUserMenu) {
+      this.showUserMenu = false;
+    }
   }
 
   // Image Management Methods
@@ -1860,6 +3095,11 @@ export class AdminComponent implements OnInit {
   openLabelsModal(project: Project): void {
     this.selectedProjectForLabels = project;
     this.selectedProjectGradeLevel = project.gradeLevel || 3;
+    this.projectShowGrade = project.showGrade !== false; // Default true
+    this.projectShowNotes = project.showNotes !== false; // Default true
+    this.labelsModalTab = 'labels'; // Reset to labels tab
+    this.editingLabel = null; // Reset editing state
+    this.resetNewLabel(); // Reset form
     this.loadProjectLabels();
     this.showLabelsModal = true;
   }
@@ -2003,6 +3243,16 @@ export class AdminComponent implements OnInit {
 
     const projectId = this.selectedProjectForLabels.id;
 
+    // Options text'i array'e dönüştür
+    if (this.newLabelOptionsText) {
+      this.newLabel.options = this.newLabelOptionsText
+        .split(',')
+        .map(o => o.trim())
+        .filter(o => o.length > 0);
+    } else {
+      this.newLabel.options = [];
+    }
+
     if (this.editingLabel) {
       this.adminService.updateLabel(projectId, this.editingLabel.id, this.newLabel).subscribe({
         next: () => {
@@ -2029,8 +3279,13 @@ export class AdminComponent implements OnInit {
     this.newLabel = {
       name: label.name,
       color: label.color,
-      description: label.description || ''
+      description: label.description || '',
+      labelType: label.labelType || 'SIMPLE',
+      inputType: label.inputType || 'NONE',
+      options: label.options || []
     };
+    // Options array'i text field'a dönüştür
+    this.newLabelOptionsText = (label.options || []).join(', ');
   }
 
   cancelEditLabel(): void {
@@ -2056,21 +3311,80 @@ export class AdminComponent implements OnInit {
   createDefaultLabels(): void {
     if (!this.selectedProjectForLabels) return;
 
+    this.loadingLabels = true;
     this.adminService.createDefaultLabels(this.selectedProjectForLabels.id).subscribe({
       next: (labels) => {
         this.projectLabels = labels;
+        this.loadingLabels = false;
         this.toastService.success('Varsayılan etiketler oluşturuldu');
       },
-      error: (err) => this.toastService.error(err.error?.message || 'Varsayılan etiketler oluşturulamadı')
+      error: (err) => {
+        this.loadingLabels = false;
+        this.toastService.error(err.error?.message || 'Varsayılan etiketler oluşturulamadı');
+      }
     });
+  }
+
+  createDentalLabels(): void {
+    if (!this.selectedProjectForLabels) return;
+
+    this.loadingLabels = true;
+    this.adminService.createDentalLabels(this.selectedProjectForLabels.id).subscribe({
+      next: (labels) => {
+        this.projectLabels = labels;
+        this.loadingLabels = false;
+        this.toastService.success('Dental şablonu yüklendi (10 bölge + 11 bulgu)');
+      },
+      error: (err) => {
+        this.loadingLabels = false;
+        this.toastService.error(err.error?.message || 'Dental şablonu yüklenemedi');
+      }
+    });
+  }
+
+  // Label helper methods for hierarchical display
+  getRegionLabels(): Label[] {
+    return this.projectLabels.filter(l => l.labelType === 'REGION');
+  }
+
+  getFindingLabels(): Label[] {
+    return this.projectLabels.filter(l => l.labelType === 'FINDING');
+  }
+
+  getSimpleLabels(): Label[] {
+    return this.projectLabels.filter(l => !l.labelType || l.labelType === 'SIMPLE');
   }
 
   resetNewLabel(): void {
     this.newLabel = {
       name: '',
       color: '#ff0000',
-      description: ''
+      description: '',
+      labelType: 'SIMPLE',
+      inputType: 'NONE',
+      options: []
     };
+    this.newLabelOptionsText = '';
+  }
+
+  // Project settings (showGrade, showNotes)
+  updateProjectSettings(): void {
+    if (!this.selectedProjectForLabels) return;
+
+    const updateRequest = {
+      name: this.selectedProjectForLabels.name,
+      description: this.selectedProjectForLabels.description,
+      gradeLevel: this.selectedProjectGradeLevel,
+      showGrade: this.projectShowGrade,
+      showNotes: this.projectShowNotes
+    };
+
+    this.adminService.updateProject(this.selectedProjectForLabels.id, updateRequest).subscribe({
+      next: () => {
+        this.toastService.success('Proje ayarları güncellendi');
+      },
+      error: (err) => this.toastService.error(err.error?.message || 'Ayarlar güncellenemedi')
+    });
   }
 
   // Project Detail View Methods
