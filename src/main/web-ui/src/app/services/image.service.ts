@@ -76,13 +76,23 @@ export interface ImageMetadata {
   physicalHeight?: number; // in micrometers
 }
 
+export type LabelingStatus = 'IN_PROGRESS' | 'COMPLETED' | null;
+
 export interface ImageOverview {
   id: number;
-    name: string;
-    status: 'PENDING' | 'PROCESSING' | 'READY' | 'ERROR';
-    previewUrl?: string;
-    created?: string;
-    updated?: string;
+  name: string;
+  status: 'PENDING' | 'PROCESSING' | 'READY' | 'ERROR';
+  previewUrl?: string;
+  created?: string;
+  updated?: string;
+  labelingStatus?: LabelingStatus;
+}
+
+export interface LabelingStats {
+  total: number;
+  completed: number;
+  inProgress: number;
+  notStarted: number;
 }
 
 
@@ -141,5 +151,26 @@ export class ImageService {
    */
   getAllImages(): Observable<ImageMetadata[]> {
     return this.http.get<ImageMetadata[]>('/api/images');
+  }
+
+  /**
+   * Belirli bir görüntü için kullanıcının etiketleme durumunu günceller
+   */
+  updateLabelingStatus(imageId: number, status: LabelingStatus): Observable<any> {
+    return this.http.patch(`/api/images/${imageId}/labeling-status`, { status });
+  }
+
+  /**
+   * Belirli bir görüntü için kullanıcının etiketleme durumunu getirir
+   */
+  getLabelingStatus(imageId: number): Observable<{ imageId: number; userId: number; status: LabelingStatus }> {
+    return this.http.get<{ imageId: number; userId: number; status: LabelingStatus }>(`/api/images/${imageId}/labeling-status`);
+  }
+
+  /**
+   * Kullanıcının etiketleme istatistiklerini getirir
+   */
+  getLabelingStats(): Observable<LabelingStats> {
+    return this.http.get<LabelingStats>('/api/images/labeling-stats');
   }
 }

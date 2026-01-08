@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.nio.file.Files;
@@ -27,6 +28,9 @@ public class ImageController {
 
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private ImageLabelingStatusService labelingStatusService;
 
     @PostMapping
     public ResponseEntity<ImageDTO> createImage(@RequestBody CreateImageDTO dto) {
@@ -149,14 +153,22 @@ public class ImageController {
             imagesToShow = List.of(); // No user, no images
         }
 
+        final User finalUser = currentUser;
         List<ImageOverviewDTO> list = imagesToShow.stream()
                 .map(img -> {
                     String preview = (img.getStatus() == Status.READY)
                             ? String.format("%s://%s/api/tiles/%d/0/0_0.jpg",
                             request.getScheme(), request.getServerName() + ":" + request.getServerPort(), img.getId())
                             : null;
+
+                    // Her kullanıcı için kendi labeling status'unu al (null = henüz başlamamış)
+                    LabelingStatus labelingStatus = null;
+                    if (finalUser != null) {
+                        labelingStatus = labelingStatusService.getLabelingStatus(img.getId(), finalUser);
+                    }
+
                     return new ImageOverviewDTO(
-                            img.getId(), img.getName(), img.getStatus(), preview
+                            img.getId(), img.getName(), img.getStatus(), preview, labelingStatus
                     );
                 })
                 .collect(Collectors.toList());
@@ -211,6 +223,94 @@ public class ImageController {
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) {
         imageService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ============ LABELING STATUS ENDPOINTS ============
+
+    /**
+     * Belirli bir görüntü için kullanıcının etiketleme durumunu günceller.
+     * Doktorlar kendi durumlarını güncelleyebilir.
+     */
+    @PatchMapping("/{id}/labeling-status")
+    public ResponseEntity<Map<String, Object>> updateLabelingStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            @AuthenticationPrincipal User currentUser) {
+
+        if (currentUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String statusStr = request.get("status");
+        if (statusStr == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Status is required"));
+        }
+
+        LabelingStatus newStatus;
+        try {
+            newStatus = LabelingStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status. Valid values: IN_PROGRESS, COMPLETED"));
+        }
+
+        ImageLabelingStatus updated = labelingStatusService.updateLabelingStatus(id, currentUser, newStatus);
+
+        return ResponseEntity.ok(Map.of(
+                "imageId", id,
+                "userId", currentUser.getId(),
+                "status", updated.getStatus().name(),
+                "updatedAt", updated.getUpdatedAt().toString()
+        ));
+    }
+
+    /**
+     * Belirli bir görüntü için kullanıcının etiketleme durumunu getirir.
+     */
+    @GetMapping("/{id}/labeling-status")
+    public ResponseEntity<Map<String, Object>> getLabelingStatus(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        if (currentUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        LabelingStatus status = labelingStatusService.getLabelingStatus(id, currentUser);
+
+        return ResponseEntity.ok(Map.of(
+                "imageId", id,
+                "userId", currentUser.getId(),
+                "status", status.name()
+        ));
+    }
+
+    /**
+     * Kullanıcının etiketleme istatistiklerini getirir.
+     */
+    @GetMapping("/labeling-stats")
+    public ResponseEntity<Map<String, Object>> getLabelingStats(
+            @AuthenticationPrincipal User currentUser) {
+
+        if (currentUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Kullanıcıya atanan toplam görüntü sayısı
+        long totalAssigned;
+        if (currentUser.getRole() == Role.ADMIN) {
+            totalAssigned = imageService.findAll().size();
+        } else {
+            totalAssigned = projectService.getImagesForDoctor(currentUser).size();
+        }
+
+        ImageLabelingStatusService.LabelingStats stats = labelingStatusService.getUserLabelingStats(currentUser, totalAssigned);
+
+        return ResponseEntity.ok(Map.of(
+                "total", stats.total(),
+                "completed", stats.completed(),
+                "inProgress", stats.inProgress(),
+                "notStarted", stats.notStarted()
+        ));
     }
 
 }

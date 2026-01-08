@@ -59,6 +59,7 @@
     "forgotPassword": "Forgot Password",
     "rememberMe": "Remember Me",
     "noAccount": "Don't have an account?",
+    "contactAdmin": "Contact the system administrator to create an account.",
     "haveAccount": "Already have an account?",
     "loginSuccess": "Login successful",
     "loginFailed": "Login failed",
@@ -115,7 +116,11 @@
     "uploadError": "Upload Error",
     "cancelUpload": "Cancel",
     "uploadSuccess": "successful",
-    "uploadFailed": "failed"
+    "uploadFailed": "failed",
+    "labelingCompleted": "Completed",
+    "labelingInProgress": "In Progress",
+    "labelingNotStarted": "Not Started",
+    "clickToChangeStatus": "Click to change status"
   },
   "admin": {
     "title": "LaPatho Admin",
@@ -300,7 +305,14 @@
     "quickLabel": "Quick Label",
     "noLabelsForProject": "No labels defined for this project",
     "details": "Details",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "labelingStatus": "Labeling Status",
+    "notStarted": "Not Started",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "markInProgress": "Mark as In Progress",
+    "markCompleted": "Mark as Completed",
+    "markNotStarted": "Mark as Not Started"
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",

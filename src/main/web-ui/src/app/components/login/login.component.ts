@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../services/auth.service';
 import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
@@ -9,7 +9,7 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, LanguageSwitcherComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, LanguageSwitcherComponent],
   template: `
     <div class="login-container">
       <div class="language-selector">
@@ -57,7 +57,8 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
         </form>
 
         <div class="login-footer">
-          <p>{{ 'auth.noAccount' | translate }} <a routerLink="/register">{{ 'auth.register' | translate }}</a></p>
+          <!-- Kayıt sayfası devre dışı - kullanıcılar sadece admin tarafından eklenebilir -->
+          <p class="admin-note">{{ 'auth.contactAdmin' | translate }}</p>
         </div>
       </div>
     </div>
@@ -180,14 +181,10 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
       font-size: 0.875rem;
     }
 
-    .login-footer a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .login-footer a:hover {
-      text-decoration: underline;
+    .login-footer .admin-note {
+      color: #6B7280;
+      font-size: 0.8rem;
+      font-style: italic;
     }
   `]
 })

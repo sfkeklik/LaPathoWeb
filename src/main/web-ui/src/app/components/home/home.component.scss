@@ -1205,3 +1205,120 @@ $font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
     }
   }
 }
+
+// ============================================
+// LABELING STATUS STYLES
+// ============================================
+
+// Labeling Progress Stats Card
+.stats-card.labeling-progress {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+
+  i {
+    color: #60a5fa !important;
+  }
+}
+
+// Labeling Badge on Image Cards
+.labeling-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+  border: 1px solid transparent;
+  margin-left: auto;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .labeling-text {
+    white-space: nowrap;
+  }
+
+  // Tamamlandı durumu
+  &.labeling-completed {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
+    color: #059669;
+    border-color: rgba(16, 185, 129, 0.3);
+
+    i {
+      color: #10b981;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
+    }
+  }
+
+  // Devam ediyor durumu
+  &.labeling-inprogress {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%);
+    color: #d97706;
+    border-color: rgba(245, 158, 11, 0.3);
+
+    i {
+      color: #f59e0b;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.25) 100%);
+    }
+  }
+
+  // Başlanmadı durumu
+  &.labeling-notstarted {
+    background: linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(107, 114, 128, 0.15) 100%);
+    color: #6b7280;
+    border-color: rgba(156, 163, 175, 0.3);
+
+    i {
+      color: #9ca3af;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(107, 114, 128, 0.25) 100%);
+    }
+  }
+}
+
+// Image Card Labeling Status Indicators
+.image-card {
+  // Tamamlandı olan kartlara yeşil border
+  &.labeling-completed {
+    border: 2px solid $success-color;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1), $shadow;
+
+    &:hover {
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2), $shadow-lg;
+    }
+  }
+
+  // Devam eden kartlara turuncu border
+  &.labeling-inprogress {
+    border: 2px solid $warning-color;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1), $shadow;
+
+    &:hover {
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2), $shadow-lg;
+    }
+  }
+}
+
+// Card Header Layout Fix for Labeling Badge
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+}
+

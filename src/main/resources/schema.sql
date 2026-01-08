@@ -103,6 +103,21 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(active);
 CREATE INDEX IF NOT EXISTS idx_labels_project_id ON labels(project_id);
 
+-- Image Labeling Status table - Doktor bazlı etiketleme durumu takibi
+CREATE TABLE IF NOT EXISTS image_labeling_status (
+    id BIGSERIAL PRIMARY KEY,
+    image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(image_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_labeling_status_image ON image_labeling_status(image_id);
+CREATE INDEX IF NOT EXISTS idx_labeling_status_user ON image_labeling_status(user_id);
+CREATE INDEX IF NOT EXISTS idx_labeling_status_status ON image_labeling_status(status);
+
 -- Add grade_level column to existing projects table if not exists
 DO $$
 BEGIN

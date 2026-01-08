@@ -3,7 +3,7 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } fro
 import { Router, RouterModule } from '@angular/router';
 import { interval, Subject, switchMap, takeUntil, startWith } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
-import { ImageOverview, ImageService } from '../../services/image.service';
+import { ImageOverview, ImageService, LabelingStats, LabelingStatus } from '../../services/image.service';
 import { ImageUploadService, UploadProgress } from '../../services/image-upload.service';
 import { ImageEditModalComponent } from '../image-edit-modal/image-edit-modal.component';
 import { AuthService } from '../../services/auth.service';
@@ -54,6 +54,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   // User menu dropdown
   showUserMenu = false;
 
+  // Labeling stats
+  labelingStats: LabelingStats = { total: 0, completed: 0, inProgress: 0, notStarted: 0 };
+
   // destroy sinyali
   private destroy$ = new Subject<void>();
 
@@ -73,14 +76,24 @@ export class HomeComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Status filtresi
+    // Status filtresi (işlem durumu + etiketleme durumu)
     if (this.currentFilter !== 'all') {
       const statusMap: { [key: string]: string } = {
         'ready': 'READY',
         'processing': 'PROCESSING',
         'failed': 'ERROR'
       };
-      filtered = filtered.filter(img => img.status === statusMap[this.currentFilter]);
+
+      // Etiketleme durumu filtreleri
+      if (this.currentFilter === 'labeling-completed') {
+        filtered = filtered.filter(img => img.labelingStatus === 'COMPLETED');
+      } else if (this.currentFilter === 'labeling-inprogress') {
+        filtered = filtered.filter(img => img.labelingStatus === 'IN_PROGRESS');
+      } else if (this.currentFilter === 'labeling-notstarted') {
+        filtered = filtered.filter(img => !img.labelingStatus);
+      } else if (statusMap[this.currentFilter]) {
+        filtered = filtered.filter(img => img.status === statusMap[this.currentFilter]);
+      }
     }
 
     // Sıralama uygula
@@ -101,6 +114,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Hemen yükle
     this.refreshImages();
+    this.loadLabelingStats();
 
     // Sonra her 60 saniyede bir tekrar
     interval(60_000).pipe(
@@ -112,6 +126,17 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.images = list; // Backward compatibility için
       },
       error: err => console.error('Liste yüklenirken hata:', err)
+    });
+  }
+
+  // Labeling stats yükleme
+  loadLabelingStats(): void {
+    this.imageService.getLabelingStats().subscribe({
+      next: stats => {
+        this.labelingStats = stats;
+        console.log('Labeling stats loaded:', stats);
+      },
+      error: err => console.error('Labeling stats yüklenirken hata:', err)
     });
   }
 
@@ -130,6 +155,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+    this.loadLabelingStats();
   }
 
   // Toolbar işlevleri
@@ -357,6 +383,68 @@ export class HomeComponent implements OnInit, OnDestroy {
         },
         error: err => console.error('Liste yüklenirken hata:', err)
       });
+    this.loadLabelingStats();
+  }
+
+  /** Etiketleme durumunu değiştir (toggle) */
+  toggleLabelingStatus(image: ImageOverview, event: Event): void {
+    event.stopPropagation();
+
+    // Durumu döngüsel olarak değiştir: null/IN_PROGRESS -> COMPLETED -> IN_PROGRESS
+    let newStatus: LabelingStatus;
+
+    switch (image.labelingStatus) {
+      case 'IN_PROGRESS':
+        newStatus = 'COMPLETED';
+        break;
+      case 'COMPLETED':
+        newStatus = 'IN_PROGRESS';
+        break;
+      default:
+        newStatus = 'IN_PROGRESS';
+    }
+
+    this.updateLabelingStatus(image, newStatus);
+  }
+
+  /** Etiketleme durumunu belirli bir değere güncelle */
+  updateLabelingStatus(image: ImageOverview, newStatus: LabelingStatus): void {
+    if (!newStatus) return; // null durumu göndermiyoruz
+
+    this.imageService.updateLabelingStatus(image.id, newStatus).subscribe({
+      next: (response) => {
+        // Lokal listeyi güncelle
+        const index = this.allImages.findIndex(img => img.id === image.id);
+        if (index !== -1) {
+          this.allImages[index].labelingStatus = newStatus;
+        }
+
+        // İstatistikleri güncelle
+        this.loadLabelingStats();
+
+        const statusMessages: { [key: string]: string } = {
+          'IN_PROGRESS': 'Devam ediyor olarak işaretlendi',
+          'COMPLETED': 'Tamamlandı olarak işaretlendi'
+        };
+        this.toastService.success(statusMessages[newStatus] || 'Durum güncellendi');
+      },
+      error: (err) => {
+        console.error('Etiketleme durumu güncellenirken hata:', err);
+        this.toastService.error('Etiketleme durumu güncellenirken bir hata oluştu');
+      }
+    });
+  }
+
+  /** Görüntüyü tamamlandı olarak işaretle */
+  markAsCompleted(image: ImageOverview, event: Event): void {
+    event.stopPropagation();
+    this.updateLabelingStatus(image, 'COMPLETED');
+  }
+
+  /** Görüntüyü devam ediyor olarak işaretle */
+  markAsInProgress(image: ImageOverview, event: Event): void {
+    event.stopPropagation();
+    this.updateLabelingStatus(image, 'IN_PROGRESS');
   }
 
   ngOnDestroy() {

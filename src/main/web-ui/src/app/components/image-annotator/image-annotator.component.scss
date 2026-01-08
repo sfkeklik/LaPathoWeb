@@ -2410,3 +2410,279 @@ $font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
   display: flex;
   gap: 4px;
 }
+
+// ========== LABELING STATUS STYLES ==========
+
+// Toolbar labeling status section
+.labeling-status-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  margin-left: auto;
+
+  .labeling-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    i {
+      font-size: 12px;
+    }
+
+    .status-text {
+      white-space: nowrap;
+    }
+
+    &.status-not-labeled {
+      background: rgba(107, 114, 128, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+
+      i {
+        color: #9CA3AF;
+      }
+    }
+
+    &.status-in-progress {
+      background: rgba(245, 158, 11, 0.3);
+      color: white;
+
+      i {
+        color: #FBBF24;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+    }
+
+    &.status-completed {
+      background: rgba(16, 185, 129, 0.3);
+      color: white;
+
+      i {
+        color: #34D399;
+      }
+    }
+  }
+
+  .labeling-status-actions {
+    display: flex;
+    gap: 4px;
+
+    .status-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+
+      &:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      &.active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      &.completed-btn {
+        &.active {
+          background: rgba(16, 185, 129, 0.5);
+        }
+
+        &:hover:not(:disabled) {
+          background: rgba(16, 185, 129, 0.4);
+        }
+      }
+
+      i {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Sidebar labeling status panel
+.labeling-status-panel {
+  margin: 12px 0;
+  padding: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 10px;
+  border: 1px solid $border-color;
+
+  .labeling-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .labeling-status-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .labeling-status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+
+      i {
+        font-size: 10px;
+      }
+
+      &.status-not-labeled {
+        background: #F3F4F6;
+        color: #6B7280;
+      }
+
+      &.status-in-progress {
+        background: #FEF3C7;
+        color: #D97706;
+
+        i {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      }
+
+      &.status-completed {
+        background: #D1FAE5;
+        color: #059669;
+      }
+    }
+  }
+
+  .labeling-status-buttons {
+    display: flex;
+    gap: 6px;
+
+    .status-option-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 8px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 10px;
+      color: #64748B;
+
+      i {
+        font-size: 16px;
+        transition: all 0.2s ease;
+      }
+
+      span {
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      &:hover:not(:disabled) {
+        background: #F8FAFC;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.active {
+        border-color: #6B7280;
+        background: #F3F4F6;
+        color: #374151;
+
+        i {
+          color: #6B7280;
+        }
+      }
+
+      // In Progress active state
+      &:nth-child(2).active {
+        border-color: #F59E0B;
+        background: #FFFBEB;
+        color: #D97706;
+
+        i {
+          color: #F59E0B;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      }
+
+      // Completed active state
+      &.completed.active {
+        border-color: #10B981;
+        background: #ECFDF5;
+        color: #059669;
+
+        i {
+          color: #10B981;
+        }
+      }
+
+      &.completed:hover:not(:disabled):not(.active) {
+        border-color: rgba(16, 185, 129, 0.3);
+        background: #F0FDF4;
+
+        i {
+          color: #10B981;
+        }
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1024px) {
+  .labeling-status-section {
+    .labeling-status-indicator {
+      .status-text {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .labeling-status-section {
+    padding: 0 8px;
+
+    .labeling-status-indicator {
+      padding: 4px 8px;
+    }
+  }
+
+  .labeling-status-panel {
+    .labeling-status-buttons {
+      flex-direction: column;
+
+      .status-option-btn {
+        flex-direction: row;
+        justify-content: center;
+        padding: 8px;
+      }
+    }
+  }
+}
+

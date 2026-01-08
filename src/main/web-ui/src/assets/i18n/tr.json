@@ -59,6 +59,7 @@
     "forgotPassword": "Şifremi Unuttum",
     "rememberMe": "Beni Hatırla",
     "noAccount": "Hesabınız yok mu?",
+    "contactAdmin": "Hesap oluşturmak için sistem yöneticisi ile iletişime geçin.",
     "haveAccount": "Zaten hesabınız var mı?",
     "loginSuccess": "Giriş başarılı",
     "loginFailed": "Giriş başarısız",
@@ -115,7 +116,11 @@
     "uploadError": "Yükleme Hatası",
     "cancelUpload": "İptal Et",
     "uploadSuccess": "başarılı",
-    "uploadFailed": "başarısız"
+    "uploadFailed": "başarısız",
+    "labelingCompleted": "Tamamlandı",
+    "labelingInProgress": "Devam Ediyor",
+    "labelingNotStarted": "Başlanmadı",
+    "clickToChangeStatus": "Durumu değiştirmek için tıklayın"
   },
   "admin": {
     "title": "LaPatho Admin",
@@ -300,7 +305,14 @@
     "quickLabel": "Hızlı Etiket",
     "noLabelsForProject": "Bu proje için etiket tanımlanmamış",
     "details": "Detaylar",
-    "clearAll": "Tümünü Temizle"
+    "clearAll": "Tümünü Temizle",
+    "labelingStatus": "Etiketleme Durumu",
+    "notStarted": "Başlanmadı",
+    "inProgress": "Devam Ediyor",
+    "completed": "Tamamlandı",
+    "markInProgress": "Devam Ediyor olarak işaretle",
+    "markCompleted": "Tamamlandı olarak işaretle",
+    "markNotStarted": "Başlanmadı olarak işaretle"
   },
   "shortcuts": {
     "title": "Klavye Kısayolları",

@@ -16,7 +16,7 @@ import {
   // Removed ESM import to avoid duplicate OpenSeadragon instances
   // import OpenSeadragon from 'openseadragon';
   declare const OpenSeadragon: any;
-  import { ImageService, ImageMetadata as ImageMetadataType } from '../../services/image.service';
+  import { ImageService, ImageMetadata as ImageMetadataType, LabelingStatus } from '../../services/image.service';
   import { AnnotationService } from '../../services/annotation.service';
   import { AdminService, Label } from '../../services/admin.service';
   import { AuthService } from '../../services/auth.service';
@@ -152,6 +152,10 @@ import {
     // Image metadata for properties display
     imageMetadata: ImageMetadataType | null = null;
 
+    // Labeling Status (doktor bazlı etiketleme durumu)
+    currentLabelingStatus: LabelingStatus = null;
+    labelingStatusLoading: boolean = false;
+
     // Add the missing formatFileSize method
     formatFileSize(bytes: number | undefined): string {
       if (!bytes || bytes === 0) return '0 B';
@@ -186,6 +190,8 @@ import {
             this.initializeViewer();
             // Subscribe to annotation changes
             this.subscribeToAnnotationChanges();
+            // Load current labeling status for this doctor
+            this.loadLabelingStatus();
           }
         }
       });
@@ -1494,5 +1500,121 @@ import {
       // Annotations are auto-saved, but this provides explicit feedback
       console.log('Saving all annotations...');
       // Could trigger a manual sync if needed
+    }
+
+    // ========== LABELING STATUS METHODS (Doktor bazlı etiketleme durumu) ==========
+
+    /**
+     * Mevcut görüntü için doktorun etiketleme durumunu yükler
+     */
+    loadLabelingStatus(): void {
+      this.labelingStatusLoading = true;
+      this.imageService.getLabelingStatus(this.imageId).subscribe({
+        next: (response) => {
+          this.currentLabelingStatus = response.status;
+          this.labelingStatusLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Etiketleme durumu yüklenirken hata:', err);
+          this.currentLabelingStatus = null;
+          this.labelingStatusLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+
+    /**
+     * Etiketleme durumunu günceller
+     */
+    updateLabelingStatus(newStatus: LabelingStatus): void {
+      this.labelingStatusLoading = true;
+      this.imageService.updateLabelingStatus(this.imageId, newStatus).subscribe({
+        next: (response) => {
+          this.currentLabelingStatus = newStatus;
+          this.labelingStatusLoading = false;
+          this.addActivity('update', `Etiketleme durumu "${this.getLabelingStatusText(newStatus)}" olarak güncellendi`);
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Etiketleme durumu güncellenirken hata:', err);
+          this.labelingStatusLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+
+    /**
+     * Görüntüyü "Tamamlandı" olarak işaretler
+     */
+    markAsCompleted(): void {
+      this.updateLabelingStatus('COMPLETED');
+    }
+
+    /**
+     * Görüntüyü "Devam Ediyor" olarak işaretler
+     */
+    markAsInProgress(): void {
+      this.updateLabelingStatus('IN_PROGRESS');
+    }
+
+    /**
+     * Etiketleme durumunu döngüsel olarak değiştirir (IN_PROGRESS <-> COMPLETED)
+     */
+    toggleLabelingStatus(): void {
+      let newStatus: LabelingStatus;
+      switch (this.currentLabelingStatus) {
+        case 'IN_PROGRESS':
+          newStatus = 'COMPLETED';
+          break;
+        case 'COMPLETED':
+          newStatus = 'IN_PROGRESS';
+          break;
+        default:
+          newStatus = 'IN_PROGRESS';
+      }
+      this.updateLabelingStatus(newStatus);
+    }
+
+    /**
+     * Etiketleme durumunun Türkçe metnini döndürür
+     */
+    getLabelingStatusText(status: LabelingStatus): string {
+      switch (status) {
+        case 'IN_PROGRESS':
+          return 'Devam Ediyor';
+        case 'COMPLETED':
+          return 'Tamamlandı';
+        default:
+          return 'Etiketlenmemiş';
+      }
+    }
+
+    /**
+     * Etiketleme durumunun CSS sınıfını döndürür
+     */
+    getLabelingStatusClass(status: LabelingStatus): string {
+      switch (status) {
+        case 'IN_PROGRESS':
+          return 'status-in-progress';
+        case 'COMPLETED':
+          return 'status-completed';
+        default:
+          return 'status-not-labeled';
+      }
+    }
+
+    /**
+     * Etiketleme durumunun ikonunu döndürür
+     */
+    getLabelingStatusIcon(status: LabelingStatus): string {
+      switch (status) {
+        case 'IN_PROGRESS':
+          return 'fa-spinner';
+        case 'COMPLETED':
+          return 'fa-check-circle';
+        default:
+          return 'fa-circle';
+      }
     }
   }

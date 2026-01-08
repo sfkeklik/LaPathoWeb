@@ -25,10 +25,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
-    }
+    // Register endpoint devre dışı - kullanıcılar sadece admin tarafından eklenebilir
+    // @PostMapping("/register")
+    // public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    //     return ResponseEntity.ok(authService.register(request));
+    // }
 
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(

@@ -132,6 +132,32 @@
       </span>
     </div>
 
+    <!-- Labeling Status Display & Controls -->
+    <div class="toolbar-section labeling-status-section">
+      <div class="labeling-status-indicator"
+           [class]="getLabelingStatusClass(currentLabelingStatus)"
+           [title]="'annotator.labelingStatus' | translate">
+        <i class="fas" [class]="getLabelingStatusIcon(currentLabelingStatus)"></i>
+        <span class="status-text">{{ getLabelingStatusText(currentLabelingStatus) }}</span>
+      </div>
+      <div class="labeling-status-actions">
+        <button class="toolbar-btn status-btn"
+                [class.active]="currentLabelingStatus === 'IN_PROGRESS'"
+                (click)="markAsInProgress()"
+                [disabled]="labelingStatusLoading"
+                [title]="'annotator.markInProgress' | translate">
+          <i class="fas fa-spinner"></i>
+        </button>
+        <button class="toolbar-btn status-btn completed-btn"
+                [class.active]="currentLabelingStatus === 'COMPLETED'"
+                (click)="markAsCompleted()"
+                [disabled]="labelingStatusLoading"
+                [title]="'annotator.markCompleted' | translate">
+          <i class="fas fa-check"></i>
+        </button>
+      </div>
+    </div>
+
     <!-- Right Section: Home and Logout -->
     <div class="toolbar-section toolbar-right">
       <button class="toolbar-btn" (click)="navigateHome()" [title]="'admin.home' | translate">
@@ -175,6 +201,33 @@
             <span class="stat">{{ imageMetadata?.width || 0 }} × {{ imageMetadata?.height || 0 }}</span>
             <span class="stat-divider">|</span>
             <span class="stat">{{ magnificationDisplay }}</span>
+          </div>
+        </div>
+
+        <!-- Labeling Status Panel -->
+        <div class="labeling-status-panel">
+          <div class="labeling-status-header">
+            <span class="labeling-status-title">{{ 'annotator.labelingStatus' | translate }}</span>
+            <span class="labeling-status-badge" [class]="getLabelingStatusClass(currentLabelingStatus)">
+              <i class="fas" [class]="getLabelingStatusIcon(currentLabelingStatus)"></i>
+              {{ getLabelingStatusText(currentLabelingStatus) }}
+            </span>
+          </div>
+          <div class="labeling-status-buttons">
+            <button class="status-option-btn"
+                    [class.active]="currentLabelingStatus === 'IN_PROGRESS'"
+                    (click)="markAsInProgress()"
+                    [disabled]="labelingStatusLoading">
+              <i class="fas fa-spinner"></i>
+              <span>{{ 'annotator.inProgress' | translate }}</span>
+            </button>
+            <button class="status-option-btn completed"
+                    [class.active]="currentLabelingStatus === 'COMPLETED'"
+                    (click)="markAsCompleted()"
+                    [disabled]="labelingStatusLoading">
+              <i class="fas fa-check-circle"></i>
+              <span>{{ 'annotator.completed' | translate }}</span>
+            </button>
           </div>
         </div>
 

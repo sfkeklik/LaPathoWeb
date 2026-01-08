@@ -25,6 +25,15 @@
             <span class="stats-label">{{ 'home.readyImages' | translate }}</span>
           </div>
         </div>
+
+        <!-- Labeling Progress Stats -->
+        <div class="stats-card labeling-progress" [title]="'Etiketleme İlerlemesi'">
+          <i class="fas fa-tasks"></i>
+          <div class="stats-info">
+            <span class="stats-value">{{ labelingStats.completed }}/{{ labelingStats.total }}</span>
+            <span class="stats-label">{{ 'home.labelingCompleted' | translate }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="header-right">
@@ -135,6 +144,9 @@
         <option value="ready">{{ 'home.ready' | translate }}</option>
         <option value="processing">{{ 'home.processing' | translate }}</option>
         <option value="failed">{{ 'home.failed' | translate }}</option>
+        <option disabled>──────────</option>
+        <option value="labeling-completed">✅ {{ 'home.labelingCompleted' | translate }}</option>
+        <option value="labeling-inprogress">🔄 {{ 'home.labelingInProgress' | translate }}</option>
       </select>
 
       <!-- Sort -->
@@ -177,7 +189,9 @@
         class="image-card"
         *ngFor="let img of filteredImages"
         [class.processing]="img.status !== 'READY'"
-        [class.clickable]="img.status === 'READY'">
+        [class.clickable]="img.status === 'READY'"
+        [class.labeling-completed]="img.labelingStatus === 'COMPLETED'"
+        [class.labeling-inprogress]="img.labelingStatus === 'IN_PROGRESS'">
 
         <!-- Card Header with Status -->
         <div class="card-header">
@@ -195,6 +209,24 @@
                img.status === 'PROCESSING' ? ('home.processing' | translate) :
                img.status === 'ERROR' ? ('home.failed' | translate) :
                img.status }}
+          </span>
+
+          <!-- Labeling Status Badge -->
+          <span class="labeling-badge" *ngIf="img.status === 'READY'" [ngClass]="{
+            'labeling-completed': img.labelingStatus === 'COMPLETED',
+            'labeling-inprogress': img.labelingStatus === 'IN_PROGRESS',
+            'labeling-notstarted': !img.labelingStatus
+          }" (click)="toggleLabelingStatus(img, $event)" [title]="'home.clickToChangeStatus' | translate">
+            <i class="fas" [ngClass]="{
+              'fa-check-double': img.labelingStatus === 'COMPLETED',
+              'fa-clock': img.labelingStatus === 'IN_PROGRESS',
+              'fa-circle': !img.labelingStatus
+            }"></i>
+            <span class="labeling-text">
+              {{ img.labelingStatus === 'COMPLETED' ? ('home.labelingCompleted' | translate) :
+                 img.labelingStatus === 'IN_PROGRESS' ? ('home.labelingInProgress' | translate) :
+                 ('home.labelingNotStarted' | translate) }}
+            </span>
           </span>
 
           <!-- Quick Actions - Only visible for ADMIN -->
