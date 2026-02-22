@@ -31,7 +31,7 @@ public class ImageService {
     // Desteklenen formatların listesi
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(
         ".tiff", ".tif", ".bif", ".ome.tiff", ".ome.tif", ".svs", ".ndpi", ".scn", ".mrxs",
-        ".png", ".jpg", ".jpeg"  // Standard image formats for dental imaging
+        ".png", ".jpg", ".jpeg", ".bmp"  // Standard image formats for dental imaging
     );
 
     public ImageEntity save(ImageEntity img) {
@@ -73,89 +73,122 @@ public class ImageService {
         // Uzantıya göre formatı belirle (BIF gibi vendor formatlarını doğru göster)
         img.setFormat(detectFormatFromPath(inputPath));
 
-        // 2) Bio-Formats ImageReader ile boyutları ve teknik bilgileri oku
-        ImageReader reader = new ImageReader();
-        try {
-            log.info("Bio-Formats ile dosya okunuyor: {}", inputPath);
-
-            // Bio-Formats format bilgisini al
-            String bfFormat = reader.getFormat(inputPath);
-            log.info("Tespit edilen BF format: {}", bfFormat);
-
-            reader.setId(inputPath);
-
-            // Format'a özgü yapılandırma
-            configureReaderForFormat(reader, bfFormat);
-
-            int seriesCount = reader.getSeriesCount();
-            log.info("Toplam seri sayısı: {}", seriesCount);
-
-            // BIF dosyaları için WSI serisini bul (3 kanallı olan)
-            int wsiSeriesIndex = findWSISeries(reader);
-            log.info("WSI serisi bulundu: Series {}", wsiSeriesIndex);
-
-            reader.setSeries(wsiSeriesIndex);
-            int width  = reader.getSizeX();
-            int height = reader.getSizeY();
-            int channels = reader.getSizeC();
-            int bitsPerPixel = reader.getBitsPerPixel();
-            boolean isRgb = reader.isRGB();
-
-            img.setWidth(width);
-            img.setHeight(height);
-            img.setChannels(channels);
-            img.setBitDepth(bitsPerPixel);
-            // Renk uzayı temel çıkarımı
-            if (isRgb || channels >= 3) {
-                img.setColorSpace("RGB");
-            } else if (channels == 1) {
-                img.setColorSpace("Grayscale");
-            } else {
-                img.setColorSpace(channels + "-channel");
-            }
-
-            // BF'nin tespit ettiği format bilgisi Ventana/BIF içeriyorsa formatı buna göre güncelle
-            if (bfFormat != null) {
-                String lf = bfFormat.toLowerCase();
-                if (lf.contains("ventana") || lf.contains("bif")) {
-                    img.setFormat("BIF");
-                } else if (lf.contains("tiff") || lf.contains("tif")) {
-                    img.setFormat("TIFF");
-                } else if (lf.contains("svs")) {
-                    img.setFormat("SVS");
-                }
-            }
-
-            log.info("WSI Serisi - Seri: {}, Kanallar: {}, BPP: {}, Boyutları: {}x{}",
-                    wsiSeriesIndex, channels, bitsPerPixel, width, height);
-
-            // BIF dosyaları için ek bilgileri logla
-            if (bfFormat != null && bfFormat.toLowerCase().contains("ventana")) {
-                log.info("Ventana BIF dosyası işleniyor - WSI Series: {}", wsiSeriesIndex);
-                logBifMetadata(reader);
-            }
-
-        } catch (Exception e) {
-            log.error("Bio-Formats okuma hatası: {}", e.getMessage(), e);
-
-            // Özel hata mesajları
-            if (e.getMessage() != null) {
-                if (e.getMessage().contains("Unsupported format")) {
-                    throw new FormatException("Desteklenmeyen dosya formatı: " + inputPath);
-                } else if (e.getMessage().contains("BIF") || e.getMessage().contains("Ventana")) {
-                    log.warn("BIF dosya okuma hatası, varsayılan değerlerle devam ediliyor");
-                }
-            }
-
-            // Fallback: Default değerler ata (format ve dosya boyutu zaten set edildi)
-            img.setWidth(1024);
-            img.setHeight(1024);
-            log.warn("Default boyutlar atandı: 1024x1024");
-        } finally {
+        // 2) Boyutları ve teknik bilgileri oku
+        if (isStandardImageFormat(inputPath)) {
+            // Standart görüntüler (PNG, JPG, JPEG, BMP) için Java ImageIO kullan
             try {
-                reader.close();
+                log.info("Standart görüntü formatı tespit edildi, Java ImageIO ile okunuyor: {}", inputPath);
+                java.awt.image.BufferedImage bufferedImage = javax.imageio.ImageIO.read(new java.io.File(inputPath));
+                if (bufferedImage != null) {
+                    img.setWidth(bufferedImage.getWidth());
+                    img.setHeight(bufferedImage.getHeight());
+                    int channels = bufferedImage.getColorModel().getNumComponents();
+                    img.setChannels(channels);
+                    img.setBitDepth(bufferedImage.getColorModel().getPixelSize() / Math.max(channels, 1));
+                    if (channels >= 3) {
+                        img.setColorSpace("RGB");
+                    } else if (channels == 1) {
+                        img.setColorSpace("Grayscale");
+                    } else {
+                        img.setColorSpace(channels + "-channel");
+                    }
+                    log.info("Standart görüntü - Boyutlar: {}x{}, Kanallar: {}", bufferedImage.getWidth(), bufferedImage.getHeight(), channels);
+                } else {
+                    log.warn("ImageIO görüntü okuyamadı, varsayılan değerler atanıyor");
+                    img.setWidth(1024);
+                    img.setHeight(1024);
+                }
             } catch (Exception e) {
-                log.warn("ImageReader kapatma hatası: {}", e.getMessage());
+                log.error("Standart görüntü okuma hatası: {}", e.getMessage(), e);
+                img.setWidth(1024);
+                img.setHeight(1024);
+                log.warn("Default boyutlar atandı: 1024x1024");
+            }
+        } else {
+            // Tıbbi görüntüler için Bio-Formats ImageReader kullan
+            ImageReader reader = new ImageReader();
+            try {
+                log.info("Bio-Formats ile dosya okunuyor: {}", inputPath);
+
+                // Bio-Formats format bilgisini al
+                String bfFormat = reader.getFormat(inputPath);
+                log.info("Tespit edilen BF format: {}", bfFormat);
+
+                reader.setId(inputPath);
+
+                // Format'a özgü yapılandırma
+                configureReaderForFormat(reader, bfFormat);
+
+                int seriesCount = reader.getSeriesCount();
+                log.info("Toplam seri sayısı: {}", seriesCount);
+
+                // BIF dosyaları için WSI serisini bul (3 kanallı olan)
+                int wsiSeriesIndex = findWSISeries(reader);
+                log.info("WSI serisi bulundu: Series {}", wsiSeriesIndex);
+
+                reader.setSeries(wsiSeriesIndex);
+                int width  = reader.getSizeX();
+                int height = reader.getSizeY();
+                int channels = reader.getSizeC();
+                int bitsPerPixel = reader.getBitsPerPixel();
+                boolean isRgb = reader.isRGB();
+
+                img.setWidth(width);
+                img.setHeight(height);
+                img.setChannels(channels);
+                img.setBitDepth(bitsPerPixel);
+                // Renk uzayı temel çıkarımı
+                if (isRgb || channels >= 3) {
+                    img.setColorSpace("RGB");
+                } else if (channels == 1) {
+                    img.setColorSpace("Grayscale");
+                } else {
+                    img.setColorSpace(channels + "-channel");
+                }
+
+                // BF'nin tespit ettiği format bilgisi Ventana/BIF içeriyorsa formatı buna göre güncelle
+                if (bfFormat != null) {
+                    String lf = bfFormat.toLowerCase();
+                    if (lf.contains("ventana") || lf.contains("bif")) {
+                        img.setFormat("BIF");
+                    } else if (lf.contains("tiff") || lf.contains("tif")) {
+                        img.setFormat("TIFF");
+                    } else if (lf.contains("svs")) {
+                        img.setFormat("SVS");
+                    }
+                }
+
+                log.info("WSI Serisi - Seri: {}, Kanallar: {}, BPP: {}, Boyutları: {}x{}",
+                        wsiSeriesIndex, channels, bitsPerPixel, width, height);
+
+                // BIF dosyaları için ek bilgileri logla
+                if (bfFormat != null && bfFormat.toLowerCase().contains("ventana")) {
+                    log.info("Ventana BIF dosyası işleniyor - WSI Series: {}", wsiSeriesIndex);
+                    logBifMetadata(reader);
+                }
+
+            } catch (Exception e) {
+                log.error("Bio-Formats okuma hatası: {}", e.getMessage(), e);
+
+                // Özel hata mesajları
+                if (e.getMessage() != null) {
+                    if (e.getMessage().contains("Unsupported format")) {
+                        throw new FormatException("Desteklenmeyen dosya formatı: " + inputPath);
+                    } else if (e.getMessage().contains("BIF") || e.getMessage().contains("Ventana")) {
+                        log.warn("BIF dosya okuma hatası, varsayılan değerlerle devam ediliyor");
+                    }
+                }
+
+                // Fallback: Default değerler ata (format ve dosya boyutu zaten set edildi)
+                img.setWidth(1024);
+                img.setHeight(1024);
+                log.warn("Default boyutlar atandı: 1024x1024");
+            } finally {
+                try {
+                    reader.close();
+                } catch (Exception e) {
+                    log.warn("ImageReader kapatma hatası: {}", e.getMessage());
+                }
             }
         }
 
@@ -331,6 +364,14 @@ public class ImageService {
                 log.error("Status güncelleme hatası: {}", saveEx.getMessage());
             }
         }
+    }
+
+    /**
+     * Standart görüntü formatı olup olmadığını kontrol eder (PNG, JPEG, JPG, BMP)
+     */
+    private boolean isStandardImageFormat(String filePath) {
+        String lowerPath = filePath.toLowerCase();
+        return lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg") || lowerPath.endsWith(".bmp");
     }
 
     /**
