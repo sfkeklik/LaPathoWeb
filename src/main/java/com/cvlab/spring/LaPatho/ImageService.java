@@ -200,6 +200,7 @@ public class ImageService {
         if (lower.endsWith(".ndpi")) return "NDPI";
         if (lower.endsWith(".scn")) return "SCN";
         if (lower.endsWith(".mrxs")) return "MRXS";
+        if (lower.endsWith(".bmp")) return "BMP";
         return "Unknown";
     }
 

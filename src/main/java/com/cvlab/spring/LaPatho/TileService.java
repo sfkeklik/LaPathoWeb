@@ -124,11 +124,11 @@ public class TileService {
      */
     private boolean isStandardImageFormat(String filePath) {
         String lowerPath = filePath.toLowerCase();
-        return lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg");
+        return lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg") || lowerPath.endsWith(".bmp");
     }
 
     /**
-     * Standart görüntüler için tile üretimi (PNG, JPEG, JPG)
+     * Standart görüntüler için tile üretimi (PNG, JPEG, JPG, BMP)
      * Java ImageIO kullanarak doğru renk işleme sağlar
      */
     private void generateTilesForStandardImage(String inputPath, String imageId) throws Exception {
